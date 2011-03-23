@@ -12,13 +12,13 @@ REAL(dp):: wslope, ar, Q, pi=atan(1.0_dp)*4._dp,  t, &
             recrd,v, bedlast, hss, tss, ddd, hss2, handy, dqbeddx, &
             epsl,epsu, slopes, E, D, C, rmult,Area, inuc, NN,&
              Width,C0,waterlast, dt, slpmx,sllength, vel, &
-            integrated_load_flux, DT1, tau_g, f_g, Cbar, &
+            integrated_load_flux, DT1,DT1_old, tau_g, f_g, Cbar, &
             taucrit_dep, hlim, mor, Arealast, taucrit_dep_ys, &
             ht,vlast, dst, taucrit, mu, & 
             tauinc, erconst, lifttodrag, vegdrag, sconc, rho, ysold, &
             lincrem, wset, voidf, smax, rough_coef, man_nveg, veg_ht,rhos,&
             dsand, d50, g, kvis, lambdacon, alpha, &
-            ysl,ysu,bedl, bedu, wdthx, TR, storer(9), tmp
+            ysl,ysu,bedl, bedu, wdthx, TR, storer(9), tmp, tmp2
 INTEGER::  remesh_freq, no_discharges
 REAL(dp):: discharges(1000), susconcs(1000)
 LOGICAL::  flag, susdist, sus2d, readin, geo, remesh, norm, vertical, & 
@@ -517,8 +517,11 @@ DO Q_loop= 1, no_discharges!15
                     !tmp = max(maxval(abs(wset*C/rhos- Qe)), maxval(abs(bed - bedlast)))
                     !tmp = max(maxval(abs(recrd(l-1:u)))*0.1_dp, maxval(abs(bed - bedlast)))
                     !tmp = max(maxval(abs(bed - bedlast)/DT1), 0.00001_dp)
-
+                    !DT1_old = DT1
+                    !tmp = maxval(abs(wset*C/rhos- Qe))*1.00_dp
                     DT1 = min(max(3.0e-03_dp/max(tmp,1.0e-020_dp), 10.0_dp), 100.0_dp*3600.0_dp)
+                    ! Get bed to accelerate 
+                    !mor = min(max(3.0e-03_dp/(maxval(abs(bed-bedlast))/DT1_old*DT1), 1.0_dp), 5._dp)
                 !END IF
 
             ELSE
