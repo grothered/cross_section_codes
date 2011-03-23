@@ -512,12 +512,12 @@ DO Q_loop= 1, no_discharges!15
                 !    DT1 = min(DT,0.003_dp/max(maxval(abs(bed(l:u) - bedlast(l:u))), 0.0000001_dp)) 
                 !ELSEIF(.TRUE.) THEN
                     !tmp = max(maxval(abs(wset*C/rhos- Qe))/1.0_dp, maxval(abs(bed - bedlast)/DT1))
-                    tmp = max(maxval(abs(wset*C/rhos- Qe))*1.00_dp, maxval(abs(bed - bedlast)/DT1*0.0_dp))
+                    tmp = min(maxval(abs(wset*C/rhos- Qe))*1.00_dp, maxval(abs(bed - bedlast)))
                     !tmp = max(maxval(abs(wset*C/rhos- Qe)), maxval(abs(bed - bedlast)))
                     !tmp = max(maxval(abs(recrd(l-1:u)))*0.1_dp, maxval(abs(bed - bedlast)))
                     !tmp = max(maxval(abs(bed - bedlast)/DT1), 0.00001_dp)
 
-                    DT1 = min(max(3.0e-03_dp/tmp, 10.0_dp), 100.0_dp*3600.0_dp)
+                    DT1 = min(max(3.0e-03_dp/max(tmp,1.0e-020_dp), 10.0_dp), 100.0_dp*3600.0_dp)
                 !END IF
 
             ELSE
