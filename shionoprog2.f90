@@ -235,7 +235,9 @@ DO Q_loop= 1, no_discharges!15
         22222 IF( mod(j-1,writfreq).eq.0 ) THEN 
                 PRINT*, j, l,u, Q/Area, t, ((Q/Area)*abs(Q/Area)*rmult),&
                      DT1, ys(u)-ys(l)+wdthx, maxval(C), &
-                    rmult*(Area)/(ys(u)-ys(l)+wdthx), f(nos/2)
+                    rmult*(Area)/(ys(u)-ys(l)+wdthx), f(nos/2), &
+                    maxval(abs(Qe - wset*C/rhos)), maxval(abs(bed-bedlast))
+        
               END IF
 
         ! Update time
@@ -489,6 +491,17 @@ DO Q_loop= 1, no_discharges!15
             END IF
            
         
+            
+            bedlast= bed ! Record the bed prior to updating
+           
+            call update_bed(u-l+1,DT1,water,Q,bed(l:u),ys(l:u),Area,ys(u)-ys(l)+wdthx, &
+             water- Area/(ys(u)-ys(l)+wdthx),f(l:u),recrd((l-1):u),E,D, C(l:u),rmult,2,inuc, tau(l:u),& 
+            NN(l:u),j,slopes(l:u), hlim, mor, taucrit_dep(l:u,1:layers), layers, taucrit_dep_ys(l:u) & 
+            ,u-l+1, taucrit(l:u, 0:layers) , vegdrag(l:u), susdist, rho, Qe(l:u) & 
+            , Qbed(l:u), wset, dqbeddx(l:u), rhos, voidf, d50, g, kvis, norm, vertical, lambdacon, tbston,&
+             Qbedon, normmov, sus2d, ysl, ysu, bedl,bedu, iii, bedlast(l:u), susQbal, talmon, & 
+            high_order_bedload) 
+
             ! Determine the timestep -- implicit timestepping will only work
             ! if there are no bed layers, because otherwise DT
             ! has already been used this timestep.
@@ -511,33 +524,22 @@ DO Q_loop= 1, no_discharges!15
                 !    ! change
                 !    DT1 = min(DT,0.003_dp/max(maxval(abs(bed(l:u) - bedlast(l:u))), 0.0000001_dp)) 
                 !ELSEIF(.TRUE.) THEN
-                    !tmp = max(maxval(abs(wset*C/rhos- Qe))/1.0_dp, maxval(abs(bed - bedlast)/DT1))
-                    tmp = min(maxval(abs(wset*C/rhos- Qe))*1.00_dp, &
-                              maxval(abs(bed(l+1:u-1) - bedlast(l+1:u-1))) ) 
-                    !tmp = max(maxval(abs(wset*C/rhos- Qe)), maxval(abs(bed - bedlast)))
-                    !tmp = max(maxval(abs(recrd(l-1:u)))*0.1_dp, maxval(abs(bed - bedlast)))
-                    !tmp = max(maxval(abs(bed - bedlast)/DT1), 0.00001_dp)
-                    !DT1_old = DT1
-                    !tmp = maxval(abs(wset*C/rhos- Qe))*1.00_dp
-                    DT1 = min(max(3.0e-03_dp/max(tmp,1.0e-020_dp), 10.0_dp), 100.0_dp*3600.0_dp)
-                    ! Get bed to accelerate 
-                    !mor = min(max(3.0e-03_dp/(maxval(abs(bed-bedlast))/DT1_old*DT1), 1.0_dp), 5._dp)
+                !tmp = max(maxval(abs(wset*C/rhos- Qe))/1.0_dp, maxval(abs(bed - bedlast)/DT1))
+                tmp = min(maxval(abs(wset*C/rhos- Qe))*1.00_dp, &
+                          maxval(abs(bed(l+1:u-1) - bedlast(l+1:u-1)))*0.1_dp ) 
+                !tmp = max(maxval(abs(wset*C/rhos- Qe)), maxval(abs(bed - bedlast)))
+                !tmp = max(maxval(abs(recrd(l-1:u)))*0.1_dp, maxval(abs(bed - bedlast)))
+                !tmp = max(maxval(abs(bed - bedlast)/DT1), 0.00001_dp)
+                !DT1_old = DT1
+                !tmp = maxval(abs(wset*C/rhos- Qe))*1.00_dp
+                DT1 = min(max(3.0e-02_dp/max(tmp,1.0e-020_dp), 10.0_dp), 100.0_dp*3600.0_dp)
+                ! Get bed to accelerate 
+                !mor = min(max(3.0e-03_dp/(maxval(abs(bed-bedlast))/DT1_old*DT1), 1.0_dp), 5._dp)
                 !END IF
 
             ELSE
                 DT1 = DT
             END IF 
-            
-            bedlast= bed ! Record the bed prior to updating
-           
-            call update_bed(u-l+1,DT1,water,Q,bed(l:u),ys(l:u),Area,ys(u)-ys(l)+wdthx, &
-             water- Area/(ys(u)-ys(l)+wdthx),f(l:u),recrd((l-1):u),E,D, C(l:u),rmult,2,inuc, tau(l:u),& 
-            NN(l:u),j,slopes(l:u), hlim, mor, taucrit_dep(l:u,1:layers), layers, taucrit_dep_ys(l:u) & 
-            ,u-l+1, taucrit(l:u, 0:layers) , vegdrag(l:u), susdist, rho, Qe(l:u) & 
-            , Qbed(l:u), wset, dqbeddx(l:u), rhos, voidf, d50, g, kvis, norm, vertical, lambdacon, tbston,&
-             Qbedon, normmov, sus2d, ysl, ysu, bedl,bedu, iii, bedlast(l:u), susQbal, talmon, & 
-            high_order_bedload) 
-
             ! Correct the banks. In the case that we allow bedload at l-1/2 and
             ! u+1/2, this is very important to ensure mass conservation, because
             ! if there is a downslope bedload flux from l-1/2, or from u+1/2,
