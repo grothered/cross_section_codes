@@ -321,7 +321,10 @@ DO Q_loop= 1, no_discharges!15
 
         ! Find wetted part of section
         call wet(l,u,nos,water, bed) 
-        
+        IF((l==1).OR.(u==nos)) THEN
+            PRINT*, 'THE CHANNEL HAS WIDENED TO THE EDGE OF THE DOMAIN -- ABORTING THIS RUN'
+            goto 373
+        END IF
         ! 'Extra' wetted width associated with the corners of the domain.
         wdthx = 0.0
         IF (u<nos) wdthx = wdthx+ (water-bed(u))/(bed(u+1)-bed(u))*(ys(u+1)-ys(u))
@@ -497,44 +500,6 @@ DO Q_loop= 1, no_discharges!15
              Qbedon, normmov, sus2d, ysl, ysu, bedl,bedu, iii, bedlast(l:u), susQbal, talmon, & 
             high_order_bedload) 
 
-            ! Determine the timestep -- implicit timestepping will only work
-            ! if there are no bed layers, because otherwise DT
-            ! has already been used this timestep.
-            IF(variable_timestep) THEN
-                ! These methods change DT1 during the evolution of the
-                ! cross-section
-                
-                !FIXME: At the moment, this slows the morphological evolution,
-                !but has no effect on the actual time t - so it can only produce
-                !the correct solutions for steady state computations
-
-                IF(j.eq.1) print*, ' Warning: Variable timestep is ONLY valid for &
-                        STEADY UNIFORM EQUILIBRIUM computations'
-
-                !IF(.FALSE.) THEN
-                !    ! Change the timestep according to the rate of deposition
-                !    DT1 = min(DT,0.003_dp/max(abs(maxval(C(l:u)*wset/rhos)*mor), 0.0000001_dp)) 
-                !ELSEIF(.FALSE.) THEN
-                !    ! Change the timestep according to the rate of morphological
-                !    ! change
-                !    DT1 = min(DT,0.003_dp/max(maxval(abs(bed(l:u) - bedlast(l:u))), 0.0000001_dp)) 
-                !ELSEIF(.TRUE.) THEN
-                !tmp = max(maxval(abs(wset*C/rhos- Qe))/1.0_dp, maxval(abs(bed - bedlast)/DT1))
-                tmp = max(maxval(abs(wset*C/rhos- Qe))*1.00_dp, &
-                          maxval(abs(bed(l+1:u-1) - bedlast(l+1:u-1)))*0.1_dp ) 
-                !tmp = max(maxval(abs(wset*C/rhos- Qe)), maxval(abs(bed - bedlast)))
-                !tmp = max(maxval(abs(recrd(l-1:u)))*0.1_dp, maxval(abs(bed - bedlast)))
-                !tmp = max(maxval(abs(bed - bedlast)), 1.0e-12_dp)
-                !DT1_old = DT1
-                !tmp = maxval(abs(wset*C/rhos- Qe))*1.00_dp
-                DT1 = min(max(3.0e-02_dp/max(tmp,1.0e-020_dp), 10.0_dp), 100.0_dp*3600.0_dp)
-                ! Get bed to accelerate 
-                !mor = min(max(3.0e-03_dp/(maxval(abs(bed-bedlast))/DT1_old*DT1), 1.0_dp), 5._dp)
-                !END IF
-
-            ELSE
-                DT1 = DT
-            END IF 
             ! Correct the banks. In the case that we allow bedload at l-1/2 and
             ! u+1/2, this is very important to ensure mass conservation, because
             ! if there is a downslope bedload flux from l-1/2, or from u+1/2,
@@ -548,7 +513,7 @@ DO Q_loop= 1, no_discharges!15
                     IF(bed(u+1)>bedu) bed(u+1)=bedu
                 END IF
             END IF
-            IF(.TRUE.) THEN
+            IF((.TRUE.).AND.(iii==2)) THEN
                 ! A version of the Delft bank erosion model. 
                 ! First check that there is no leakage of bedl, bedu in the
                 ! bed solver (possibly could happen due to matrix round off or
@@ -573,6 +538,47 @@ DO Q_loop= 1, no_discharges!15
                     bed(u) = bedlast(u)
                 END IF
             END IF
+            
+            ! Determine the timestep -- implicit timestepping will only work
+            ! if there are no bed layers, because otherwise DT
+            ! has already been used this timestep.
+            IF((iii==2).and.(variable_timestep)) THEN
+                ! These methods change DT1 during the evolution of the
+                ! cross-section
+                
+                !FIXME: At the moment, this slows the morphological evolution,
+                !but has no effect on the actual time t - so it can only produce
+                !the correct solutions for steady state computations
+
+                IF(j.eq.1) print*, ' Warning: Variable timestep is ONLY valid for &
+                        STEADY UNIFORM EQUILIBRIUM computations'
+
+                !IF(.FALSE.) THEN
+                !    ! Change the timestep according to the rate of deposition
+                !    DT1 = min(DT,0.003_dp/max(abs(maxval(C(l:u)*wset/rhos)*mor), 0.0000001_dp)) 
+                !ELSEIF(.FALSE.) THEN
+                !    ! Change the timestep according to the rate of morphological
+                !    ! change
+                !    DT1 = min(DT,0.003_dp/max(maxval(abs(bed(l:u) - bedlast(l:u))), 0.0000001_dp)) 
+                !ELSEIF(.TRUE.) THEN
+                !tmp = max(maxval(abs(wset*C/rhos- Qe))/1.0_dp, maxval(abs(bed - bedlast)/DT1))
+                tmp = min(max(maxval(abs(wset*C/rhos- Qe))*1.00_dp,maxval(Qbed)), &
+                          maxval(abs(bed(l+1:u-1) - bedlast(l+1:u-1)))*1.0_dp) 
+                !tmp = max(tmp, maxval(abs(bed(l+1:u-1) - bedlast(l+1:u-1)))*0.01_dp)
+                !tmp = max(maxval(abs(wset*C/rhos- Qe)), maxval(abs(bed - bedlast)))
+                !tmp = max(maxval(abs(recrd(l-1:u)))*0.1_dp, maxval(abs(bed - bedlast)))
+                !tmp = max(maxval(abs(bed - bedlast)), 1.0e-12_dp)
+                !DT1_old = DT1
+                !tmp = maxval(abs(wset*C/rhos- Qe))*1.00_dp
+                DT1 = min(max(1.0e-03_dp/max(tmp,1.0e-020_dp), 10.0_dp), 100.0_dp*3600.0_dp, DT1*2.0_dp)
+                PRINT*, 'DT1 = ', DT1
+                ! Get bed to accelerate 
+                !mor = min(max(3.0e-03_dp/(maxval(abs(bed-bedlast))/DT1_old*DT1), 1.0_dp), 5._dp)
+                !END IF
+
+            ELSE
+                DT1 = DT
+            END IF 
             
             ! Write outputs
             IF((mod(j-1,writfreq).EQ.0).AND.(j>0).AND.(iii.eq.1)) THEN!.or.(j>15250)) THEN 
