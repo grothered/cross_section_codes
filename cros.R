@@ -291,6 +291,7 @@ get_extra<-function(l){
         Qe_file = which(dir()=='q')
         Qbed_file = which(dir()=='Area')
         qb_G_file = which(dir()=='recrd')
+        h_next_file = which(dir()=='usef')
 
 	
         taug <<- genread(dir()[taug_file],l)	
@@ -299,6 +300,7 @@ get_extra<-function(l){
         Qe   <<- genread(dir()[Qe_file],l)	
         Qbed <<- genread(dir()[Qbed_file],l)	
         Qb_g <<- genread(dir()[qb_G_file],l+1)	
+        h_next <<- genread(dir()[h_next_file],l)	
 
 }
 
