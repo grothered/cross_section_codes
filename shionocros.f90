@@ -1598,7 +1598,7 @@ SUBROUTINE update_bed(a, dT, water, Q, bed,ys,Area, Width,bottom, ff,recrd, E, D
         !boundary points - these will let us include those boundaries in the
         !implicit solution
         ys_tmp(1:a)=ys
-        bed_tmp(1:a)=bedlast
+        bed_tmp(1:a)=bed
         ys_tmp(0)=ysl
         ys_tmp(a+1)=ysu
         bed_tmp(0)=bedl
@@ -1669,7 +1669,7 @@ SUBROUTINE update_bed(a, dT, water, Q, bed,ys,Area, Width,bottom, ff,recrd, E, D
         h_diag(a+1)=1._dp+h_diag(a+1)
 
 
-        !IF(iii==1) THEN
+        IF(iii==1) THEN
             !Now define the right_hand side
             h_rhs(1:a)= (bed_tmp(1:a) + (-dqbeddx + Qd - Qe)*tmp2) + h_rhs2(1:a)
             h_rhs(0)=bed_tmp(0) + h_rhs2(0)
@@ -1719,18 +1719,18 @@ SUBROUTINE update_bed(a, dT, water, Q, bed,ys,Area, Width,bottom, ff,recrd, E, D
                 bedu=bedl
             END IF
 
-        !ELSE !iii=1
-        !    !FIXME
-        !    PRINT*, 'TWO STEP VERSION NEEDS EDITING BEFORE IT CAN BE SUPPORTED'
-        !    STOP
-        !    h_rhs= bedlast + (-dqbeddx + Qd - Qe)*mor*dT/(1._dp-voidf) !+Qd*mor*dT/(1._dp-voidf) - dT*mor*Qe/(1._dp-voidf) 
-        !!!!ENFORCE BOUNDARY CONDITIONS
-        !    h_rhs(1)= bedlast(1) + 2._dp/(ys(2)-ysl)*qb_G(0)*(-bedl/(ys(1)-ysl))*tmp2
-        !    h_rhs(a) = bedlast(a) +2._dp/(ysu-ys(a-1))*qb_G(a)*(-bedu/(ysu-ys(a)))*tmp2
-        !    !Call the matrix solver
-        !    call DGTSV(a,1,h_lower(2:a), h_diag,h_upper(1:a-1),h_rhs,a, info)
-        !    bed=h_rhs
-        !END IF !iii=1
+        ELSE !iii=1
+            !FIXME
+            PRINT*, 'TWO STEP VERSION NEEDS EDITING BEFORE IT CAN BE SUPPORTED'
+            STOP
+            h_rhs= bedlast + (-dqbeddx + Qd - Qe)*mor*dT/(1._dp-voidf) !+Qd*mor*dT/(1._dp-voidf) - dT*mor*Qe/(1._dp-voidf) 
+        !!!ENFORCE BOUNDARY CONDITIONS
+            h_rhs(1)= bedlast(1) + 2._dp/(ys(2)-ysl)*qb_G(0)*(-bedl/(ys(1)-ysl))*tmp2
+            h_rhs(a) = bedlast(a) +2._dp/(ysu-ys(a-1))*qb_G(a)*(-bedu/(ysu-ys(a)))*tmp2
+            !Call the matrix solver
+            call DGTSV(a,1,h_lower(2:a), h_diag,h_upper(1:a-1),h_rhs,a, info)
+            bed=h_rhs
+        END IF !iii=1
     END IF !IF(maxval(abs(qb_G)).EQ.0._dp)
 
 
