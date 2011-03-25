@@ -3832,9 +3832,9 @@ SUBROUTINE calc_friction(friction_type, rough_coef, water, a, bed, vel, man_nveg
     !and 'f_g' (which is the grain related roughness)
     
     !LOCAL VARIABLES
-    REAL(dp)::ks, f_tmp(a), Re(a)
+    REAL(dp)::ks, f_tmp(a), Re(a), f_glast(a)
     REAL(dp):: dgravel, dsilt, f_cs, si, k_scr, k_scmr, k_scd, f_fs, k_sc, k_sg
-    INTEGER:: i
+    INTEGER:: i, j
     REAL(dp):: onethird = (1.0_dp/3.0_dp)
 
 
@@ -3946,26 +3946,32 @@ SUBROUTINE calc_friction(friction_type, rough_coef, water, a, bed, vel, man_nveg
     END DO 
 
     ! Grain roughness
-    ! Van Rijn, fully turbulent flow
-    ! f_g =(8._dp*g/(18._dp*log10(12._dp*max(water-bed, 10.0_dp*d50)/(10._dp*d50)+0.0_dp)+0.0e+00_dp)**2)
-    
-    ! ERRONIOUS BIT
-    !f_g =(8._dp*g/(18._dp*& 
-    !        log10(12._dp*max(water-bed, 10.0_dp*d50)/(10._dp*d50+ 11.0e+06_dp*sqrt(f_g/8.0_dp)*vel)))**2)
-
-    ! Colebrook and White, following Chanson (2004)
-    ! f = 0.25/(log10(ks/(3.71*4*d) + 2.51/(Re*sqrt(f))))^2
-    ! where Re = u_star*ks/kinematic_visc 
-    ! Really we should solve this through iteration.
-    k_sg = 10.0_dp*d50
-    !Re = max((sqrt(f_g/8.0_dp)*abs(vel))*k_sg/1.0e-06_dp, 10.0_dp)
-    Re = max(abs(vel)*max(water-bed, 20.0_dp*k_sg)/1.0e-06_dp, 10.0_dp)
-    ! Turbulent regime -- iterate to get convergence
-    ! FIXME: Check that this is converging
-    DO i=1,10
-        f_g = 0.25_dp/(log10( k_sg/(3.71_dp*4.0_dp*max(water-bed,20._dp*k_sg)) &
-                      + 2.51_dp/(Re*sqrt(f_g)))  )**2
-    END DO
+    IF(.TRUE.) THEN
+        ! Van Rijn, fully turbulent flow
+         f_g =(8._dp*g/(18._dp*log10(12._dp*max(water-bed, 20.0_dp*10.0_dp*d50)/(10._dp*d50)+0.0_dp)+0.0e+00_dp)**2)
+    ELSE 
+        ! Colebrook and White, following Chanson (2004)
+        ! f = 0.25/(log10(ks/(3.71*4*d) + 2.51/(Re*sqrt(f))))^2
+        ! where Re = u_star*ks/kinematic_visc 
+        k_sg = 10.0_dp*d50
+        !!Re = max((sqrt(f_g/8.0_dp)*abs(vel))*k_sg/1.0e-06_dp, 10.0_dp)
+        Re = max(abs(vel)*max(water-bed, 20.0_dp*k_sg)/1.0e-06_dp, 10.0_dp)
+        !! Solve through iteration
+        f_glast=f_g+0.001_dp
+        DO i=1,a
+            j=0
+            DO WHILE(abs(f_glast(i) - f_g(i))>1.0e-08_dp)
+                j=j+1
+                f_glast(i)=f_g(i)
+                f_g(i) = 0.25_dp/(log10( k_sg/(3.71_dp*4.0_dp*max(water-bed(i),20._dp*k_sg)) &
+                              + 2.51_dp/(Re(i)*sqrt(f_glast(i))))  )**2
+                IF(j>1000) THEN
+                    PRINT*,'f_g did not converge in ', j,' iterations' 
+                    stop
+                END IF
+            END DO
+        END DO
+    END IF 
     ! Laminar regime
     !DO i=1,a
     !    IF(Re(i)<2000._dp) f_g(i) = 64._dp/Re(i)

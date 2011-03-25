@@ -20,7 +20,7 @@
 !Algorithm options
 !!!!!!!!!!!!!!!!!!!!!
 
-nos = 4000 ! Number of spatial grid points
+nos = 1500 ! Number of spatial grid points
 writfreq = 2000 !24*5*5 ! The output is written every writfreq 'th timestep
 jmax= 2400000 !1382400 !24*5*2*45*4*4*4*4*5 ! The number of time steps
 t = 0.00 ! Starting time (s)
@@ -31,9 +31,9 @@ waterM = 0.0 !Initial water elevation (m) and mean water elevation
 TR=0.0 !Tidal range. If it is set to zero then the discharge is constant, otherwise the continuity based method is used.
 Width = 1500.0 !Width of computational domain (m)
 
-no_discharges = 7
-Discharges = 2000.0  2000.0  2000.0  2000.0  2000.0  2000.0  2000.0 
-susconcs =   5.0e-03 1.0e-03 5.0e-04 2.0e-04 8.0e-05 4.0e-05 1.0e-05 !manning=.true. !Do we use a manning friction factor? If not, then we use a Darcy Weisbach friction factor, calculated as f=man_n**2*8.*9.8 -i.e., the equivalent manning friction value if the depth were 1 everywhere. Hence, the variable man_n is used to set either a manning or darcy friction. Same deal for vegetation drag
+no_discharges = 1 !7
+Discharges = 2000.0  !2000.0  2000.0  2000.0  2000.0  2000.0  2000.0 
+susconcs =   8.0e-05 !4.0e-05 1.0e-05 5.0e-06 1.0e-06 !manning=.true. !Do we use a manning friction factor? If not, then we use a Darcy Weisbach friction factor, calculated as f=man_n**2*8.*9.8 -i.e., the equivalent manning friction value if the depth were 1 everywhere. Hence, the variable man_n is used to set either a manning or darcy friction. Same deal for vegetation drag
 friction_type = 'manning' !, 'darcy', 'vanrijn'
 rough_coef =0.032 !Mannings n for the basic bed
 man_nveg = 0.3 !Mannings n for vegetated regions
@@ -71,8 +71,8 @@ vertical=.true. !Is the vertical shear method (SKM) to be used (support for Pizz
 readin = .FALSE. !Do we read the initial conditions from a file?
 geo = .false. !Do we use the 'geotech' algorithm to prevent steep slopes? This is also a bit outdated
 smax= 200.0 !The max slope when geo=.true. A bit outdated
-remesh=.FALSE. !Do we remesh
-remesh_freq= 5000 !How many time steps before we consider remesh (only active if remesh=.true.)
+remesh=.TRUE. !Do we remesh
+remesh_freq= 1000 !How many time steps before we consider remesh (only active if remesh=.true.)
 normmov=.false. !Do the bed points actually shift with the D-E vector? This is only supported for pure suspended load without bed layers.
 
 high_order_shear=.FALSE. ! Do we try to use a higher order estimate of derivatives in the shear approximation

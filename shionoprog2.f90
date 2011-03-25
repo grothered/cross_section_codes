@@ -431,7 +431,7 @@ DO Q_loop= 1, no_discharges!15
                                 man_nveg,d50,veg_ht, rhos, rho, g,f(l:u), vegdrag(l:u),f_g(l:u), dsand, j) 
 
             ! Calculate bed shear
-            call calc_shear(u-l+1,DT,water,Q,bed(l:u),ys(l:u),Area,ys(u)-ys(l)+wdthx, &
+            call calc_shear(u-l+1,DT1,water,Q,bed(l:u),ys(l:u),Area,ys(u)-ys(l)+wdthx, &
             water-Area/(ys(u)-ys(l)+wdthx),f(l:u),recrd((l-1):u),E,D, C(l:u),rmult,inuc, tau(l:u),& 
             NN(l:u),j,slopes(l:u), hlim, mor, taucrit_dep(l:u,1:layers), layers, taucrit_dep_ys(l:u) & 
             ,u-l+1, taucrit(l:u, 0:layers) , vegdrag(l:u), susdist, rho, Qe(l:u) & 
@@ -448,7 +448,7 @@ DO Q_loop= 1, no_discharges!15
             tau_g(l:u) = rho*vel(l:u)**2*(f_g(l:u)/8._dp)*sign(1._dp+0._dp*tau(l:u), tau(l:u))
             
             ! Calculate rates of resuspension and bedload transport
-            call calc_resus_bedload(u-l+1,DT,water,Q,bed(l:u),ys(l:u),Area,ys(u)-ys(l)+wdthx,&
+            call calc_resus_bedload(u-l+1,DT1,water,Q,bed(l:u),ys(l:u),Area,ys(u)-ys(l)+wdthx,&
              water-Area/(ys(u)-ys(l)+wdthx),f(l:u),recrd((l-1):u),E,D, C(l:u),wset, rmult,2,inuc, tau_g(l:u),& 
             vel(l:u), NN(l:u),j,slopes(l:u), hlim, mor, taucrit_dep(l:u,1:layers), layers, taucrit_dep_ys(l:u) & 
             ,u-l+1, taucrit(l:u, 0:layers) , vegdrag(l:u), susdist, rho, Qe(l:u) & 
@@ -470,7 +470,7 @@ DO Q_loop= 1, no_discharges!15
                 !            rho,rhos, g, d50, susQbal, Qbed(l:u),talmon, sllength, bedl, bedu, ysl, ysu, C(l:u),&
                 !            integrated_load_flux)
                 !ELSE
-                call dynamic_sus_dist(u-l+1, dT, ys(l:u), bed(l:u), water, waterlast, Q, tau(l:u), vel(l:u), wset, & 
+                call dynamic_sus_dist(u-l+1, DT1, ys(l:u), bed(l:u), water, waterlast, Q, tau(l:u), vel(l:u), wset, & 
                                         Qe(l:u), lambdacon, rho,rhos, g, d50, bedl,bedu, ysl, ysu, C(l:u),&
                                         Cbar(l:u), Qbed(l:u), sconc, j, high_order_Cflux)
 
@@ -489,44 +489,6 @@ DO Q_loop= 1, no_discharges!15
             END IF
            
         
-            ! Determine the timestep -- implicit timestepping will only work
-            ! if there are no bed layers, because otherwise DT
-            ! has already been used this timestep.
-            IF(variable_timestep) THEN
-                ! These methods change DT1 during the evolution of the
-                ! cross-section
-                
-                !FIXME: At the moment, this slows the morphological evolution,
-                !but has no effect on the actual time t - so it can only produce
-                !the correct solutions for steady state computations
-
-                IF(j.eq.1) print*, ' Warning: Variable timestep is ONLY valid for &
-                        STEADY UNIFORM EQUILIBRIUM computations'
-
-                !IF(.FALSE.) THEN
-                !    ! Change the timestep according to the rate of deposition
-                !    DT1 = min(DT,0.003_dp/max(abs(maxval(C(l:u)*wset/rhos)*mor), 0.0000001_dp)) 
-                !ELSEIF(.FALSE.) THEN
-                !    ! Change the timestep according to the rate of morphological
-                !    ! change
-                !    DT1 = min(DT,0.003_dp/max(maxval(abs(bed(l:u) - bedlast(l:u))), 0.0000001_dp)) 
-                !ELSEIF(.TRUE.) THEN
-                    !tmp = max(maxval(abs(wset*C/rhos- Qe))/1.0_dp, maxval(abs(bed - bedlast)/DT1))
-                    tmp = min(maxval(abs(wset*C/rhos- Qe))*1.00_dp, &
-                              maxval(abs(bed(l+1:u-1) - bedlast(l+1:u-1))) ) 
-                    !tmp = max(maxval(abs(wset*C/rhos- Qe)), maxval(abs(bed - bedlast)))
-                    !tmp = max(maxval(abs(recrd(l-1:u)))*0.1_dp, maxval(abs(bed - bedlast)))
-                    !tmp = max(maxval(abs(bed - bedlast)/DT1), 0.00001_dp)
-                    !DT1_old = DT1
-                    !tmp = maxval(abs(wset*C/rhos- Qe))*1.00_dp
-                    DT1 = min(max(3.0e-03_dp/max(tmp,1.0e-020_dp), 10.0_dp), 100.0_dp*3600.0_dp)
-                    ! Get bed to accelerate 
-                    !mor = min(max(3.0e-03_dp/(maxval(abs(bed-bedlast))/DT1_old*DT1), 1.0_dp), 5._dp)
-                !END IF
-
-            ELSE
-                DT1 = DT
-            END IF 
             
             bedlast= bed ! Record the bed prior to updating
            
@@ -600,6 +562,45 @@ DO Q_loop= 1, no_discharges!15
                 END IF
                 bedold=bed
             END IF
+            
+            ! Determine the timestep -- implicit timestepping will only work
+            ! if there are no bed layers, because otherwise DT
+            ! has already been used this timestep.
+            IF(variable_timestep) THEN
+                ! These methods change DT1 during the evolution of the
+                ! cross-section
+                
+                !FIXME: At the moment, this slows the morphological evolution,
+                !but has no effect on the actual time t - so it can only produce
+                !the correct solutions for steady state computations
+
+                IF(j.eq.1) print*, ' Warning: Variable timestep is ONLY valid for &
+                        STEADY UNIFORM EQUILIBRIUM computations'
+
+                !IF(.FALSE.) THEN
+                !    ! Change the timestep according to the rate of deposition
+                !    DT1 = min(DT,0.003_dp/max(abs(maxval(C(l:u)*wset/rhos)*mor), 0.0000001_dp)) 
+                !ELSEIF(.FALSE.) THEN
+                !    ! Change the timestep according to the rate of morphological
+                !    ! change
+                !    DT1 = min(DT,0.003_dp/max(maxval(abs(bed(l:u) - bedlast(l:u))), 0.0000001_dp)) 
+                !ELSEIF(.TRUE.) THEN
+                    !tmp = max(maxval(abs(wset*C/rhos- Qe))/1.0_dp, maxval(abs(bed - bedlast)/DT1))
+                    tmp = min(max(maxval(abs(wset*C/rhos- Qe)), maxval(abs(recrd(l-1:u)))), &
+                              maxval(abs(bed(l+1:u-1) - bedlast(l+1:u-1))) ) 
+                    !tmp = max(maxval(abs(wset*C/rhos- Qe)), maxval(abs(bed - bedlast)))
+                    !tmp = max(maxval(abs(recrd(l-1:u)))*0.1_dp, maxval(abs(bed - bedlast)))
+                    !tmp = max(maxval(abs(bed - bedlast)/DT1), 0.00001_dp)
+                    !DT1_old = DT1
+                    !tmp = maxval(abs(wset*C/rhos- Qe))*1.00_dp
+                    DT1 = min(max(1.0e-03_dp/max(tmp,1.0e-020_dp), 10.0_dp), 100.0_dp*3600.0_dp)
+                    ! Get bed to accelerate 
+                    !mor = min(max(3.0e-03_dp/(maxval(abs(bed-bedlast))/DT1_old*DT1), 1.0_dp), 5._dp)
+                !END IF
+
+            ELSE
+                DT1 = DT
+            END IF 
             ! Add random sedimentation to the channel
             ! This is a technique to prevent the channel from converging to a
             ! marginally stable state where tau_g < taucrit, which is dependent
