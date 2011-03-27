@@ -71,7 +71,7 @@ vertical=.true. !Is the vertical shear method (SKM) to be used (support for Pizz
 readin = .false. !Do we read the initial conditions from a file?
 geo = .false. !Do we use the 'geotech' algorithm to prevent steep slopes? This is also a bit outdated
 smax= 200.0 !The max slope when geo=.true. A bit outdated
-remesh=.FALSE. !Do we remesh
+remesh=.TRUE. !Do we remesh
 remesh_freq= 5000 !How many time steps before we consider remesh (only active if remesh=.true.)
 normmov=.false. !Do the bed points actually shift with the D-E vector? This is only supported for pure suspended load without bed layers.
 

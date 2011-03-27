@@ -1248,8 +1248,8 @@ SUBROUTINE calc_resus_bedload(a, dT, water, Q, bed,ys,Area, Width,bottom, ff,rec
                     END IF
                     si = (vel(i)**2)/((rhos-rho)/rho*g*d50)
                     k_scr = f_cs*d50*(85.0_dp-65.0_dp*tanh(0.015_dp*(si - 150.0_dp)))
-                    !a_ref = max(0.01_dp, 0.5_dp*k_scr, 0.01_dp*(water-bed(i))) !Reference level (m) 
-                    a_ref = max(0.5_dp*k_scr, 0.01_dp*(water-bed(i))) !Reference level (m) 
+                    a_ref = max(0.01_dp, 0.5_dp*k_scr, 0.01_dp*(water-bed(i))) !Reference level (m) 
+                    !a_ref = max(0.5_dp*k_scr, 0.01_dp*(water-bed(i))) !Reference level (m) 
                     d_star = (d50*((rhos/rho-1._dp)*g/kvis**2)**(1._dp/3._dp))  !Van Rijn d_star parameter
                     c_a = 0.015_dp*max(dsand/d50,1.0_dp)*d50/(a_ref*d_star**0.3_dp)* & 
                             (max(0._dp,abs(tau(i))-taucrit(i,jj))/taucrit(i,jj))**1.5_dp ! Van Rijn reference concentration, in m^3/m^3     
@@ -1299,7 +1299,7 @@ SUBROUTINE calc_resus_bedload(a, dT, water, Q, bed,ys,Area, Width,bottom, ff,rec
         IF( (abs(tau(i))>taucrit(i,0)).AND.(Qbedon)) THEN
             !Qb(i)= C(i)/rhos*(water-bed(i))*sqrt(tau(i)/(rho*ff(i)/8._dp))*mor
             !Qb(i)=0._dp!5._dp*Qe(i)
-            IF(.TRUE.) THEN
+            IF(.FALSE.) THEN
                 Qbed(i)= 0.5_dp*max(dsand/d50,1._dp)*d50*(d50*((rhos/rho-1._dp)*g/kvis**2)**(1._dp/3._dp))**(-.3_dp)*& 
                    rho**(-.5_dp)*(abs(tau(i)))**(.5_dp)*( abs(tau(i))-taucrit(i,0))/taucrit(i,0)*sign(1._dp, tau(i)) &
                    *sllength(i) !max(taucrit(i,0),0.05) !See van Rijn (2007 paper 1 eqn 10). This is the flux in m^3/m/s of SOLID MATERIAL, i.e. not accounting for porosity. Here we are assuming that the bedload layer has critical shear equal to the critical shear for suspension of the upper layer. Now, this might not be the best way to go.
@@ -2267,7 +2267,9 @@ SUBROUTINE refit(ys,bed,a)
 
     INTEGER:: dstspl,i,j, bankl, bankr, num_bank_pts, tmp(1), n1, n2, num_pts(5)
     REAL(dp):: dsts(a),dsts2(a),eqspc(a),p1,newxs(a),newys(a),w2,w1, wdth,&
-                av,mxch(a),b,newxs2(a), tmpR, res_pts(6), high_res_width
+                av,mxch(a),b,newxs2(a), tmpR, res_pts(6), high_res_width, bank_old
+    SAVE res_pts ! This will record the boundaries between zones of different resolutions
+    DATA res_pts /6*0.0_dp/
     LOGICAL:: okay, reint
     
     
@@ -2295,9 +2297,25 @@ SUBROUTINE refit(ys,bed,a)
     tmp = maxloc(abs(dsts(a/2:a))) + a/2 -1
     bankr=tmp(1)
 
-    ! Define the y value where the resolution (dy) will change
-    ! The idea is to have high resolution between res_pts(2 - 3), and
-    ! res_pts(4-5), and low resolution elsewhere
+    ! Check whether we need to remesh
+    ! If the distance between 'bankl' and 'the value of bankl last time we remeshed'
+    ! is small, and if this is also true for 'bankr', then we don't remesh.
+    ! This is good because remeshing can introduce numerical
+    ! diffusion/disturbance, which we don't need. 
+    bank_old = 0.5_dp*(res_pts(3) + res_pts(2)) !Value of the left bank last time we remeshed
+    IF(abs(ys(bankl) - bank_old)< 0.25_dp*(res_pts(3)-res_pts(2)) ) THEN
+        ! Check right bank
+        bank_old = 0.5_dp*(res_pts(4) + res_pts(5))
+        IF(abs(ys(bankr) - bank_old)< 0.25_dp*(res_pts(5)-res_pts(4)) ) THEN
+            PRINT*, 'No need to remesh'
+            RETURN
+        END IF
+    END IF 
+
+
+    ! Define the y value where the resolution (dy) will change The idea is to
+    ! have high resolution between [res_pts(2), res_pts(3)], and [res_pts(4),
+    ! res_pts(5)], and low resolution elsewhere
     high_res_width=min(10._dp,(ys(bankr)-ys(bankl))/4.0_dp, &
                         (ys(bankl)-ys(1))*0.9_dp,(ys(a) - ys(bankr))*0.9_dp)
     res_pts(1) = ys(1)
@@ -2306,7 +2324,8 @@ SUBROUTINE refit(ys,bed,a)
     res_pts(3) = ys(bankl) + high_res_width
     res_pts(4) = ys(bankr) - high_res_width
     res_pts(5) = ys(bankr) + high_res_width
-    
+   
+ 
     IF((res_pts(2)<0._dp).or.(res_pts(5)>ys(a))& 
         .or.(res_pts(4)<res_pts(3)) ) THEN
         PRINT*, 'ERROR - the bank region points are not ordered correctly. &
@@ -2320,14 +2339,16 @@ SUBROUTINE refit(ys,bed,a)
     ! num_pts holds the number of points in each of the 5 regions
     num_pts(2) = n1
     num_pts(4) = n1
-   
+    
+    print*, 'REMESHING' 
     print*, 'n1 = ', n1
     print*, 'n2 = ', n2
     print*, 'ys(bankl) = ', ys(bankl)
     print*, 'ys(bankr) = ', ys(bankr)
-    print*, high_res_width
+    print*, 'high_res_width = ', high_res_width
+    print*, 'END REMESHING'
 
-    ! Calc number of points in the first low res region  =
+    ! Calculate number of points in the first low res region  =
     ! n2*first_region_width/total_lowres_region_width
     tmpR = n2*(res_pts(2)-res_pts(1))/& 
            (res_pts(2)-res_pts(1) + res_pts(4) - res_pts(3) + res_pts(6) - res_pts(5) )
@@ -3946,32 +3967,37 @@ SUBROUTINE calc_friction(friction_type, rough_coef, water, a, bed, vel, man_nveg
     END DO 
 
     ! Grain roughness
-    IF(.TRUE.) THEN
-        ! Van Rijn, fully turbulent flow
-         f_g =(8._dp*g/(18._dp*log10(12._dp*max(water-bed, 20.0_dp*10.0_dp*d50)/(10._dp*d50)+0.0_dp)+0.0e+00_dp)**2)
-    ELSE 
-        ! Colebrook and White, following Chanson (2004)
-        ! f = 0.25/(log10(ks/(3.71*4*d) + 2.51/(Re*sqrt(f))))^2
-        ! where Re = u_star*ks/kinematic_visc 
-        k_sg = 10.0_dp*d50
-        !!Re = max((sqrt(f_g/8.0_dp)*abs(vel))*k_sg/1.0e-06_dp, 10.0_dp)
-        Re = max(abs(vel)*max(water-bed, 20.0_dp*k_sg)/1.0e-06_dp, 10.0_dp)
-        !! Solve through iteration
-        f_glast=f_g+0.001_dp
-        DO i=1,a
-            j=0
-            DO WHILE(abs(f_glast(i) - f_g(i))>1.0e-08_dp)
-                j=j+1
-                f_glast(i)=f_g(i)
-                f_g(i) = 0.25_dp/(log10( k_sg/(3.71_dp*4.0_dp*max(water-bed(i),20._dp*k_sg)) &
-                              + 2.51_dp/(Re(i)*sqrt(f_glast(i))))  )**2
-                IF(j>1000) THEN
-                    PRINT*,'f_g did not converge in ', j,' iterations' 
-                    stop
-                END IF
+    !IF(.TRUE.) THEN
+    SELECT CASE ('onethird')
+        CASE('vanrijn')
+            ! Van Rijn, fully turbulent flow
+             f_g =(8._dp*g/(18._dp*log10(12._dp*max(water-bed, 20.0_dp*10.0_dp*d50)/(10._dp*d50)+0.0_dp)+0.0e+00_dp)**2)
+        CASE('colebrook') 
+            ! Colebrook and White, following Chanson (2004)
+            ! f = 0.25/(log10(ks/(3.71*4*d) + 2.51/(Re*sqrt(f))))^2
+            ! where Re = u_star*ks/kinematic_visc 
+            k_sg = 10.0_dp*d50
+            !!Re = max((sqrt(f_g/8.0_dp)*abs(vel))*k_sg/1.0e-06_dp, 10.0_dp)
+            Re = max(abs(vel)*max(water-bed, 20.0_dp*k_sg)/1.0e-06_dp, 10.0_dp)
+            !! Solve through iteration
+            f_glast=f_g+0.001_dp
+            DO i=1,a
+                j=0
+                DO WHILE(abs(f_glast(i) - f_g(i))>1.0e-08_dp)
+                    j=j+1
+                    f_glast(i)=f_g(i)
+                    f_g(i) = 0.25_dp/(log10( k_sg/(3.71_dp*4.0_dp*max(water-bed(i),20._dp*k_sg)) &
+                                  + 2.51_dp/(Re(i)*sqrt(f_glast(i))))  )**2
+                    IF(j>1000) THEN
+                        PRINT*,'f_g did not converge in ', j,' iterations' 
+                        stop
+                    END IF
+                END DO
             END DO
-        END DO
-    END IF 
+        CASE('onethird')
+            f_g = f/3._dp
+    END SELECT
+    !END IF 
     ! Laminar regime
     !DO i=1,a
     !    IF(Re(i)<2000._dp) f_g(i) = 64._dp/Re(i)

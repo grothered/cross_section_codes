@@ -19,6 +19,7 @@ k2a1= 0.5*0.000062*(0.000062*((rhos/rho-1)*9.8/1e-06^2)^(1/3))^(-0.3)*1/sqrt(rho
 png('Analytical_compare.png', width=5.4,height=4,units='in', res=300)
 k2=k2a1/a1
 
+# Index of 'h' that we plot
 iii=10 #:7*200
 #iii=200
 

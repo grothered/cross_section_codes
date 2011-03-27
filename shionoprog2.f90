@@ -670,9 +670,9 @@ DO Q_loop= 1, no_discharges!15
         IF(remesh) THEN
             IF(mod(j, remesh_freq).EQ.0) THEN
                 !Get distance between consecutive points in the cross seciton. 
-                dists(2:nos)=sqrt((ys(2:nos)-ys(1:nos-1))**2+(bed(2:nos)-bed(1:nos-1))**2) 
-                dists(1)=dists(2)
-                handy=minval(dists)
+                !dists(2:nos)=sqrt((ys(2:nos)-ys(1:nos-1))**2+(bed(2:nos)-bed(1:nos-1))**2) 
+                !dists(1)=dists(2)
+                !handy=minval(dists)
                 !DO i =2, nos-1
                     !IF(abs(slopes(i))>.0_dp) THEN
                         
