@@ -1399,40 +1399,77 @@ SUBROUTINE update_bed(a, dT, water, Q, bed,ys,Area, Width,bottom, ff,recrd, E, D
     ! Calculate deposition rate
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    DO i=1, a
+    !DO i=1, a
 
-        IF((bed(i)<(water-0._dp))) THEN 
-            IF(sus2d.eqv..false.) THEN  
-                Qd(i)=(wset/rhos)*C(i)
-                !!!This is the rate of deposition in m/s of SOLID MATERIAL, i.e.
-                !not accounting for the porosity of sediment
-            ELSE
-                IF(( abs(tau(i))>0._dp).and.(wset>0._dp)) THEN
-                    Qd(i)=(wset/rhos)*C(i)*min( (water-bed(i)) &
-                        /(.1_dp*sqrt(abs(tau(i))/rho)*(water-bed(i))/wset*& 
-                        (1._dp-exp(-wset/(.1_dp*sqrt(abs(tau(i))/rho)*(water-bed(i)))*(water-bed(i))))) &
+    !    IF((bed(i)<(water-0._dp))) THEN 
+    !        IF(sus2d.eqv..false.) THEN  
+    !            Qd(i)=(wset/rhos)*C(i)
+    !            !!!This is the rate of deposition in m/s of SOLID MATERIAL, i.e.
+    !            !not accounting for the porosity of sediment
+    !        ELSE
+    !            IF(( abs(tau(i))>0._dp).and.(wset>0._dp)) THEN
+    !                Qd(i)=(wset/rhos)*C(i)*min( (water-bed(i)) &
+    !                    /(.1_dp*sqrt(abs(tau(i))/rho)*(water-bed(i))/wset*& 
+    !                    (1._dp-exp(-wset/(.1_dp*sqrt(abs(tau(i))/rho)*(water-bed(i)))*(water-bed(i))))) &
+    !                    , 20._dp) 
+    !                !!!This is the rate of deposition in m/s of SOLID MATERIAL,
+    !                !i.e. not accounting for the porosity of sediment, and the
+    !                !crazy factor accounts for the fact that C(i) is the average
+    !                !concentration, but we want the bottom concentration. We
+    !                !limit the ratio of these 2 to be a number, say 20-200 -
+    !                !whatever is written 
+    !            ELSE
+    !                Qd(i)= (wset/rhos)*C(i)*20._dp 
+    !                !So in this case the shear is zero, and whatever deposits
+    !                !should deposit fast 
+    !            END IF 
+    !        END IF 
+    !    ELSE
+    !        Qd(i)=0._dp
+    !    END IF 
+
+
+    !    IF(isnan(Qd(i)).or.(Qd(i)<0._dp)) THEN
+    !        PRINT*, "Qd(",i,") is nan", Qd(i)
+    !        STOP
+    !    END IF 
+
+    !END DO 
+
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    ! Calculate deposition rate
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    SELECT CASE(sus2d)
+        CASE(.FALSE.)
+            ! When we do not use the fully 2D suspended load routine
+            WHERE (bed<water)
+                Qd=(wset/rhos)*C
+            ELSEWHERE
+                Qd = 0.0_dp
+            END WHERE
+
+        CASE(.TRUE.)
+            ! Where we do use the 2D suspended load routine
+            WHERE((abs(tau)>0._dp).and.(wset>0._dp))
+                    Qd=(wset/rhos)*C*& 
+                        min( &
+                        (water-bed)/(.1_dp*sqrt(abs(tau)/rho)*(water-bed)/wset*& 
+                        (1._dp-exp(-wset/(.1_dp*sqrt(abs(tau)/rho)*(water-bed))*(water-bed)))) &
                         , 20._dp) 
-                    !!!This is the rate of deposition in m/s of SOLID MATERIAL,
-                    !i.e. not accounting for the porosity of sediment, and the
-                    !crazy factor accounts for the fact that C(i) is the average
-                    !concentration, but we want the bottom concentration. We
-                    !limit the ratio of these 2 to be a number, say 20-200 -
-                    !whatever is written 
-                ELSE
-                    Qd(i)= (wset/rhos)*C(i)*20._dp 
+            ELSEWHERE
+                    Qd= (wset/rhos)*C*20._dp 
                     !So in this case the shear is zero, and whatever deposits
                     !should deposit fast 
-                END IF 
-            END IF 
-        ELSE
-            Qd(i)=0._dp
-        END IF 
+            END WHERE 
+    END SELECT
+
+    ! Reality check
+    DO i=1,a
         IF(isnan(Qd(i)).or.(Qd(i)<0._dp)) THEN
             PRINT*, "Qd(",i,") is nan", Qd(i)
             STOP
         END IF 
-
-    END DO 
+    END DO                
 
     !FIXME: Force intertidal flat elevation to be a set value
     IF(.FALSE.) THEN
