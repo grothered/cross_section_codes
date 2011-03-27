@@ -25,7 +25,7 @@ LOGICAL::  flag, susdist, sus2d, readin, geo, remesh, norm, vertical, &
             tbston, normmov, Qbedon, susQbal, talmon,&
              variable_timestep, high_order_shear, high_order_bedload, &
             high_order_Cflux
-CHARACTER(LEN=20):: friction_type
+CHARACTER(LEN=20):: friction_type, grain_friction_type
 NAMELIST /inputdata/ nos,writfreq,jmax, layers, hlim, mor, mu, tauinc,&
                 erconst,lifttodrag,sconc,rho,lincrem,wset, voidf, t, dt, &
                 susdist,readin, geo, waterM, width, smax, rough_coef, &
@@ -35,7 +35,7 @@ NAMELIST /inputdata/ nos,writfreq,jmax, layers, hlim, mor, mu, tauinc,&
                 Qbedon, susQbal, TR, talmon, variable_timestep, & 
                 integrated_load_flux, friction_type, no_discharges, &
                 discharges, susconcs, high_order_shear, &
-                high_order_bedload, high_order_Cflux
+                high_order_bedload, high_order_Cflux, grain_friction_type
 
 ALLOCATABLE ys(:), bed(:), dists(:), tau(:),ks(:),tbst(:),& 
             recrd(:), bedlast(:), hss(:), tss(:),  hss2(:), Qe(:),& 
@@ -427,8 +427,9 @@ DO Q_loop= 1, no_discharges!15
             !(sqrt(1._dp+( (bedu-bed(u))/(ysu-ys(u)))**2) + sqrt(1._dp+slopes(u)**2) )
         
             ! Calculate friction
-            call calc_friction(friction_type, rough_coef, water, u-l+1, bed(l:u), vel(l:u), &
-                                man_nveg,d50,veg_ht, rhos, rho, g,f(l:u), vegdrag(l:u),f_g(l:u), dsand, j) 
+            call calc_friction(friction_type, grain_friction_type, rough_coef, water, u-l+1,&
+                                 bed(l:u), vel(l:u), man_nveg,d50,veg_ht, rhos, rho, g,&
+                                 f(l:u), vegdrag(l:u),f_g(l:u), dsand, j) 
 
             ! Calculate bed shear
             call calc_shear(u-l+1,DT1,water,Q,bed(l:u),ys(l:u),Area,ys(u)-ys(l)+wdthx, &

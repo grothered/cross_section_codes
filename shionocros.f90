@@ -3838,10 +3838,11 @@ END SUBROUTINE dynamic_sus_dist
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!
-SUBROUTINE calc_friction(friction_type, rough_coef, water, a, bed, vel, man_nveg,d50,veg_ht, & 
-                            rhos, rho, g, f, vegdrag,f_g, dsand, counter) 
+SUBROUTINE calc_friction(friction_type, grain_friction_type, rough_coef, water,&
+                            a, bed, vel, man_nveg,d50,veg_ht, rhos, rho, g, f,&
+                            vegdrag,f_g, dsand, counter) 
     INTEGER, INTENT(IN):: a, counter
-    CHARACTER(LEN=20), INTENT(IN):: friction_type
+    CHARACTER(LEN=20), INTENT(IN):: friction_type, grain_friction_type
     REAL(dp), INTENT(IN):: rough_coef, water, man_nveg, d50, veg_ht, rhos, rho, g, dsand
     REAL(dp), INTENT(IN):: bed, vel
     REAL(dp), INTENT(IN OUT):: f, vegdrag, f_g
@@ -3968,7 +3969,7 @@ SUBROUTINE calc_friction(friction_type, rough_coef, water, a, bed, vel, man_nveg
 
     ! Grain roughness
     !IF(.TRUE.) THEN
-    SELECT CASE ('onethird')
+    SELECT CASE (grain_friction_type)
         CASE('vanrijn')
             ! Van Rijn, fully turbulent flow
              f_g =(8._dp*g/(18._dp*log10(12._dp*max(water-bed, 20.0_dp*10.0_dp*d50)/(10._dp*d50)+0.0_dp)+0.0e+00_dp)**2)
