@@ -25,7 +25,8 @@ LOGICAL::  flag, susdist, sus2d, readin, geo, remesh, norm, vertical, &
             tbston, normmov, Qbedon, susQbal, talmon,&
              variable_timestep, high_order_shear, high_order_bedload, &
             high_order_Cflux
-CHARACTER(LEN=20):: friction_type, grain_friction_type
+CHARACTER(LEN=20):: friction_type, grain_friction_type, resus_type, &
+                    bedload_type
 NAMELIST /inputdata/ nos,writfreq,jmax, layers, hlim, mor, mu, tauinc,&
                 erconst,lifttodrag,sconc,rho,lincrem,wset, voidf, t, dt, &
                 susdist,readin, geo, waterM, width, smax, rough_coef, &
@@ -35,7 +36,8 @@ NAMELIST /inputdata/ nos,writfreq,jmax, layers, hlim, mor, mu, tauinc,&
                 Qbedon, susQbal, TR, talmon, variable_timestep, & 
                 integrated_load_flux, friction_type, no_discharges, &
                 discharges, susconcs, high_order_shear, &
-                high_order_bedload, high_order_Cflux, grain_friction_type
+                high_order_bedload, high_order_Cflux, grain_friction_type, &
+                resus_type, bedload_type
 
 ALLOCATABLE ys(:), bed(:), dists(:), tau(:),ks(:),tbst(:),& 
             recrd(:), bedlast(:), hss(:), tss(:),  hss2(:), Qe(:),& 
@@ -454,7 +456,7 @@ DO Q_loop= 1, no_discharges!15
             vel(l:u), NN(l:u),j,slopes(l:u), hlim, mor, taucrit_dep(l:u,1:layers), layers, taucrit_dep_ys(l:u) & 
             ,u-l+1, taucrit(l:u, 0:layers) , vegdrag(l:u), susdist, rho, Qe(l:u) & 
             , Qbed(l:u), rhos, voidf, dsand, d50, g, kvis, norm, vertical,alpha, tbston, Qbedon &
-            , ysl,ysu,bedl,bedu) 
+            , ysl,ysu,bedl,bedu, resus_type, bedload_type) 
 
             !Calculate the cross-sectional suspended load distribution
             IF(susdist) THEN

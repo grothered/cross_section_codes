@@ -36,6 +36,7 @@ Discharges = 30.0 24.0 18.0
 susconcs =   0.1  0.1  0.1
 friction_type = 'darcy'
 rough_coef = 0.07056 !Mannings n for the basic bed
+grain_friction_type='one'
 man_nveg = 0.3 !Mannings n for vegetated regions
 veg_ht = 0.3 !Height at which vegetation is assumed to occur.
 lambdacon=0.0 !Dimensionless eddy viscosity constant
@@ -59,7 +60,9 @@ g = 9.8 !Gravity (m/s^2)
 kvis = 1.0E-06 !Kinematic viscosity of water. 
 alpha=0.000228 !The constant for the erosion formula E= alpha*(tau-taue)/sqrt(taue)
 Qbedon=.true. !Is bedload active
+bedload_type='vanrijn'
 talmon=.false.
+resus_type='cohesive'
 
 susdist = .false. !Do we have a laterally variable suspended load? This can ONLY treat the case of steady state, with suspended load only. The near bed concentration at the centre is assumed to be = sconc
 susQbal= .false. !Is there a balance between the lateral flux of suspended load and bedload? Only relevant if susdist=.true.
