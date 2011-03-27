@@ -35,6 +35,7 @@ no_discharges = 1
 Discharges = 4.926774 !2100.0  2100.0  2100.0  2100.0  2100.0  2100.0 
 susconcs =   3.0e-03  !2.0e-03 1.0e-03 8.0e-05 4.0e-05 1.0e-05 !6.0e-06  
 friction_type = 'darcy'
+grain_friction_type  = 'onethird' ! 'vanrijn', 'colebrook', 'onethird' -- model for bed shear acting on grains 
 rough_coef = 0.02 !0.01597191
 man_nveg = 0.3 !Mannings n for vegetated regions
 veg_ht = 9.0e+20 !Height at which vegetation is assumed to occur.
