@@ -36,6 +36,7 @@ Discharges = 2100.0  2100.0  2100.0  2100.0  2100.0  2100.0  2100.0
 susconcs =   3.0e-03 2.0e-03 1.0e-03 8.0e-04 4.0e-04 1.0e-05 6.0e-05  
 friction_type = 'manning' !'manning' !, 'darcy', 'vanrijn'
 rough_coef = 0.039 !0.039 !Mannings n for the basic bed
+grain_friction_type  = 'onethird' ! 'vanrijn', 'colebrook', 'onethird' -- model for bed shear acting on grains 
 man_nveg = 0.3 !Mannings n for vegetated regions
 veg_ht = 9.0e+20 !Height at which vegetation is assumed to occur.
 lambdacon=0.24 !Dimensionless eddy viscosity constant

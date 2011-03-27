@@ -20,7 +20,7 @@ png('Analytical_compare.png', width=5.4,height=4,units='in', res=300)
 k2=k2a1/a1
 
 # Index of 'h' that we plot
-iii=10 #:7*200
+iii=50 #:7*200
 #iii=200
 
 for(indy in iii){
