@@ -1901,7 +1901,7 @@ SUBROUTINE roughmult(aa,rmu, vel, Q, A, width,tbst,depths, ys, f, vegdrag, count
         ! (roughness/depth)
         rmu= rmutop/rmubot
     ELSE
-        rmu=sum(f)/(8._dp*g*sum(depths)) !The mean value of f/depth
+        rmu=sum(f)/(8._dp*g*sum(depths)) !The mean value of (f/8g)/depth
     END IF
 
     IF(rmu.eq.0._dp) THEN
@@ -2339,8 +2339,7 @@ SUBROUTINE refit(ys,bed,a)
     END IF
     END DO
 
-    !dsts(2:a)= min(sqrt((ys(2:a)-ys(1:a-1))**2._dp+1._dp*(bed(2:a)-bed(1:a-1))**2._dp), & 
-    !                5._dp*(ys(2:a)-ys(1:a-1)))!, 100._dp*(ys(2:a)-ys(1:a-1))) !The 'distance' between consecutive points in the cross section. 
+    ! Bed slope
     dsts(2:a-1) = ((bed(3:a)-bed(2:a-1))/(ys(3:a) - ys(1:a-2))*(ys(2:a-1) - ys(1:a-2)) + &
                    (bed(2:a-1)-bed(1:a-2))/(ys(2:a-1) - ys(1:a-2))*(ys(3:a) - ys(2:a-1)) )/ &
                    (ys(3:a) - ys(1:a-2))
@@ -2413,8 +2412,6 @@ SUBROUTINE refit(ys,bed,a)
     num_pts(1) = floor(tmpR)
     num_pts(5) = floor(tmpR)
     num_pts(3) = n2 - 2*floor(tmpR)   
-    
-    !print*, 'REFIT:', bankl, bankr,n1, n2, num_pts, sum(num_pts), res_pts 
     
     ! Define newx values, which will be used to re-interpolate over the
     ! cross-section
