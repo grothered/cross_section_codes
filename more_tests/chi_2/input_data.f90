@@ -36,7 +36,7 @@ Discharges = 2000.0  !2000.0  2000.0  2000.0  2000.0  2000.0  2000.0
 susconcs =   8.0e-05 !4.0e-05 1.0e-05 5.0e-06 1.0e-06 !manning=.true. !Do we use a manning friction factor? If not, then we use a Darcy Weisbach friction factor, calculated as f=man_n**2*8.*9.8 -i.e., the equivalent manning friction value if the depth were 1 everywhere. Hence, the variable man_n is used to set either a manning or darcy friction. Same deal for vegetation drag
 friction_type = 'manning' !, 'darcy', 'vanrijn'
 rough_coef =0.032 !Mannings n for the basic bed
-grain_friction_type  = 'colebrook' ! 'vanrijn', 'colebrook', 'onethird' -- model for bed shear acting on grains 
+grain_friction_type  = 'vanrijn' ! 'vanrijn', 'colebrook', 'onethird' -- model for bed shear acting on grains 
 man_nveg = 0.3 !Mannings n for vegetated regions
 veg_ht = 9.0e+20 !Height at which vegetation is assumed to occur.
 lambdacon=0.24 !Dimensionless eddy viscosity constant
@@ -62,7 +62,7 @@ alpha=0.000228 !The constant for the erosion formula E= alpha*(tau-taue)/sqrt(ta
 Qbedon=.TRUE. !Is bedload active
 bedload_type='vanrijn' ! 'mpm', 'vanrijn'
 talmon=.FALSE. !Do we use a talmon lateral bedload closure?
-resus_type = 'vanrijn' ! 'cohesive', 'vanrijn'
+resus_type = 'vanrijn'! ! 'cohesive', 'vanrijn'
 
 susdist = .TRUE. !Do we have a laterally variable suspended load? This can ONLY treat the case of steady state. The total load flux (bedload + spsuended load) is assumed to be integrated_load_flux
 susQbal= .FALSE. !Is there a balance between the lateral flux of suspended load and bedload? Only relevant if susdist=.true.
@@ -74,7 +74,7 @@ vertical=.true. !Is the vertical shear method (SKM) to be used (support for Pizz
 readin = .FALSE. !Do we read the initial conditions from a file?
 geo = .false. !Do we use the 'geotech' algorithm to prevent steep slopes? This is also a bit outdated
 smax= 200.0 !The max slope when geo=.true. A bit outdated
-remesh=.TRUE. !Do we remesh
+remesh=.FALSE. !Do we remesh
 remesh_freq= 1000 !How many time steps before we consider remesh (only active if remesh=.true.)
 normmov=.false. !Do the bed points actually shift with the D-E vector? This is only supported for pure suspended load without bed layers.
 

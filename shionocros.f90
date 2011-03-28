@@ -1254,8 +1254,9 @@ SUBROUTINE calc_resus_bedload(a, dT, water, Q, bed,ys,Area, Width,bottom, ff,rec
                             END IF
                             si = (vel(i)**2)/((rhos-rho)/rho*g*d50)
                             k_scr = f_cs*d50*(85.0_dp-65.0_dp*tanh(0.015_dp*(si - 150.0_dp)))
-                            a_ref = max(0.01_dp, 0.5_dp*k_scr, 0.01_dp*(water-bed(i))) !Reference level (m) 
-                            !a_ref = max(0.5_dp*k_scr, 0.01_dp*(water-bed(i))) !Reference level (m) 
+                            !a_ref = 0.5_dp*k_scr !, 0.01_dp*(water-bed(i))) !Reference level (m) 
+                            !a_ref = max(0.01_dp, 0.5_dp*k_scr) !, 0.01_dp*(water-bed(i))) !Reference level (m) 
+                            a_ref = max(0.5_dp*k_scr, 0.01_dp*(water-bed(i))) !Reference level (m) 
                             d_star = (d50*((rhos/rho-1._dp)*g/kvis**2)**(1._dp/3._dp))  !Van Rijn d_star parameter
                             c_a = 0.015_dp*max(dsand/d50,1.0_dp)*d50/(a_ref*d_star**0.3_dp)* & 
                                     (max(0._dp,abs(tau(i))-taucrit(i,jj))/taucrit(i,jj))**1.5_dp ! Van Rijn reference concentration, in m^3/m^3     
@@ -1543,7 +1544,7 @@ SUBROUTINE update_bed(a, dT, water, Q, bed,ys,Area, Width,bottom, ff,recrd, E, D
         DO i=1, a
             IF(tau(i).ne.0._dp) THEN
                 ! Simple downslope bedslope relation 
-                qb_G(i)= -abs(Qbed(i))*(1._dp/(sqrt(abs(tau(i))/taucrit(i,0))))
+                qb_G(i)= -abs(Qbed(i))*sqrt(abs(taucrit(i,0))/tau(i))
                 
                 ! Talmon (1995) relation
                 IF(talmon) qb_G(i)=qb_G(i)*sqrt(tmp1/taucrit(i,0)) &
@@ -1564,7 +1565,7 @@ SUBROUTINE update_bed(a, dT, water, Q, bed,ys,Area, Width,bottom, ff,recrd, E, D
         call qbh_approx(a,ys,qb_G(0:a),qb_G(a+1),bed, bedl, bedu, ysl, ysu, 2)                
     END IF !Qbedon
 
-    IF(.TRUE.) THEN
+    IF(.FALSE.) THEN
         IF(counter.eq.1) print*, 'WARNING: EDGE BEDLOAD VALUES DROPPED TO ZERO'
         qb_G(0) = 0.0_dp
         qb_G(a) = 0.0_dp
@@ -3029,6 +3030,11 @@ SUBROUTINE dbeddyH_approx(a,ys,bed, dbeddyH, ysl, ysu, bedl, bedu, order)
                         dbeddyH(2,i)=-dbeddyH(3,i)
                     END IF
                 END IF
+
+            CASE DEFAULT
+                print*, 'ERROR: ii should be +-1 in dbeddyH_approx'
+                stop
+
         END SELECT
     END DO
     
@@ -3564,6 +3570,14 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
 
     !    END DO
     !ELSE
+    
+    !Check if the mesh is constant -- because if it is, we can use high order
+    !derivative methods
+    IF(maxval(dy_all) - minval(dy_all) < 1.0e-010) THEN
+        const_mesh=.TRUE.
+    ELSE
+        const_mesh=.FALSE.
+    END IF 
 
     ! Model 2 -- dC/dx is = (C - C/mean_C*desired_C)/x_length_scale
     !tmp1 = sum(Cbar*vel*depth(1:a)*(0.5_dp*(ys_temp(2:a+1)-ys_temp(0:a-1)))) !Cbar flux
@@ -3572,14 +3586,6 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     tmp1 = sum(Cbar*vel*depth(1:a)*dy_all) !Cbar flux
     tmp2 =sconc*abs(Q) - sum(Qbed(1:a)*dy_all) !Desired Cbar flux = 'Measure of total load less bedload'
     tmp2 = max(tmp2, 0._dp)
-
-    !Check if the mesh is constant -- because if it is, we can use high order
-    !derivative methods
-    IF(maxval(dy_all) - minval(dy_all) < 1.0e-010) THEN
-        const_mesh=.TRUE.
-    ELSE
-        const_mesh=.FALSE.
-    END IF 
 
     IF(mod(counter,1000).eq.0) PRINT*, 'sus flux is =', tmp1, '; desired flux is', tmp2
     xlen=1000._dp ! dx
@@ -3934,6 +3940,7 @@ SUBROUTINE calc_friction(friction_type, grain_friction_type, rough_coef, water,&
             ! Manning style friction
             DO i= 1, a
                 f(i)= rough_coef**2*g*8._dp/(max( water-bed(i),200._dp*d50)**(onethird))!
+                !f(i)= rough_coef**2*g*8._dp/(max( water-bed(i),1.0e-05_dp)**(onethird))!
             END DO 
 
             ! Now spatially average the friction
