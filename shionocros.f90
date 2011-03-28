@@ -1565,7 +1565,7 @@ SUBROUTINE update_bed(a, dT, water, Q, bed,ys,Area, Width,bottom, ff,recrd, E, D
         call qbh_approx(a,ys,qb_G(0:a),qb_G(a+1),bed, bedl, bedu, ysl, ysu, 2)                
     END IF !Qbedon
 
-    IF(.FALSE.) THEN
+    IF(.TRUE.) THEN
         IF(counter.eq.1) print*, 'WARNING: EDGE BEDLOAD VALUES DROPPED TO ZERO'
         qb_G(0) = 0.0_dp
         qb_G(a) = 0.0_dp
