@@ -323,7 +323,7 @@ DO Q_loop= 1, no_discharges!15
 
         ! Water elevation (free surface)
         waterlast=water
-        water= waterM + (TR/2._dp+.0*sin(2._dp*pi*t/(12.4_dp*3600._dp*100._dp))+0.1_dp)*sin(2._dp*pi*t/(12.4_dp*3600._dp))  !1.+ 1.*sin(2.*pi*j/500.) 
+        water= waterM + (TR/2._dp+.0*sin(2._dp*pi*t/(12.4_dp*3600._dp*100._dp))+0.0_dp)*sin(2._dp*pi*t/(12.4_dp*3600._dp))  !1.+ 1.*sin(2.*pi*j/500.) 
 
         ! Find wetted part of section
         call wet(l,u,nos,water, bed) 
@@ -364,7 +364,7 @@ DO Q_loop= 1, no_discharges!15
 
         ! Compute discharge
         IF(TR==0._dp) THEN
-            Q=discharges(Q_loop)*(1.0_dp+0.1_dp*sin(2._dp*pi*t/(12.4_dp*3600._dp))) !/50._dp
+            Q=discharges(Q_loop)!*(1.0_dp+0.1_dp*sin(2._dp*pi*t/(12.4_dp*3600._dp))) !/50._dp
         ELSE
             Q= (discharges(Q_loop)+j*0._dp/500._dp)*(ys(u)-ys(l)+wdthx)*abs((water-waterlast))/dt*10._dp 
         END IF
