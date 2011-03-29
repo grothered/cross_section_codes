@@ -3974,7 +3974,7 @@ SUBROUTINE calc_friction(friction_type, grain_friction_type, rough_coef, water,&
             ! Manning style friction
             DO i= 1, a
                 !f(i)= rough_coef**2*g*8._dp/(max( water-bed(i),200._dp*d50)**(onethird))!
-                f(i)= rough_coef**2*g*8._dp/(max( water-bed(i),1.0e-05_dp)**(onethird))!
+                f(i)= rough_coef**2*g*8._dp/(max( water-bed(i),1.0e-08_dp)**(onethird))!
             END DO 
 
             ! Now spatially average the friction
