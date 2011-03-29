@@ -699,6 +699,8 @@ DO Q_loop= 1, no_discharges!15
                 END IF
             END DO
 
+        !Reset the bed
+        bed = hss
         END IF
 
         !DO i=1,floor(nos*0.50_dp)
