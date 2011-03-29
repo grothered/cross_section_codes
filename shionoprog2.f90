@@ -604,13 +604,14 @@ DO Q_loop= 1, no_discharges!15
                 !ELSEIF(.TRUE.) THEN
                     !tmp = max(maxval(abs(wset*C/rhos- Qe))/1.0_dp, maxval(abs(bed - bedlast)/DT1))
                     tmp = min(max(maxval(abs(wset*C/rhos- Qe)), maxval(abs(recrd(l-1:u)))), &
-                              maxval(abs(bed(l+1:u-1) - bedlast(l+1:u-1))) ) 
+                              maxval(abs(bed(l+1:u-1) - bedlast(l+1:u-1))) )
+                    tmp2 = minval(ys(2:nos) - ys(1:nos-1)) 
                     !tmp = max(maxval(abs(wset*C/rhos- Qe)), maxval(abs(bed - bedlast)))
                     !tmp = max(maxval(abs(recrd(l-1:u)))*0.1_dp, maxval(abs(bed - bedlast)))
                     !tmp = max(maxval(abs(bed - bedlast)/DT1), 0.00001_dp)
                     !DT1_old = DT1
                     !tmp = maxval(abs(wset*C/rhos- Qe))*1.00_dp
-                    DT1 = min(max(1.0e-04_dp/max(tmp,1.0e-020_dp), 10.0_dp), 100.0_dp*3600.0_dp)
+                    DT1 = min(max(1.0e-02_dp*tmp2/max(tmp,1.0e-020_dp), 10.0_dp), 100.0_dp*3600.0_dp)
                     ! Get bed to accelerate 
                     !mor = min(max(3.0e-03_dp/(maxval(abs(bed-bedlast))/DT1_old*DT1), 1.0_dp), 5._dp)
                 !END IF
