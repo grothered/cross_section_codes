@@ -514,7 +514,7 @@ DO Q_loop= 1, no_discharges!15
             ! u+1/2, this is very important to ensure mass conservation, because
             ! if there is a downslope bedload flux from l-1/2, or from u+1/2,
             ! then it must come from the dry part of the channel 
-            IF(.TRUE.) THEN
+            IF(.FALSE.) THEN
                 ! Use this case when bedload occurs and l-1/2, u+1/2
                 IF(l>1) THEN
                     IF(bed(l-1)>bedl) bed(l-1)=bedl
@@ -524,7 +524,7 @@ DO Q_loop= 1, no_discharges!15
                 END IF
             END IF
 
-            IF(.FALSE.) THEN
+            IF(.TRUE.) THEN
                 ! A version of the Delft bank erosion model. 
                 ! First check that there is no leakage of bedl, bedu in the
                 ! bed solver (possibly could happen due to matrix round off or
@@ -542,17 +542,17 @@ DO Q_loop= 1, no_discharges!15
                 ! then assign it to the neighbouring dry bed point
                 IF((bed(l)<bedlast(l)).AND.(l>1)) THEN
                     !IF( abs(bed(l) - bed(l-1))/(ys(l)-ys(l-1))>1.0_dp) THEN
-                    IF( abs(tau_g(l))>taucrit(l,0)) THEN
+                    !IF( abs(tau_g(l))>taucrit(l,0)) THEN
                         bed(l-1) = bed(l-1) - (bedlast(l) - bed(l))
                         bed(l) = bedlast(l)
-                    END IF
+                    !END IF
                 END IF
                 IF((bed(u)<bedlast(u)).AND.(u<nos)) THEN
                     !IF( abs(bed(u+1) - bed(u))/(ys(u+1)-ys(u))>1.0_dp) THEN
-                    IF( abs(tau_g(u))>taucrit(u,0)) THEN
+                    !IF( abs(tau_g(u))>taucrit(u,0)) THEN
                         bed(u+1) = bed(u+1) - (bedlast(u) - bed(u))
                         bed(u) = bedlast(u)
-                    END IF
+                    !END IF
                 END IF
             END IF
             
