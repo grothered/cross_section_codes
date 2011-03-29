@@ -610,7 +610,7 @@ DO Q_loop= 1, no_discharges!15
                     !tmp = max(maxval(abs(bed - bedlast)/DT1), 0.00001_dp)
                     !DT1_old = DT1
                     !tmp = maxval(abs(wset*C/rhos- Qe))*1.00_dp
-                    DT1 = min(max(1.0e-04_dp/max(tmp,1.0e-020_dp), 10.0_dp), 100.0_dp*3600.0_dp)
+                    DT1 = min(max(1.0e-04_dp/max(tmp,1.0e-020_dp), 1.0_dp), 100.0_dp*3600.0_dp)
                     ! Get bed to accelerate 
                     !mor = min(max(3.0e-03_dp/(maxval(abs(bed-bedlast))/DT1_old*DT1), 1.0_dp), 5._dp)
                 !END IF
