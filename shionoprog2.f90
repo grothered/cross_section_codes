@@ -435,11 +435,13 @@ DO Q_loop= 1, no_discharges!15
 
             ! Calculate bed shear
             call calc_shear(u-l+1,DT1,water,Q,bed(l:u),ys(l:u),Area,ys(u)-ys(l)+wdthx, &
-            water-Area/(ys(u)-ys(l)+wdthx),f(l:u),recrd((l-1):u),E,D, C(l:u),rmult,inuc, tau(l:u),& 
-            NN(l:u),j,slopes(l:u), hlim, mor, taucrit_dep(l:u,1:layers), layers, taucrit_dep_ys(l:u) & 
-            ,u-l+1, taucrit(l:u, 0:layers) , vegdrag(l:u), susdist, rho, Qe(l:u) & 
-            , Qbed(l:u), rhos, voidf, d50, g, kvis, norm, vertical, lambdacon, tbston &
-            , ysl,ysu,bedl,bedu, high_order_shear) 
+                            water-Area/(ys(u)-ys(l)+wdthx),f(l:u),recrd((l-1):u),E,D, C(l:u),&
+                            rmult,inuc, tau(l:u),& 
+                            NN(l:u),j,slopes(l:u), hlim, mor, taucrit_dep(l:u,1:layers), layers,&
+                            taucrit_dep_ys(l:u) & 
+                            ,u-l+1, taucrit(l:u, 0:layers) , vegdrag(l:u), susdist, rho, Qe(l:u) & 
+                            , Qbed(l:u), rhos, voidf, d50, g, kvis, norm, vertical, lambdacon, tbston &
+                            , ysl,ysu,bedl,bedu, high_order_shear) 
             
             ! Calculate depth-averaged velocity
             vel = 0._dp 
@@ -452,11 +454,13 @@ DO Q_loop= 1, no_discharges!15
             
             ! Calculate rates of resuspension and bedload transport
             call calc_resus_bedload(u-l+1,DT1,water,Q,bed(l:u),ys(l:u),Area,ys(u)-ys(l)+wdthx,&
-             water-Area/(ys(u)-ys(l)+wdthx),f(l:u),recrd((l-1):u),E,D, C(l:u),wset, rmult,2,inuc, tau_g(l:u),& 
-            vel(l:u), NN(l:u),j,slopes(l:u), hlim, mor, taucrit_dep(l:u,1:layers), layers, taucrit_dep_ys(l:u) & 
-            ,u-l+1, taucrit(l:u, 0:layers) , vegdrag(l:u), susdist, rho, Qe(l:u) & 
-            , Qbed(l:u), rhos, voidf, dsand, d50, g, kvis, norm, vertical,alpha, tbston, Qbedon &
-            , ysl,ysu,bedl,bedu, resus_type, bedload_type) 
+                                     water-Area/(ys(u)-ys(l)+wdthx),f(l:u),recrd((l-1):u),E,D, &
+                                    C(l:u),wset, rmult,2,inuc, tau_g(l:u),& 
+                                    vel(l:u), NN(l:u),j,slopes(l:u), hlim, mor, taucrit_dep(l:u,1:layers),&
+                                     layers, taucrit_dep_ys(l:u) & 
+                                    ,u-l+1, taucrit(l:u, 0:layers) , vegdrag(l:u), susdist, rho, Qe(l:u) & 
+                                    , Qbed(l:u), rhos, voidf, dsand, d50, g, kvis, norm, vertical,alpha, &
+                                    tbston, Qbedon, ysl,ysu,bedl,bedu, resus_type, bedload_type) 
 
             !Calculate the cross-sectional suspended load distribution
             IF(susdist) THEN
@@ -496,18 +500,21 @@ DO Q_loop= 1, no_discharges!15
             bedlast= bed ! Record the bed prior to updating
            
             call update_bed(u-l+1,DT1,water,Q,bed(l:u),ys(l:u),Area,ys(u)-ys(l)+wdthx, &
-             water- Area/(ys(u)-ys(l)+wdthx),f(l:u),recrd((l-1):u),E,D, C(l:u),rmult,2,inuc, tau(l:u),& 
-            NN(l:u),j,slopes(l:u), hlim, mor, taucrit_dep(l:u,1:layers), layers, taucrit_dep_ys(l:u) & 
-            ,u-l+1, taucrit(l:u, 0:layers) , vegdrag(l:u), susdist, rho, Qe(l:u) & 
-            , Qbed(l:u), wset, dqbeddx(l:u), rhos, voidf, d50, g, kvis, norm, vertical, lambdacon, tbston,&
-             Qbedon, normmov, sus2d, ysl, ysu, bedl,bedu, iii, bedlast(l:u), susQbal, talmon, & 
-            high_order_bedload) 
+                             water- Area/(ys(u)-ys(l)+wdthx),f(l:u),recrd((l-1):u),E,D, &
+                            C(l:u),rmult,2,inuc, tau(l:u),& 
+                            NN(l:u),j,slopes(l:u), hlim, mor, taucrit_dep(l:u,1:layers), &
+                            layers, taucrit_dep_ys(l:u) & 
+                            ,u-l+1, taucrit(l:u, 0:layers) , vegdrag(l:u), susdist, rho, &
+                            Qe(l:u), Qbed(l:u), wset, dqbeddx(l:u), rhos, voidf, d50, g, &
+                            kvis, norm, vertical, lambdacon, tbston,&
+                            Qbedon, normmov, sus2d, ysl, ysu, bedl,bedu, iii, bedlast(l:u), &
+                            susQbal, talmon, high_order_bedload) 
 
             ! Correct the banks. In the case that we allow bedload at l-1/2 and
             ! u+1/2, this is very important to ensure mass conservation, because
             ! if there is a downslope bedload flux from l-1/2, or from u+1/2,
             ! then it must come from the dry part of the channel 
-            IF(.FALSE.) THEN
+            IF(.TRUE.) THEN
                 ! Use this case when bedload occurs and l-1/2, u+1/2
                 IF(l>1) THEN
                     IF(bed(l-1)>bedl) bed(l-1)=bedl
@@ -517,7 +524,7 @@ DO Q_loop= 1, no_discharges!15
                 END IF
             END IF
 
-            IF(.TRUE.) THEN
+            IF(.FALSE.) THEN
                 ! A version of the Delft bank erosion model. 
                 ! First check that there is no leakage of bedl, bedu in the
                 ! bed solver (possibly could happen due to matrix round off or

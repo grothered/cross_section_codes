@@ -481,14 +481,27 @@ SUBROUTINE shear(nn,ys,bed,water,wslope,taus,ks, f,NNN,slopes, counter, Q, vegdr
     !!!!Solution when using DGTSVX
     !taus= XXX(1:nn,1)*rho*(f/8._dp)
 
-    call DGBSVX('E','N', nn,2,2,1, bandmat(1:5,1:nn),  2+2+1, AFB(1:7,1:nn), 4+2+1, IPV(1:nn),EQUED, RRR(1:nn), & 
-             CCC(1:nn), s(1:nn), nn, XXX(1:nn,1),nn, rcond, ferr,berr, work(1:(3*nn)),iwork(1:nn), info)
-    IF(info.ne.0) THEN
-        print*, 'ERROR: info = ', info, ' in DGBSVX, in shear'
-        stop
+    ! Matrix solver -- use banded matrix solver, or if possible, tridiagonal
+    ! solver
+    IF((const_mesh).AND.(high_order_shear)) THEN
+        ! Banded matrix solver, LAPACK
+        call DGBSVX('E','N', nn,2,2,1, bandmat(1:5,1:nn),  2+2+1, AFB(1:7,1:nn), 4+2+1, IPV(1:nn),EQUED, RRR(1:nn), & 
+                 CCC(1:nn), s(1:nn), nn, XXX(1:nn,1),nn, rcond, ferr,berr, work(1:(3*nn)),iwork(1:nn), info)
+    ELSE
+        ! Tridiagonal matrix solver, LAPACK
+        XXX(1:nn,1) = s(1:nn)
+        call DGTSV(nn, 1, bandmat(4,1:nn-1), bandmat(3,1:nn), bandmat(2,2:nn), XXX(1:nn,1), nn, info)
     END IF
     taus = XXX(1:nn,1)*rho*(f/8._dp)
-
+    !Check
+    IF(info.ne.0) THEN
+        IF((const_mesh).AND.(high_order_shear)) THEN
+             PRINT*, 'ERROR: info = ', info, ' in DGBSVX, in shear'
+        ELSE
+             PRINT*, 'ERROR: info = ', info, ' in DGTSV, in shear'
+        END IF
+        stop
+    END IF
         
 
 
@@ -1565,7 +1578,7 @@ SUBROUTINE update_bed(a, dT, water, Q, bed,ys,Area, Width,bottom, ff,recrd, E, D
         call qbh_approx(a,ys,qb_G(0:a),qb_G(a+1),bed, bedl, bedu, ysl, ysu, 2)                
     END IF !Qbedon
 
-    IF(.TRUE.) THEN
+    IF(.FALSE.) THEN
         IF(counter.eq.1) print*, 'WARNING: EDGE BEDLOAD VALUES DROPPED TO ZERO'
         qb_G(0) = 0.0_dp
         qb_G(a) = 0.0_dp
@@ -1756,17 +1769,30 @@ SUBROUTINE update_bed(a, dT, water, Q, bed,ys,Area, Width,bottom, ff,recrd, E, D
             !hsl=h_rhs(0)
             !The following version of dgbsv supposedly improves the solution and checks for
             !badness
-            call DGBSVX('E','N', a+2,2,2,1, bandmat(3:7,0:a+1),  2+2+1, AFB(1:7,0:a+1), 4+2+1, IPV(1:a+2),EQUED, RRR(0:a+1), & 
-                     CCC(0:a+1), h_rhs(0:a+1), a+2, XXX(0:a+1,1),a+2, rcond, ferr,berr, work(1:(3*(a+2))),iwork(1:(a+2)), info)
+            IF(high_order_bedload) THEN
+                !Banded matrix solver from LAPACK for the high order case
+                call DGBSVX('E','N', a+2,2,2,1, bandmat(3:7,0:a+1),  2+2+1, AFB(1:7,0:a+1), 4+2+1, IPV(1:a+2),EQUED, RRR(0:a+1), & 
+                         CCC(0:a+1), h_rhs(0:a+1), a+2, XXX(0:a+1,1),a+2, rcond, ferr,berr, work(1:(3*(a+2))),iwork(1:(a+2)), info)
+            ELSE
+                !Tridiagonal matrix solver from LAPACK for the lower order
+                !(standard) case
+                XXX(0:a+1,1) = h_rhs(0:a+1)
+                call DGTSV(a+2, 1, bandmat(6,0:a), bandmat(5,0:a+1), bandmat(4,1:a+1), XXX(0:a+1,1), a+2, info)  
+            END IF 
             bed(1:a)=XXX(1:a,1)
             bedl=XXX(0,1)
             bedu=XXX(a+1,1)
-
             !Check
             IF(info.ne.0) THEN
-                print*, 'Bed solver DGBSV ERROR, info=', info, 'rcond = ', rcond
+                IF(high_order_bedload) THEN
+                     print*, 'Bed solver DGBSVX ERROR, info=', info, 'rcond = ', rcond
+                ELSE
+                    print*, 'Bed solver DGTSV ERROR, info=', info, 'rcond = ', rcond 
+                END IF
+                stop
             END IF
-    
+
+ 
             !FIXME: THIS WAS NEEDED TO PREVENT CUMULATIVE GROWTH OF ROUND-OFF
             IF(.FALSE.) THEN
                 IF(counter.eq.1) print*, 'Symmetry correction in bed routine'
@@ -3806,14 +3832,22 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     ! New Cbar, converted to kg/m^3
     !Cbar = XXX(1:a,1)*rhos
 
-
-    call DGBSVX('E','N', a,2,2,1, bandmat(1:5,1:a),  2+2+1, AFB(1:7,1:a), 4+2+1, IPV(1:a),EQUED, RRR(1:a), & 
-             CCC(1:a), RHS(1:a), a, XXX(1:a,1),a, rcond, ferr,berr, work(1:(3*a)),iwork(1:a), info)
-    IF(info.ne.0) THEN
-        print*, 'ERROR: info = ', info, ' in DGBSVX, dynamic_sus_dist'
-        stop
+    IF((high_order_Cflux).AND.(const_mesh)) THEN
+        call DGBSVX('E','N', a,2,2,1, bandmat(1:5,1:a),  2+2+1, AFB(1:7,1:a), 4+2+1, IPV(1:a),EQUED, RRR(1:a), & 
+                 CCC(1:a), RHS(1:a), a, XXX(1:a,1),a, rcond, ferr,berr, work(1:(3*a)),iwork(1:a), info)
+    ELSE
+        XXX(1:a,1) = RHS(1:a)
+        call DGTSV(a, 1, bandmat(4,1:a-1), bandmat(3,1:a), bandmat(2,2:a), XXX(1:a,1), a, info)
     END IF
     Cbar = XXX(1:a,1)*rhos
+    IF(info.ne.0) THEN
+        IF((high_order_Cflux).AND.(const_mesh)) THEN
+            print*, 'ERROR: info = ', info, ' in DGBSVX, dynamic_sus_dist'
+        ELSE
+            print*, 'ERROR: info = ', info, ' in DGTSV, dynamic_sus_dist'
+        END IF
+        stop
+    END IF
     !bed(1:a)=XXX(1:a,1)
     
     ! Sometimes, the near bed diffusive flux can lead to small negative values
