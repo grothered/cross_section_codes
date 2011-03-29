@@ -661,6 +661,46 @@ DO Q_loop= 1, no_discharges!15
             !slopes(u)=(bed(u-1)-bed(u))/(ys(u-1)-ys(u))
         END DO
 
+        ! Basic limiting of the channel slope -- to circumvent the numerically
+        ! difficult problem of allowing infinite banks otherwise
+        hss = bed
+        IF((remesh.eqv..FALSE.).AND.(.TRUE.).AND.(mod(j,100)==0)) THEN
+            !FIXME: At present, this is only valid(mass conserving) with a uniform mesh
+            ! Move from centre of channel to left bank
+            DO i=nos/2,2,-1
+                IF(abs(bed(i)-bed(i-1))>(ys(i)-ys(i-1))) THEN
+                    IF(bed(i)>bed(i-1)) THEN
+                        tmp = bed(i)-(bed(i-1) + ys(i)-ys(i-1))
+                        hss(i) = hss(i)-tmp*0.5_dp
+                        hss(i-1) = hss(i-1) + tmp*0.5_dp    
+                    ELSE
+                        tmp = bed(i-1)-(bed(i) + ys(i)-ys(i-1))
+                        hss(i) = hss(i)+tmp*0.5_dp
+                        hss(i-1) = hss(i-1) - tmp*0.5_dp    
+
+                    END IF
+                    
+                END IF
+            END DO
+            ! Move from centre of channel to right bank
+            DO i=nos/2,nos-1,1
+                IF(abs(bed(i)-bed(i+1))>(ys(i+1)-ys(i))) THEN
+                    IF(bed(i)>bed(i+1)) THEN
+                        tmp = bed(i)-(bed(i+1) + ys(i+1)-ys(i))
+                        hss(i) = hss(i)-tmp*0.5_dp
+                        hss(i+1) = hss(i+1) + tmp*0.5_dp    
+                    ELSE
+                        tmp = bed(i+1)-(bed(i) + ys(i+1)-ys(i))
+                        hss(i) = hss(i)+tmp*0.5_dp
+                        hss(i+1) = hss(i+1) - tmp*0.5_dp    
+
+                    END IF
+                    
+                END IF
+            END DO
+
+        END IF
+
         !DO i=1,floor(nos*0.50_dp)
         !    IF(abs(bed(i)-bed(nos-i+1))>1.0e-12_dp) THEN
         !        print*, 'bed symmetry loss post perturbation'
