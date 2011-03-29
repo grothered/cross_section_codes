@@ -4090,7 +4090,7 @@ SUBROUTINE calc_friction(friction_type, grain_friction_type, rough_coef, water,&
         CASE('vanrijn')
             ! Van Rijn, fully turbulent flow
              !f_g =(8._dp*g/(18._dp*log10(12._dp*max(water-bed, 20.0_dp*10.0_dp*d50)/(10._dp*d50)+0.0_dp)+0.0e+00_dp)**2)
-             f_g =(8._dp*g/(18._dp*log(12._dp*max(water-bed, 20.0_dp*10.0_dp*d50)/(10._dp*d50)+0.0_dp)+0.0e+00_dp)**2)
+             f_g =(8._dp*g/(18._dp*log10(12._dp*max(water-bed, 20.0_dp*10.0_dp*d50)/(10._dp*d50)+0.0_dp)+0.0e+00_dp)**2)
 
         CASE('colebrook') 
             ! Colebrook and White, following Chanson (2004)
