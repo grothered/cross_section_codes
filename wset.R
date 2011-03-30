@@ -53,17 +53,17 @@ tauc<-function(d){
 
     d_star = d*( (s-1)*g/v^2)**(1/3)
 
+    # According to van Rijn, 1984 bedload paper, Fig 1
     if(d_star<4){
         theta_c = 0.115*(d_star)^(-0.5)
-    }else{
-        if((d_star>=4.0)&(d_star<10.0)){
+    } else if((d_star>=4.0)&(d_star<10.0)){
             theta_c = 0.14*d_star^(-0.64)
-        }else{
-            print(paste('d_star outside range of method, =', d_star))
-            print('If we set d_star to 10, we get this result')
-            d_star=10.
-            theta_c = 0.14*d_star^(-0.64)
-        }
+    } else if((d_star>=10.)&(d_star<20.0)){
+            theta_c = 0.04*d_star^(-0.1)
+    } else if((d_star>=20.)&(d_star<150.0)){
+            theta_c = 0.013*d_star^(0.29)
+    } else{
+            theta_c = 0.055
     }
 
     tauc = (rho_s-rho_w)*g*d*theta_c
@@ -99,4 +99,40 @@ f_colebrook<-function(f_g,depth, vel, d50){
 }
 
 
+vrijn_bed<-function(vel, h, d50, d90){
+    #f_g =4.0*(8.*9.8/(18.*log10(12.*pmax(h, 20*d90)/(1*d90)+0.0)+0.0e+00)^2)
+    f_g =(8.*9.8/(18.*log10(12.*pmax(h, 20*d90)/d90))^2)
+    tau = 1000*f_g/8*vel^2
+    # note -- in the paper, it is written that tau = rho f/2 vel^2 -- typo, the
+    # way it is written here is standard, and gives much better predictions.
+    taucrit=as.numeric(tauc(d50)[1])
+    Qbed= 0.5*2600*max(0.000062/d50,1.)*d50*(d50*(1.6*9.8/(1.0e-06)**2)**(1./3.))**(-0.3)* 
+            1000**(-0.5)*(abs(tau))**(0.5)*
+            pmax( abs(tau)-taucrit,0.0)/taucrit*sign(tau)
+    cbind(tau, taucrit, Qbed)
 
+            
+}
+
+test_vrijn_bed<-function(){
+    #Measurement data from Table 2 of vanrijn 2007a
+    d50 = c(1050, 1050, 950, 530, 530, 530, 530, 530, 690, 400, 400, 400, 400, 400)/1e+06
+    d90 = c(1750, 1750, 1550, 700, 700, 700, 900, 1300, 1270, 1000, 1000, 1000, 1000, 1000)/1e+06
+    h = c(9, 9.8, 9.5, 4.5, 4.5, 4.5, 4.5, 4.5, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0)
+    vel = c(1.4, 1.55, 1.15, 0.45, 0.6, 0.82, 1, 1.2, 0.8, 0.33, 0.45, 0.6, 0.7, 0.83)
+
+    qb = c(0.1, 0.18, 0.06, 0.002, 0.005, 0.031, 0.05, 0.065, 0.035, 0.0005, 0.002, 0.006, 0.012, 0.023)
+
+    qb_pred=qb*0
+    tauc = qb*0
+    # Compare predictions with measurements
+    for(i in 1:length(d50)){
+        tmp = vrijn_bed(vel[i], h[i], d50[i], d90[i])
+        qb_pred[i] = tmp[3]
+        tauc[i] = tmp[1]
+    }
+     
+    plot(qb_pred, qb, main='Predicted and measured bedload transport ', cex=d50*1e+03)
+    abline(0,1)
+    cbind(tauc, qb_pred,qb)
+}
