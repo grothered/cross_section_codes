@@ -1273,6 +1273,7 @@ SUBROUTINE calc_resus_bedload(a, dT, water, Q, bed,ys,Area, Width,bottom, ff,rec
                             d_star = (d50*((rhos/rho-1._dp)*g/kvis**2)**(1._dp/3._dp))  !Van Rijn d_star parameter
                             c_a = 0.015_dp*max(dsand/d50,1.0_dp)*d50/(a_ref*d_star**0.3_dp)* & 
                                     (max(0._dp,abs(tau(i))-taucrit(i,jj))/taucrit(i,jj))**1.5_dp ! Van Rijn reference concentration, in m^3/m^3     
+                            !c_a = c_a/3.0_dp
                             Qelocal = wset*c_a*sllength(i) !/rhos !Rate of erosion in m/s of SOLID material
                             
                         CASE DEFAULT
@@ -4093,7 +4094,7 @@ SUBROUTINE calc_friction(friction_type, grain_friction_type, rough_coef, water,&
              ! data in table2 of the paper are better predicted using the
              ! 'normal' formula, tau = rho f/8 U^2 --- I think the paper must
              ! have a type
-             f_g =(8._dp*g/(18._dp*log10(12._dp*max(water-bed, 20.0_dp*10.0_dp*d50)/(10._dp*d50)+0.0_dp)+0.0e+00_dp)**2)
+             f_g =(8._dp*g/(18._dp*log10(12._dp*max(water-bed, 20.0_dp*3.0_dp*d50)/(3._dp*d50)+0.0_dp)+0.0e+00_dp)**2)
 
         CASE('colebrook') 
             ! Colebrook and White, following Chanson (2004)
