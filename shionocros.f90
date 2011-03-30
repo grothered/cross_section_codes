@@ -1177,7 +1177,7 @@ SUBROUTINE calc_resus_bedload(a, dT, water, Q, bed,ys,Area, Width,bottom, ff,rec
     REAL(dp):: kkkk(a), tbst(a), f(a)  
     REAL(dp)::sllength(a),    dst(a,0:(layers+1)), Qb(a), & 
         bedlast(a), sinsl(a), mu_d, Qtemp, useful(a), Ceq(a) 
-    REAL(dp)::writout(a2), a_ref, d_star, c_a, k_scr, f_cs, si
+    REAL(dp)::writout(a2), a_ref, d_star, c_a, k_scr, f_cs, si, tmp
     !logical::writ_tau=.TRUE.  !This will write out the cross sectional taus-- will lead to massive files if you're not careful. 
     LOGICAL::  dry(a)
 
@@ -1273,9 +1273,14 @@ SUBROUTINE calc_resus_bedload(a, dT, water, Q, bed,ys,Area, Width,bottom, ff,rec
                             d_star = (d50*((rhos/rho-1._dp)*g/kvis**2)**(1._dp/3._dp))  !Van Rijn d_star parameter
                             c_a = 0.015_dp*max(dsand/d50,1.0_dp)*d50/(a_ref*d_star**0.3_dp)* & 
                                     (max(0._dp,abs(tau(i))-taucrit(i,jj))/taucrit(i,jj))**1.5_dp ! Van Rijn reference concentration, in m^3/m^3     
-                            !c_a = c_a/3.0_dp
                             Qelocal = wset*c_a*sllength(i) !/rhos !Rate of erosion in m/s of SOLID material
                             
+                        CASE('smithmac')
+                            !Based on description in Garcia and Parker
+                            tmp = 2.4e-03_dp*(max(0._dp,abs(tau(i))-taucrit(i,jj))/taucrit(i,jj))
+                            c_a = 0.65_dp*tmp/(1.0_dp+tmp)
+                            Qelocal = wset*c_a*sllength(i) !/rhos !Rate of erosion in m/s of SOLID material
+
                         CASE DEFAULT
                             print*, 'ERROR: resus_type does not have the correct value in calc_resus_bedload'
 
