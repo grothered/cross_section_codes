@@ -3484,7 +3484,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     REAL(dp):: DLF(a), DF(a), DUF(a), DU2(a),rcond, ferr, berr, work(3*a), XXX(a, 1)
     REAL(dp):: bandmat(5,a), AFB(7,a), RRR(a), CCC(a)
     INTEGER::  IPV(a), iwork(a)   
-    LOGICAL:: const_mesh, ROUSE=.TRUE.
+    LOGICAL:: const_mesh, ROUSE=.FALSE.
     CHARACTER(1):: EQUED
     ! This routine calculates C, Cbar in units m^3/m^3 --- however, elsewhere
     ! they are in kg/m^3 --- so we convert here, and convert back at the end of
