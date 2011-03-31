@@ -33,7 +33,7 @@ Width = 100.0 !Width of computational domain (m)
 
 no_discharges=1
 Discharges = 29.4
-susconcs = 1.0e-03
+susconcs = 1.0e-04
 friction_type = 'manning'!, 'darcy', 'vanrijn'
 rough_coef=0.027
 grain_friction_type='vanrijn' !'colebrook'!'vanrijn'

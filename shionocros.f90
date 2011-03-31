@@ -3526,7 +3526,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
         IF(counter.eq.1) print*, 'WARNING: Zero eddy diffusivity in dynamic_sus_dist'
     END IF
    
-    IF(.TRUE.) THEN 
+    IF(.FALSE.) THEN 
         ! Exponential suspended sediment distribution
 
         ! Vertical eddy diffusivity
@@ -4185,7 +4185,7 @@ SUBROUTINE calc_friction(friction_type, grain_friction_type, rough_coef, water,&
         k_scr = f_cs*d50*(85.0_dp-65.0_dp*tanh(0.015_dp*(si - 150.0_dp)))
         !a_ref = 0.5_dp*k_scr !, 0.01_dp*(water-bed(i))) !Reference level (m) 
         !a_ref = max(0.01_dp, 0.5_dp*k_scr) !, 0.01_dp*(water-bed(i))) !Reference level (m) 
-        a_ref(i) = max(0.5_dp*k_scr, 0.01_dp*(water-bed(i))) !Reference level (m) 
+        a_ref(i) = min(max(0.5_dp*k_scr, 0.01_dp*(water-bed(i))),0.5_dp*(water-bed(i))) !Reference level (m) 
     END DO
     
 
@@ -4216,8 +4216,8 @@ REAL(dp) FUNCTION rouse_int(z,d_aref)
     INTEGER:: i
     REAL(dp):: db_const, F1, J1, j, E2, z2, rouse_int
    
-    ! If z=0, quick exit, otherwise proceed with algorithm 
-    IF(z.eq.0.0_dp) THEN
+    ! If z>10.0, there is no suspended load, make a quick exit, otherwise proceed with algorithm 
+    IF((z>10.0_dp).or.(d_aref>0.3_dp)) THEN
 
          rouse_int = 0.0_dp 
 
@@ -4249,7 +4249,7 @@ REAL(dp) FUNCTION rouse_int(z,d_aref)
         rouse_int=J1*db_const
 
         IF((rouse_int<0.0_dp).or.(rouse_int>=1.0_dp)) THEN
-            PRINT*, ' ERROR in rouse_int: unphysical K value ', rouse_int
+            PRINT*, ' ERROR in rouse_int: unphysical rouse_int value ', rouse_int, d_aref, z
             stop
         END IF
     END IF
