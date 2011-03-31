@@ -3484,7 +3484,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     REAL(dp):: DLF(a), DF(a), DUF(a), DU2(a),rcond, ferr, berr, work(3*a), XXX(a, 1)
     REAL(dp):: bandmat(5,a), AFB(7,a), RRR(a), CCC(a)
     INTEGER::  IPV(a), iwork(a)   
-    LOGICAL:: const_mesh
+    LOGICAL:: const_mesh, ROUSE=.TRUE.
     CHARACTER(1):: EQUED
     ! This routine calculates C, Cbar in units m^3/m^3 --- however, elsewhere
     ! they are in kg/m^3 --- so we convert here, and convert back at the end of
@@ -3526,7 +3526,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
         IF(counter.eq.1) print*, 'WARNING: Zero eddy diffusivity in dynamic_sus_dist'
     END IF
    
-    IF(.FALSE.) THEN 
+    IF(ROUSE.eqv..FALSE.) THEN 
         ! Exponential suspended sediment distribution
 
         ! Vertical eddy diffusivity
@@ -4218,14 +4218,14 @@ REAL(dp) FUNCTION rouse_int(z,d_aref)
    
     ! If z>10.0, there is no suspended load, make a quick exit, otherwise proceed with algorithm 
     IF((z>10.0_dp).or.(d_aref>0.3_dp)) THEN
-
-         rouse_int = 0.0_dp 
-
+        !FIXME: Check that the 0.3 above is okay
+        rouse_int = 0.0_dp 
+        
     ELSE
 
         ! Prevent integer values of z 
         IF(abs(z-anint(z))<0.0005_dp) THEN
-            z2 = anint(z)+0.0005
+            z2 = anint(z)+0.0005_dp
         ELSE
             z2=z
         END IF
