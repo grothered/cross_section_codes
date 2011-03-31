@@ -18,7 +18,7 @@ REAL(dp):: wslope, ar, Q, pi=atan(1.0_dp)*4._dp,  t, &
             tauinc, erconst, lifttodrag, vegdrag, sconc, rho, ysold, &
             lincrem, wset, voidf, smax, rough_coef, man_nveg, veg_ht,rhos,&
             dsand, d50, g, kvis, lambdacon, alpha, &
-            ysl,ysu,bedl, bedu, wdthx, TR, storer(9), tmp, tmp2
+            ysl,ysu,bedl, bedu, wdthx, TR, storer(9), tmp, tmp2, a_ref
 INTEGER::  remesh_freq, no_discharges
 REAL(dp):: discharges(1000), susconcs(1000)
 LOGICAL::  flag, susdist, sus2d, readin, geo, remesh, norm, vertical, & 
@@ -45,7 +45,7 @@ ALLOCATABLE ys(:), bed(:), dists(:), tau(:),ks(:),tbst(:),&
             taucrit_dep(:,:), C(:),bedold(:), &
             taucrit_dep_ys(:) ,dst(:,:), taucrit(:,:), slpmx(:,:), &
             vegdrag(:), ysold(:), dqbeddx(:), sllength(:), vel(:), &
-            tau_g(:),f_g(:), Cbar(:)
+            tau_g(:),f_g(:), Cbar(:), a_ref(:)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! READ IN DATA
@@ -105,7 +105,7 @@ ALLOCATE(ys(nos),bed(nos),dists(nos),tau(nos),ks(nos),tbst(nos),&
          taucrit_dep_ys(nos),dst(nos,0:(layers+1)), &
          taucrit(nos, 0:layers), slpmx(nos,0:(layers+1)), vegdrag(nos),&
          ysold(nos) ,  Qbed(nos), dqbeddx(nos),sllength(nos), &
-         vel(nos), tau_g(nos), f_g(nos), Cbar(nos), bedold(nos)) 
+         vel(nos), tau_g(nos), f_g(nos), Cbar(nos), bedold(nos), a_ref(nos)) 
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !Loop over different values of discharge
@@ -206,6 +206,7 @@ DO Q_loop= 1, no_discharges!15
     bedlast = bed - 0.001_dp !
     bedold = bed - 0.001_dp !
     DT1 = dt ! An adaptive timestep
+    a_ref=0.0_dp !Reference level of vanrijn
 
     !!!Calculate area
     IF(l>0) THEN
@@ -431,7 +432,7 @@ DO Q_loop= 1, no_discharges!15
             ! Calculate friction
             call calc_friction(friction_type, grain_friction_type, rough_coef, water, u-l+1,&
                                  bed(l:u), vel(l:u), man_nveg,d50,veg_ht, rhos, rho, g,&
-                                 f(l:u), vegdrag(l:u),f_g(l:u), dsand, j) 
+                                 f(l:u), vegdrag(l:u),f_g(l:u), dsand, j, a_ref(l:u)) 
 
             ! Calculate bed shear
             call calc_shear(u-l+1,DT1,water,Q,bed(l:u),ys(l:u),Area,ys(u)-ys(l)+wdthx, &
@@ -460,7 +461,7 @@ DO Q_loop= 1, no_discharges!15
                                      layers, taucrit_dep_ys(l:u) & 
                                     ,u-l+1, taucrit(l:u, 0:layers) , vegdrag(l:u), susdist, rho, Qe(l:u) & 
                                     , Qbed(l:u), rhos, voidf, dsand, d50, g, kvis, norm, vertical,alpha, &
-                                    tbston, Qbedon, ysl,ysu,bedl,bedu, resus_type, bedload_type) 
+                                    tbston, Qbedon, ysl,ysu,bedl,bedu, resus_type, bedload_type, a_ref(l:u)) 
 
             !Calculate the cross-sectional suspended load distribution
             IF(susdist) THEN
@@ -479,7 +480,7 @@ DO Q_loop= 1, no_discharges!15
                 !ELSE
                 call dynamic_sus_dist(u-l+1, DT1, ys(l:u), bed(l:u), water, waterlast, Q, tau(l:u), vel(l:u), wset, & 
                                         Qe(l:u), lambdacon, rho,rhos, g, d50, bedl,bedu, ysl, ysu, C(l:u),&
-                                        Cbar(l:u), Qbed(l:u), sconc, j, high_order_Cflux)
+                                        Cbar(l:u), Qbed(l:u), sconc, j, high_order_Cflux, a_ref(l:u))
 
                 ! Set C in dry parts of the channel to zero
                 IF(l>1) THEN

@@ -136,3 +136,23 @@ test_vrijn_bed<-function(){
     abline(0,1)
     cbind(tauc, qb_pred,qb)
 }
+
+
+einstein_j1<-function(z,E, n=10){
+    #Approximate the einstein integral J1 (Guo and Julien, 2004)
+    # This arises because the average suspended sediment concentration
+    # Cbar = C_nearbed*J1*1/( (1-deltab)/deltab)^z
+    
+    # Apply only to non-integer values
+    if(abs(z-round(z))<0.0005) z = round(z)+0.0005
+
+    # Compute 1/((1-deltab)/deltab)^z
+    db_const = ((1-E)/E)^(-z)
+    
+    # Compute F1, eqn 8 in their paper
+    k = seq(1,n)
+    E2 = E/(1-E)
+    F1 = ((1-E)^z)/E^(z-1) - z*sum( ((-1)^k)/(k-z)*(E2)^(k-z))
+    J1 = z*pi/sin(z*pi) -F1
+    J1*db_const
+}

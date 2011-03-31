@@ -1157,27 +1157,27 @@ END SUBROUTINE calc_shear
 !!!!!!!!!!!!!!!!!!!!!!!!!!!
 SUBROUTINE calc_resus_bedload(a, dT, water, Q, bed,ys,Area, Width,bottom, ff,recrd, E, D,C, wset, rmu,a2, inuc,tau,vel,NN & 
     ,counter,slopes, hlim,mor,taucrit_dep,layers, taucrit_dep_ys, nos, taucrit, vegdrag, susdist, rho, Qe, Qbed, rhos,& 
-    voidf, dsand, d50, g, kvis, norm, vertical,alpha, tbston, Qbedon, ysl,ysu,bedl,bedu, resus_type, bedload_type) 
+    voidf, dsand, d50, g, kvis, norm, vertical,alpha, tbston, Qbedon, ysl,ysu,bedl,bedu, resus_type, bedload_type, a_ref) 
     ! Calculate the rate of resuspension and bedload transport over a
     ! cross-section
 
     INTEGER, INTENT(IN)::a,a2,counter,layers, nos
     REAL(dp), INTENT(IN)::water,Q, Width, Area, bottom, ff, hlim,mor, vegdrag,dt, rho, rhos, voidf, dsand, d50, g, & 
-        kvis, alpha, wset
+        kvis, alpha, wset, a_ref
     REAL(dp), INTENT(IN OUT):: bed, recrd, E, D,rmu,inuc,tau,vel, NN, ys,C,taucrit_dep, taucrit_dep_ys, slopes, taucrit,& 
          Qe, Qbed
     REAL(dp), INTENT(IN):: ysl,ysu,bedl,bedu 
     LOGICAL, INTENT(IN):: susdist, norm, vertical, tbston, Qbedon
     CHARACTER(LEN=20), INTENT(IN):: resus_type, bedload_type
     DIMENSION bed(a),ys(a), ff(a),recrd(a),tau(a),vel(a), NN(a),slopes(a),taucrit_dep(nos,layers),C(a),& 
-                taucrit_dep_ys(nos), taucrit(nos,0:layers), vegdrag(a), Qe(a), Qbed(a) ! 
+                taucrit_dep_ys(nos), taucrit(nos,0:layers), vegdrag(a), Qe(a), Qbed(a), a_ref(a) ! 
 
     INTEGER::i, j, bgwet, up,  jj,  info,ii, n(a)
     REAL(dp)::wslope,  Qelocal, tt, corfact, useme, dgravel
     REAL(dp):: kkkk(a), tbst(a), f(a)  
     REAL(dp)::sllength(a),    dst(a,0:(layers+1)), Qb(a), & 
         bedlast(a), sinsl(a), mu_d, Qtemp, useful(a), Ceq(a) 
-    REAL(dp)::writout(a2), a_ref, d_star, c_a, k_scr, f_cs, si, tmp
+    REAL(dp)::writout(a2), d_star, c_a, k_scr, f_cs, si, tmp
     !logical::writ_tau=.TRUE.  !This will write out the cross sectional taus-- will lead to massive files if you're not careful. 
     LOGICAL::  dry(a)
 
@@ -1257,21 +1257,9 @@ SUBROUTINE calc_resus_bedload(a, dT, water, Q, bed,ys,Area, Width,bottom, ff,rec
                                       (taucrit(i,jj)**(-.5_dp))*sllength(i) 
                                 !min(taucrit(i,jj)**(-.5_dp), 50._dp)*sllength(i) 
                         CASE('vanrijn')
-                            ! vanrijn's (2007) method based on the reference
-                            ! concentration c_a
-                            dgravel=0.002_dp !According to van Rijn -- yes this is 2mm, not a typo
-                            IF(d50< 0.25_dp*dgravel) THEN
-                                f_cs=1.0_dp
-                            ELSE
-                                f_cs = (0.25_dp*dgravel/ d50)**(1.5_dp)
-                            END IF
-                            si = (vel(i)**2)/((rhos-rho)/rho*g*d50)
-                            k_scr = f_cs*d50*(85.0_dp-65.0_dp*tanh(0.015_dp*(si - 150.0_dp)))
-                            !a_ref = 0.5_dp*k_scr !, 0.01_dp*(water-bed(i))) !Reference level (m) 
-                            !a_ref = max(0.01_dp, 0.5_dp*k_scr) !, 0.01_dp*(water-bed(i))) !Reference level (m) 
-                            a_ref = max(0.5_dp*k_scr, 0.01_dp*(water-bed(i))) !Reference level (m) 
+                            ! vanrijn 2007 reference concentration method
                             d_star = (d50*((rhos/rho-1._dp)*g/kvis**2)**(1._dp/3._dp))  !Van Rijn d_star parameter
-                            c_a = 0.015_dp*max(dsand/d50,1.0_dp)*d50/(a_ref*d_star**0.3_dp)* & 
+                            c_a = 0.015_dp*max(dsand/d50,1.0_dp)*d50/(a_ref(i)*d_star**0.3_dp)* & 
                                     (max(0._dp,abs(tau(i))-taucrit(i,jj))/taucrit(i,jj))**1.5_dp ! Van Rijn reference concentration, in m^3/m^3     
                             Qelocal = wset*c_a*sllength(i) !/rhos !Rate of erosion in m/s of SOLID material
                             
@@ -3466,7 +3454,7 @@ END SUBROUTINE reset_ys
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wset, Qe,lambdacon, &
                                 rho,rhos, g, d50, bedl,bedu, ysl, ysu, cb, Cbar, Qbed, &
-                                sconc, counter, high_order_Cflux)
+                                sconc, counter, high_order_Cflux, a_ref)
     ! Calculate the cross-sectional distribution of suspended sediment using
     ! some ideas from /home/gareth/Documents/H_drive_Gareth/Gareth_and_colab
     ! s/Thesis/Hydraulic_morpho_model/channel_cross_section/paper/idea_for_
@@ -3480,10 +3468,10 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     
     INTEGER, INTENT(IN)::a, counter
     REAL(dp), INTENT(IN):: delT, ys, bed, water, waterlast, tau, vel, wset, Qe, lambdacon, rho, rhos,g, & 
-                                d50, bedl, bedu,ysl,ysu, sconc, Q, Qbed
+                                d50, bedl, bedu,ysl,ysu, sconc, Q, Qbed, a_ref
     REAL(dp), INTENT(IN OUT):: cb, Cbar ! Near bed suspended sediment concentration, Depth averaged suspended sediment concentration
     LOGICAL, INTENT(IN):: high_order_Cflux
-    DIMENSION ys(a), bed(a), tau(a),vel(a), Qe(a), cb(a), Cbar(a),Qbed(a) 
+    DIMENSION ys(a), bed(a), tau(a),vel(a), Qe(a), cb(a), Cbar(a),Qbed(a), a_ref(a) 
 
     ! LOCAL VARIABLES
     INTEGER:: i, info
@@ -3491,7 +3479,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     REAL(dp):: depth(0:a+1), eddif_y(0:a+1), eddif_z(a), zetamult(0:a+1), vd(0:a+1), ys_temp(0:a+1)
     REAL(dp):: M1_lower(a), M1_diag(a), M1_upper(a), M1_upper2(a), M1_lower2(a)
     REAL(dp):: RHS(a), dy_all(a)
-    REAL(dp):: tmp1, dy, dy_outer, xlen, tmp2, Cref
+    REAL(dp):: tmp1, dy, dy_outer, xlen, tmp2, Cref, z
     REAL(dp):: dQdx, dhdt, Cbar_old(a), dUd_dx(0:a+1)
     REAL(dp):: DLF(a), DF(a), DUF(a), DU2(a),rcond, ferr, berr, work(3*a), XXX(a, 1)
     REAL(dp):: bandmat(5,a), AFB(7,a), RRR(a), CCC(a)
@@ -3537,24 +3525,46 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
         eddif_y=0._dp
         IF(counter.eq.1) print*, 'WARNING: Zero eddy diffusivity in dynamic_sus_dist'
     END IF
-    
-    ! Vertical eddy diffusivity
-    eddif_z= 0.067_dp*sqrt(abs(tau)/rho)*depth(1:a) 
-    !eddif_z= (lambdacon/2.0_dp)*sqrt(abs(tau)/rho)*depth(1:a) 
-    
-    IF(.FALSE.) THEN
-        eddif_z(1:a)=maxval(eddif_z(1:a)) !eddif_y(1:a)+0.01_dp
-        IF(counter.eq.1.) PRINT*, 'WARNING: constant eddy diff'
-    END IF 
-    
-    !zetamult*cbed= depth integrated sediment concentration = Cbar*d
-    DO i=1, a
-        IF((eddif_z(i)>0._dp).and.(depth(i)>0.0e-00_dp)) THEN 
-            zetamult(i)= eddif_z(i)/wset*(1._dp-exp(-(wset/eddif_z(i))*max(depth(i),0._dp)) )
-        ELSE 
-            zetamult(i)=1.0e-012_dp !1.0e-04_dp
-        END IF
-    END DO
+   
+    IF(.TRUE.) THEN 
+        ! Exponential suspended sediment distribution
+
+        ! Vertical eddy diffusivity
+        eddif_z= 0.067_dp*sqrt(abs(tau)/rho)*depth(1:a) 
+        !eddif_z= (lambdacon/2.0_dp)*sqrt(abs(tau)/rho)*depth(1:a) 
+        
+        IF(.FALSE.) THEN
+            eddif_z(1:a)=maxval(eddif_z(1:a)) !eddif_y(1:a)+0.01_dp
+            IF(counter.eq.1.) PRINT*, 'WARNING: constant eddy diff'
+        END IF 
+        
+        !zetamult*cbed= depth integrated sediment concentration = Cbar*d
+        DO i=1, a
+            IF((eddif_z(i)>0._dp).and.(depth(i)>0.0e-00_dp)) THEN 
+                zetamult(i)= eddif_z(i)/wset*(1._dp-exp(-(wset/eddif_z(i))*max(depth(i),0._dp)) )
+            ELSE 
+                zetamult(i)=1.0e-012_dp !1.0e-04_dp
+            END IF
+        END DO
+    ELSE
+        ! Rouse vertical suspended sediment distribution
+        DO i=1,a
+
+            IF(abs(tau(i))>0.0_dp) THEN
+                ! Rouse number
+                z = wset/(0.4_dp*sqrt(tau(i)/rho)) 
+            ELSE
+                zetamult(i) = 0.0_dp
+                cycle
+            END IF
+
+            ! Compute rouse integral factor
+            zetamult(i) = rouse_int(z,a_ref(i)/depth(i))
+
+        END DO
+
+    END IF
+
     zetamult = max(zetamult, 1.0e-012)
     ! Include zero depth boundaries 0 and a+1 -- set to 1, because we divide by
     ! it often
@@ -3953,14 +3963,14 @@ END SUBROUTINE dynamic_sus_dist
 !!!!!!!!!!!!!!!!!!!!!!!!!
 SUBROUTINE calc_friction(friction_type, grain_friction_type, rough_coef, water,&
                             a, bed, vel, man_nveg,d50,veg_ht, rhos, rho, g, f,&
-                            vegdrag,f_g, dsand, counter) 
+                            vegdrag,f_g, dsand, counter, a_ref) 
     INTEGER, INTENT(IN):: a, counter
     CHARACTER(LEN=20), INTENT(IN):: friction_type, grain_friction_type
     REAL(dp), INTENT(IN):: rough_coef, water, man_nveg, d50, veg_ht, rhos, rho, g, dsand
     REAL(dp), INTENT(IN):: bed, vel
-    REAL(dp), INTENT(IN OUT):: f, vegdrag, f_g
+    REAL(dp), INTENT(IN OUT):: f, vegdrag, f_g, a_ref
 
-    DIMENSION bed(a), vel(a), f(a), vegdrag(a), f_g(a)
+    DIMENSION bed(a), vel(a), f(a), vegdrag(a), f_g(a), a_ref(a)
     
     !INPUT: Various friction related parameters
     !PURPOSE: calculate the value of the friction parameters 'f' and 'vegdrag'
@@ -4161,10 +4171,93 @@ SUBROUTINE calc_friction(friction_type, grain_friction_type, rough_coef, water,&
     ! Total roughness
     !f = f+f_g
 
+    
+    ! Compute vanrijn's (2007) roughness height 'a'
+    dgravel=0.002_dp !According to van Rijn -- yes this is 2mm, not a typo
+    IF(d50< 0.25_dp*dgravel) THEN
+        f_cs=1.0_dp
+    ELSE
+        f_cs = (0.25_dp*dgravel/ d50)**(1.5_dp)
+    END IF
+    
+    DO i=1,a 
+        si = (vel(i)**2)/((rhos-rho)/rho*g*d50)
+        k_scr = f_cs*d50*(85.0_dp-65.0_dp*tanh(0.015_dp*(si - 150.0_dp)))
+        !a_ref = 0.5_dp*k_scr !, 0.01_dp*(water-bed(i))) !Reference level (m) 
+        !a_ref = max(0.01_dp, 0.5_dp*k_scr) !, 0.01_dp*(water-bed(i))) !Reference level (m) 
+        a_ref(i) = max(0.5_dp*k_scr, 0.01_dp*(water-bed(i))) !Reference level (m) 
+    END DO
+    
+
 END SUBROUTINE calc_friction
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!
+REAL(dp) FUNCTION rouse_int(z,d_aref)
+    ! Suppose that Cbar = cbed*K
+    ! Where Cbar is the depth-averaged sediment concentration
+    ! cbed is the near bed concentration
+    ! and K is an integrating factor, which is determined from the Rouse
+    ! distribution for suspended sediment.
+    ! Then this function calculates K.
+    
+    ! INPUTS
+    ! z = rouse number = wset/(0.4*ustar)
+    ! d_aref = dimensionless reference leven 
+    !        = (van rijn reference level)/ depth
+
+    ! NOTE -- This uses a method from Guo and Julien (2004) 'Efficient
+    ! Algorithms for Computing Einstein Integrals', Journal of Hydraulic
+    ! Engineering 130:1198-1201.
+    ! They show how to calculate J1=int_{d_aref}^{1} [(1-eps)/eps]^z d(eps)
+    ! It can be shown that K=J1*db_const (where db_const is defined below) 
+    REAL(dp), INTENT(IN):: z, d_aref
+
+    INTEGER:: i
+    REAL(dp):: db_const, F1, J1, j, E2, z2, rouse_int
+   
+    ! If z=0, quick exit, otherwise proceed with algorithm 
+    IF(z.eq.0.0_dp) THEN
+
+         rouse_int = 0.0_dp 
+
+    ELSE
+
+        ! Prevent integer values of z 
+        IF(abs(z-anint(z))<0.0005_dp) THEN
+            z2 = anint(z)+0.0005
+        ELSE
+            z2=z
+        END IF
+
+        ! Compute 1/((1-deltab)/deltab)^z2
+        db_const = ((1.0_dp-d_aref)/d_aref)**(-z2)
+
+        ! Compute F1, eqn 8
+        F1 =((1.0_dp-d_aref)**z2)/d_aref**(z2-1.0_dp) 
+        E2 = d_aref/(1.0_dp-d_aref)
+
+        DO i=1,10
+            j=i*1.0_dp
+            F1 = F1 - z2*((-1)**j)/(j-z2)*(E2)**(j-z2)
+        END DO
+
+        ! Compute J1, eqn 9
+        J1 = z2*pi/sin(z2*pi) -F1
+
+        ! Compute the desired integration factor
+        rouse_int=J1*db_const
+
+        IF((rouse_int<0.0_dp).or.(rouse_int>=1.0_dp)) THEN
+            PRINT*, ' ERROR in rouse_int: unphysical K value ', rouse_int
+            stop
+        END IF
+    END IF
+
+END FUNCTION rouse_int
+!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!
 END MODULE crosssection
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
