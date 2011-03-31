@@ -3518,6 +3518,9 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     IF(lambdacon>0._dp) THEN
         eddif_y(1:a)= lambdacon*sqrt(abs(tau)/rho)*depth(1:a)
     ELSE
+        IF(counter.eq.1) print*, 'WARNING: Using default eddy diffusivity &
+                                    of 0.2 in in dynamic_sus_dist, because &
+                                    lambdacon = 0.0'
         eddif_y(1:a)= 0.2_dp*sqrt(abs(tau)/rho)*depth(1:a) 
     END IF
    
@@ -3536,8 +3539,8 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     END IF
     
     ! Vertical eddy diffusivity
-    !eddif_z= 0.1_dp*sqrt(abs(tau)/rho)*depth(1:a) 
-    eddif_z= (lambdacon/2.0_dp)*sqrt(abs(tau)/rho)*depth(1:a) 
+    eddif_z= 0.067_dp*sqrt(abs(tau)/rho)*depth(1:a) 
+    !eddif_z= (lambdacon/2.0_dp)*sqrt(abs(tau)/rho)*depth(1:a) 
     
     IF(.FALSE.) THEN
         eddif_z(1:a)=maxval(eddif_z(1:a)) !eddif_y(1:a)+0.01_dp

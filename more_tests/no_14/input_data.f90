@@ -39,7 +39,7 @@ rough_coef=0.027
 grain_friction_type='vanrijn' !'colebrook'!'vanrijn'
 man_nveg = 0.3 !Mannings n for vegetated regions
 veg_ht = 9.0e+20 !Height at which vegetation is assumed to occur.
-lambdacon=0.64 !Dimensionless eddy viscosity constant
+lambdacon=0.24 !Dimensionless eddy viscosity constant
 rho = 1026.0 ! Density of water (kg/m^3)
 tbston=.true. !When true (false) this term switches on (off) the sqrt(1+slopes^2) in the bed shear equation: tau*sqrt(1+slopes^2) = rho g Sf h + d/dy ... If .false., then it is replaced with 1. This effects both the shear calculation, and the 'roughmult' friction factor estimation
 
