@@ -3904,6 +3904,36 @@ END FUNCTION rouse_int
 !!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!
+SUBROUTINE int_epsy_f(epsy_model,sus_vert_prof,a,ustar,depth, output)
+INTEGER, INTENT(IN):: a
+CHARACTER(20), INTENT(IN):: epsy_model, sus_vert_prof
+REAL(dp), INTENT(IN):: ustar, depth
+REAL(dp), INTENT(OUT):: output
+DIMENSION ustar(a), depth(a), output(a)
+
+! Local variables
+INTEGER:: i, j
+
+REAL(dp):: d, us, f_i(100), epsy_i(100)
+
+! Compute vertical profiles of suspended sediment and lateral eddy viscosity
+DO i=1,a
+    d = depth(i)
+    us=ustar(i)
+    DO j=1,100
+        ! Create vertical suspended sediment profile
+        f_i(j) = (d-j*d/100._dp)/d
+    END DO 
+     
+    epsy_i = 0.24*d*us
+
+
+END DO
+
+END SUBROUTINE int_epsy_f
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 END MODULE crosssection
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
