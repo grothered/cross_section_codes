@@ -1283,13 +1283,15 @@ SUBROUTINE update_bed(a, dT, water, Q, bed,ys,Area, Width,bottom, ff,recrd, E, D
         tmp1 = (rho*g*(rhos/rho-1._dp)*d50) ! A constant in the lateral bedload formula
         DO i=1, a
             IF(tau(i).ne.0._dp) THEN
-                ! Simple downslope bedslope relation 
-                qb_G(i)= -abs(Qbed(i))*sqrt(abs(taucrit(i,0))/tau(i))
-                
+                !Choose downslope bedload relation
+                IF(talmon.eqv..FALSE.) THEN
+                    ! Simple downslope bedslope relation 
+                    qb_G(i)= -abs(Qbed(i))*sqrt(abs(taucrit(i,0))/tau(i))
+                ELSE 
                 ! Talmon (1995) relation
-                IF(talmon) qb_G(i)=qb_G(i)*sqrt(tmp1/taucrit(i,0)) &
+                    qb_G(i)=-abs(Qbed(i))*sqrt(tmp1/tau(i)) &
                                     *1._dp/9._dp*(max(water-bed(i),0._dp)/d50)**.3_dp 
-
+                END IF
             ELSE !tmp1>0
                 qb_G(i)=0._dp
             END IF !tmp1>0
