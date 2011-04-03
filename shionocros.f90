@@ -3700,73 +3700,35 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
         
         tmp1 = 0.5_dp*(eddif_y(i+1)+eddif_y(i))/(dy_outer*(ys_temp(i+1) - ys_temp(i)))
         IF(i<a) THEN
-            IF((i>1).and.(i<a-1).and.(const_mesh).and.(high_order_Cflux)) THEN
-                ! 4 point derivative approx -- estimate of
-                ! 1/dy_outer*(eddify*d(depthCbar)/dy) at i+1/2
-                M1_upper2(i) = M1_upper2(i) + 1.0_dp/24.0_dp*tmp1*depth(i+2)
-                M1_upper(i) = M1_upper(i) - 9.0_dp/8.0_dp*tmp1*depth(i+1)
-                M1_diag(i)  = M1_diag(i)  + 9.0_dp/8.0_dp*tmp1*depth(i)
-                M1_lower(i) = M1_lower(i) - 1.0_dp/24.0_dp*tmp1*depth(i-1)
-            ELSE
-                ! 2 point derivative approx
-                M1_upper(i) = M1_upper(i) - tmp1*depth(i+1)
-                M1_diag(i)  = M1_diag(i)  + tmp1*depth(i)
-            END IF
+            ! 2 point derivative approx
+            M1_upper(i) = M1_upper(i) - tmp1*depth(i+1)
+            M1_diag(i)  = M1_diag(i)  + tmp1*depth(i)
         END IF
  
         tmp1 = 0.5_dp*(eddif_y(i) + eddif_y(i-1))/((ys_temp(i) - ys_temp(i-1))*dy_outer)
         IF(i>1) THEN
-            IF((i>2).and.(i<a).and.(const_mesh).and.(high_order_Cflux)) THEN
-                ! 4 point derivative approx -- estimate of
-                ! 1/dy_outer*(eddify*d(depthCbar)/dy) at i-1/2
-                M1_upper(i) = M1_upper(i) - 1.0_dp/24.0_dp*tmp1*depth(i+1)
-                M1_diag(i)  = M1_diag(i)  + 9.0_dp/8.0_dp*tmp1*depth(i)
-                M1_lower(i) = M1_lower(i) - 9.0_dp/8.0_dp*tmp1*depth(i-1)
-                M1_lower2(i) = M1_lower2(i) + 1.0_dp/24.0_dp*tmp1*depth(i-2)
-
-            ELSE
-                ! 2 point derivative approx
-                M1_diag(i)  = M1_diag(i)  + tmp1*depth(i)
-                M1_lower(i) = M1_lower(i) - tmp1*depth(i-1)
-            END IF
+            ! 2 point derivative approx
+            M1_diag(i)  = M1_diag(i)  + tmp1*depth(i)
+            M1_lower(i) = M1_lower(i) - tmp1*depth(i-1)
         END IF
 
         ! d/dy ( eddify* dbed/dy * cb)
 
         ! First compute eddify*dbed/dy at i+1/2
-        IF((i>1).and.(i<a-1).and.(const_mesh).and.(high_order_Cflux)) THEN
-            !Use higher order dbed/dy approximation
-            tmp1 = 0.5_dp*(eddif_y(i+1)+eddif_y(i))
-            tmp1 = tmp1*(-1._dp)*(9.0_dp/8.0_dp*(depth(i+1)-depth(i)) &
-                            -1.0_dp/24.0_dp*(depth(i+2)-depth(i-1)) )&
-                                    /(ys_temp(i+1)-ys_temp(i))
-            tmp1 = tmp1/dy_outer
-        ELSE
-            tmp1 = 0.5_dp*(eddif_y(i+1)+eddif_y(i))
-            tmp1 = tmp1*( -(depth(i+1)-depth(i) )/(ys_temp(i+1)-ys_temp(i)))
-            tmp1 = tmp1/dy_outer
-
-        END IF
+        tmp1 = 0.5_dp*(eddif_y(i+1)+eddif_y(i))
+        tmp1 = tmp1*( -(depth(i+1)-depth(i) )/(ys_temp(i+1)-ys_temp(i)))
+        tmp1 = tmp1/dy_outer
 
         IF(i<a) THEN
             !Estimate of 1/dy_outer*(eddify* dbed/dy *cb) at i+1/2
-                M1_upper(i) = M1_upper(i) - 0.5_dp*tmp1*(depth(i+1)/zetamult(i+1))  ! Note that depth(i)/zetamult(i)*Cbar = cb
-                M1_diag(i)  = M1_diag(i)  - 0.5_dp*tmp1*(depth(i)/zetamult(i))
+            M1_upper(i) = M1_upper(i) - 0.5_dp*tmp1*(depth(i+1)/zetamult(i+1))  ! Note that depth(i)/zetamult(i)*Cbar = cb
+            M1_diag(i)  = M1_diag(i)  - 0.5_dp*tmp1*(depth(i)/zetamult(i))
         END IF
 
-        IF((i>2).and.(i<a).and.(const_mesh).and.(high_order_Cflux)) THEN
-            !Use higher order dbed/dy approximation
-            tmp1 = 0.5_dp*(eddif_y(i)+eddif_y(i-1))
-            tmp1 = tmp1*(-1._dp)*(9.0_dp/8.0_dp*(depth(i)-depth(i-1)) &
-                            -1.0_dp/24.0_dp*(depth(i+1)-depth(i-2)) )&
-                                    /(ys_temp(i+1)-ys_temp(i))
-            tmp1 = tmp1/dy_outer
-        ELSE
-            ! Use central dbed/dy approximation
-            tmp1 = 0.5_dp*(eddif_y(i)+eddif_y(i-1))
-            tmp1 = tmp1*( -(depth(i)-depth(i-1) )/(ys_temp(i)-ys_temp(i-1)))
-            tmp1 = tmp1/dy_outer
-        END IF
+        ! Compute eddify*dbed/dy at i-1/2
+        tmp1 = 0.5_dp*(eddif_y(i)+eddif_y(i-1))
+        tmp1 = tmp1*( -(depth(i)-depth(i-1) )/(ys_temp(i)-ys_temp(i-1)))
+        tmp1 = tmp1/dy_outer
 
         IF(i>1) THEN
             !Estimate of 1/dy_outer*(eddify*dbed/dy*cb) at i-1/2
@@ -3840,22 +3802,14 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     !Cbar = XXX(1:a,1)*rhos
     
     ! Solve matrix equations
-    IF((high_order_Cflux).AND.(const_mesh)) THEN
-        call DGBSVX('E','N', a,2,2,1, bandmat(1:5,1:a),  2+2+1, AFB(1:7,1:a), 4+2+1, IPV(1:a),EQUED, RRR(1:a), & 
-                 CCC(1:a), RHS(1:a), a, XXX(1:a,1),a, rcond, ferr,berr, work(1:(3*a)),iwork(1:a), info)
-    ELSE
-        XXX(1:a,1) = RHS(1:a)
-        call DGTSV(a, 1, bandmat(4,1:a-1), bandmat(3,1:a), bandmat(2,2:a), XXX(1:a,1), a, info)
-    END IF
+    XXX(1:a,1) = RHS(1:a)
+    call DGTSV(a, 1, bandmat(4,1:a-1), bandmat(3,1:a), bandmat(2,2:a), XXX(1:a,1), a, info)
+
     ! New Cbar, converted to kg/m^3
     Cbar = XXX(1:a,1)*rhos
 
     IF(info.ne.0) THEN
-        IF((high_order_Cflux).AND.(const_mesh)) THEN
-            print*, 'ERROR: info = ', info, ' in DGBSVX, dynamic_sus_dist'
-        ELSE
             print*, 'ERROR: info = ', info, ' in DGTSV, dynamic_sus_dist'
-        END IF
         stop
     END IF
     
