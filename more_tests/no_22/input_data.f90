@@ -20,7 +20,7 @@
 !Algorithm options
 !!!!!!!!!!!!!!!!!!!!!
 
-nos = 4000 ! Number of spatial grid points
+nos = 2000 ! Number of spatial grid points
 writfreq = 2000 !24*5*5 ! The output is written every writfreq 'th timestep
 jmax= 2400000 !1382400 !24*5*2*45*4*4*4*4*5 ! The number of time steps
 t = 0.00 ! Starting time (s)
@@ -33,9 +33,9 @@ Width = 150.0 !Width of computational domain (m)
 
 no_discharges = 7
 Discharges = 6.44   6.44    6.44    6.44    6.44    6.44    6.44 
-susconcs =  5.0e-04 2.0e-04 1.0e-04 5.0e-05 2.0e-05 1.5e-05 1.0e-05 !manning=.true. !Do we use a manning friction factor? If not, then we use a Darcy Weisbach friction factor, calculated as f=man_n**2*8.*9.8 -i.e., the equivalent manning friction value if the depth were 1 everywhere. Hence, the variable man_n is used to set either a manning or darcy friction. Same deal for vegetation drag
+susconcs =  2.0e-05 1.0e-04 5.0e-05 2.0e-05 1.5e-05 1.0e-05 5.0e-06 !manning=.true. !Do we use a manning friction factor? If not, then we use a Darcy Weisbach friction factor, calculated as f=man_n**2*8.*9.8 -i.e., the equivalent manning friction value if the depth were 1 everywhere. Hence, the variable man_n is used to set either a manning or darcy friction. Same deal for vegetation drag
 friction_type = 'manning' !'manning'!, 'darcy', 'vanrijn', 'ks'
-grain_friction_type  = 'onethird' ! 'vanrijn', 'colebrook', 'onethird' -- model for bed shear acting on grains 
+grain_friction_type  = 'vanrijn' ! 'vanrijn', 'colebrook', 'onethird' -- model for bed shear acting on grains 
 rough_coef =0.03 ! A value depending on the friction type. if 'manning' = Mannings n for the basic bed, if 'ks' = value of ks, if 'darcy' = f, etc, if 'vanrijn', then the value is not used.
 man_nveg = 0.3 !Mannings n for vegetated regions
 veg_ht = 9.0e+20 !Height at which vegetation is assumed to occur.

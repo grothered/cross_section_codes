@@ -3454,7 +3454,7 @@ END SUBROUTINE reset_ys
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wset, Qe,lambdacon, &
                                 rho,rhos, g, d50, bedl,bedu, ysl, ysu, cb, Cbar, Qbed, &
-                                sconc, counter, high_order_Cflux, a_ref)
+                                sconc, counter, high_order_Cflux, a_ref, sus_vert_prof)
     ! Calculate the cross-sectional distribution of suspended sediment using
     ! some ideas from /home/gareth/Documents/H_drive_Gareth/Gareth_and_colab
     ! s/Thesis/Hydraulic_morpho_model/channel_cross_section/paper/idea_for_
@@ -3470,6 +3470,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     REAL(dp), INTENT(IN):: delT, ys, bed, water, waterlast, tau, vel, wset, Qe, lambdacon, rho, rhos,g, & 
                                 d50, bedl, bedu,ysl,ysu, sconc, Q, Qbed, a_ref
     REAL(dp), INTENT(IN OUT):: cb, Cbar ! Near bed suspended sediment concentration, Depth averaged suspended sediment concentration
+    CHARACTER(20), INTENT(IN):: sus_vert_prof
     LOGICAL, INTENT(IN):: high_order_Cflux
     DIMENSION ys(a), bed(a), tau(a),vel(a), Qe(a), cb(a), Cbar(a),Qbed(a), a_ref(a) 
 
@@ -3484,7 +3485,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     REAL(dp):: DLF(a), DF(a), DUF(a), DU2(a),rcond, ferr, berr, work(3*a), XXX(a, 1)
     REAL(dp):: bandmat(5,a), AFB(7,a), RRR(a), CCC(a)
     INTEGER::  IPV(a), iwork(a)   
-    LOGICAL:: const_mesh, ROUSE=.TRUE.
+    LOGICAL:: const_mesh
     CHARACTER(1):: EQUED
     ! This routine calculates C, Cbar in units m^3/m^3 --- however, elsewhere
     ! they are in kg/m^3 --- so we convert here, and convert back at the end of
@@ -3511,67 +3512,74 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
                                     lambdacon = 0.0'
         eddif_y(1:a)= 0.2_dp*sqrt(abs(tau)/rho)*depth(1:a) 
     END IF
-   
-    IF(.FALSE.) THEN
-        eddif_y(1:a)=maxval(eddif_y(1:a)) !eddif_y(1:a)+0.01_dp
-        IF(counter.eq.1.) PRINT*, 'WARNING: constant eddy diff'
-    END IF 
-    
     ! Include zero depth boundaries 0 and a+1
     eddif_y(0) = 0._dp
     eddif_y(a+1) = 0._dp
-
-    IF(.FALSE.) THEN
-        eddif_y=0._dp
-        IF(counter.eq.1) print*, 'WARNING: Zero eddy diffusivity in dynamic_sus_dist'
-    END IF
    
-    IF(ROUSE.eqv..FALSE.) THEN 
-        ! Exponential suspended sediment distribution
+    !IF(.FALSE.) THEN
+    !    eddif_y(1:a)=maxval(eddif_y(1:a)) !eddif_y(1:a)+0.01_dp
+    !    IF(counter.eq.1.) PRINT*, 'WARNING: constant eddy diff'
+    !END IF 
+    
 
-        ! Vertical eddy diffusivity
-        eddif_z= 0.067_dp*sqrt(abs(tau)/rho)*depth(1:a) 
-        !eddif_z= (lambdacon/2.0_dp)*sqrt(abs(tau)/rho)*depth(1:a) 
+    !IF(.FALSE.) THEN
+    !    eddif_y=0._dp
+    !    IF(counter.eq.1) print*, 'WARNING: Zero eddy diffusivity in dynamic_sus_dist'
+    !END IF
+
+    ! Calculate the value of 'zetamult', where:
+    ! zetamult*cbed = depth integrated sediment concentration = Cbar*d  
+    SELECT CASE(sus_vert_prof) 
+
+        CASE('exp')
+            ! Exponential suspended sediment distribution
+
+            ! Vertical eddy diffusivity
+            eddif_z= 0.067_dp*sqrt(abs(tau)/rho)*depth(1:a) 
+            !eddif_z= (lambdacon/2.0_dp)*sqrt(abs(tau)/rho)*depth(1:a) 
+            
+            !IF(.FALSE.) THEN
+            !    eddif_z(1:a)=maxval(eddif_z(1:a)) !eddif_y(1:a)+0.01_dp
+            !    IF(counter.eq.1.) PRINT*, 'WARNING: constant eddy diff'
+            !END IF 
+            
+            DO i=1, a
+                IF((eddif_z(i)>0._dp).and.(depth(i)>0.0e-00_dp)) THEN 
+                    zetamult(i)= eddif_z(i)/wset*(1._dp-exp(-(wset/eddif_z(i))*max(depth(i),0._dp)) )
+                ELSE 
+                    zetamult(i)=1.0e-012_dp !1.0e-04_dp
+                END IF
+            END DO
+
+        CASE('Rouse')
+            ! Rouse vertical suspended sediment distribution
+            DO i=1,a
+
+                IF(abs(tau(i))>0.0_dp) THEN
+                    ! Rouse number
+                    z = wset/(0.4_dp*sqrt(tau(i)/rho)) 
+                ELSE
+                    zetamult(i) = 0.0_dp
+                    CYCLE
+                END IF
+
+                ! Compute rouse integral factor using a function
+                zetamult(i) = rouse_int(z,a_ref(i)/depth(i))
+
+            END DO
+
+        ! Catch errors
+        CASE DEFAULT
+            PRINT*,  'ERROR: sus_vert_prof does not have the correct value in dynamic_sus_dist'
+            stop
         
-        IF(.FALSE.) THEN
-            eddif_z(1:a)=maxval(eddif_z(1:a)) !eddif_y(1:a)+0.01_dp
-            IF(counter.eq.1.) PRINT*, 'WARNING: constant eddy diff'
-        END IF 
-        
-        !zetamult*cbed= depth integrated sediment concentration = Cbar*d
-        DO i=1, a
-            IF((eddif_z(i)>0._dp).and.(depth(i)>0.0e-00_dp)) THEN 
-                zetamult(i)= eddif_z(i)/wset*(1._dp-exp(-(wset/eddif_z(i))*max(depth(i),0._dp)) )
-            ELSE 
-                zetamult(i)=1.0e-012_dp !1.0e-04_dp
-            END IF
-        END DO
-    ELSE
-        ! Rouse vertical suspended sediment distribution
-        DO i=1,a
+    END SELECT
 
-            IF(abs(tau(i))>0.0_dp) THEN
-                ! Rouse number
-                z = wset/(0.4_dp*sqrt(tau(i)/rho)) 
-            ELSE
-                zetamult(i) = 0.0_dp
-                cycle
-            END IF
-
-            ! Compute rouse integral factor
-            zetamult(i) = rouse_int(z,a_ref(i)/depth(i))
-
-        END DO
-
-    END IF
-
-    zetamult = max(zetamult, 1.0e-012)
-    ! Include zero depth boundaries 0 and a+1 -- set to 1, because we divide by
-    ! it often
+    ! Limit zetamult to a non-zero value to avoid division problems
     zetamult(0)   = 1.0e-012_dp
     zetamult(a+1) = 1.0e-012_dp
+    zetamult = max(zetamult, 1.0e-012)
 
-    !zetamult=1.0_dp
 
     ! Solve initially for the depth - averaged suspended sediment concentration
     ! depth d (Cbar) / dt + U*depth*dCbar/dx +
@@ -3598,36 +3606,15 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
         RHS(i)     = RHS(i)     + Cbar(i)*depth(i)/delT
     END DO
         
-    ! Ud Advection term
-    !IF(.FALSE.) THEN
-    !
-    !    ! Model 1 -- dC/dx is positive in the direction of velocity if Es>Ds, and negative otherwise
-    !    ! THIS DIDN'T WORK!
-    !    DO i = 1, a
-
-    !        tmp1 = depth(i) 
-    !        if(vel(i)==0._dp) tmp1 = 0._dp
-
-    !        IF(zetamult(i) > 0._dp) THEN
-    !            M1_diag(i) = M1_diag(i) - tmp1*wset*(depth(i)/zetamult(i)) ! Note depth(i)/zetamult(i)*Cbar = cb
-    !        END IF
-
-    !        RHS(i)     = RHS(i)     - tmp1*Qe(i)     
-
-    !    END DO
-    !ELSE
-    
     !Check if the mesh is constant -- because if it is, we can use high order
     !derivative methods
-    IF(maxval(dy_all) - minval(dy_all) < 1.0e-010) THEN
+    IF(maxval(dy_all) - minval(dy_all) < 1.0e-010_dp) THEN
         const_mesh=.TRUE.
     ELSE
         const_mesh=.FALSE.
     END IF 
 
-    ! Model 2 -- dC/dx is = (C - C/mean_C*desired_C)/x_length_scale
-    !tmp1 = sum(Cbar*vel*depth(1:a)*(0.5_dp*(ys_temp(2:a+1)-ys_temp(0:a-1)))) !Cbar flux
-    !tmp2 = 3.333333e-05_dp*abs(Q) ! Desired sediment flux
+    ! Advection term -- dC/dx is = (C - C/mean_C*desired_C)/x_length_scale
     dy_all = (ys_temp(2:a+1)-ys_temp(0:a-1))*0.5_dp
     tmp1 = sum(Cbar*vel*depth(1:a)*dy_all) !Cbar flux
     tmp2 =sconc*abs(Q) - sum(Qbed(1:a)*dy_all) !Desired Cbar flux = 'Measure of total load less bedload'
@@ -3763,8 +3750,8 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
 
         IF(i<a) THEN
             !Estimate of 1/dy_outer*(eddify* dbed/dy *cb) at i+1/2
-                M1_upper(i) = M1_upper(i) - 0.5*tmp1*(depth(i+1)/zetamult(i+1))  ! Note that depth(i)/zetamult(i)*Cbar = cb
-                M1_diag(i)  = M1_diag(i)  - 0.5*tmp1*(depth(i)/zetamult(i))
+                M1_upper(i) = M1_upper(i) - 0.5_dp*tmp1*(depth(i+1)/zetamult(i+1))  ! Note that depth(i)/zetamult(i)*Cbar = cb
+                M1_diag(i)  = M1_diag(i)  - 0.5_dp*tmp1*(depth(i)/zetamult(i))
         END IF
 
         IF((i>2).and.(i<a).and.(const_mesh).and.(high_order_Cflux)) THEN
@@ -3783,8 +3770,8 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
 
         IF(i>1) THEN
             !Estimate of 1/dy_outer*(eddify*dbed/dy*cb) at i-1/2
-            M1_diag(i)   = M1_diag(i)   + 0.5*tmp1*(depth(i)/zetamult(i))  ! Note that depth(i)/zetamult(i)*Cbar = cb
-            M1_lower(i)  = M1_lower(i)  + 0.5*tmp1*(depth(i-1)/zetamult(i-1))
+            M1_diag(i)   = M1_diag(i)   + 0.5_dp*tmp1*(depth(i)/zetamult(i))  ! Note that depth(i)/zetamult(i)*Cbar = cb
+            M1_lower(i)  = M1_lower(i)  + 0.5_dp*tmp1*(depth(i-1)/zetamult(i-1))
         END IF 
 
     END DO
@@ -3851,7 +3838,8 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     
     ! New Cbar, converted to kg/m^3
     !Cbar = XXX(1:a,1)*rhos
-
+    
+    ! Solve matrix equations
     IF((high_order_Cflux).AND.(const_mesh)) THEN
         call DGBSVX('E','N', a,2,2,1, bandmat(1:5,1:a),  2+2+1, AFB(1:7,1:a), 4+2+1, IPV(1:a),EQUED, RRR(1:a), & 
                  CCC(1:a), RHS(1:a), a, XXX(1:a,1),a, rcond, ferr,berr, work(1:(3*a)),iwork(1:a), info)
@@ -3859,7 +3847,9 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
         XXX(1:a,1) = RHS(1:a)
         call DGTSV(a, 1, bandmat(4,1:a-1), bandmat(3,1:a), bandmat(2,2:a), XXX(1:a,1), a, info)
     END IF
+    ! New Cbar, converted to kg/m^3
     Cbar = XXX(1:a,1)*rhos
+
     IF(info.ne.0) THEN
         IF((high_order_Cflux).AND.(const_mesh)) THEN
             print*, 'ERROR: info = ', info, ' in DGBSVX, dynamic_sus_dist'
@@ -3868,7 +3858,6 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
         END IF
         stop
     END IF
-    !bed(1:a)=XXX(1:a,1)
     
     ! Sometimes, the near bed diffusive flux can lead to small negative values
     ! of Cbed being predicted right near the channel edge. This is because when
@@ -3879,13 +3868,13 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     ! depth right next to the dry bank. (e.g. depth(i-1)=0.0)
     ! A simple fix is to make Cbed = 0.0 if negative, and remove the required
     ! amount of suspended sediment from the neighbouring point. 
-    !tmp1 = maxval(Cbar)
     DO i = 1,a
         IF((Cbar(i)<0._dp).and.(.TRUE.)) THEN
             ! Clip negligably small Cbar values
             IF(abs(Cbar(i))<1.0e-10) THEN
                 Cbar(i) = 0._dp
-                goto 21121            
+                !goto 21121            
+                CYCLE
             END IF
             ! Look at neighbouring points
             IF((i>1).and.(i<a)) THEN
@@ -4203,7 +4192,7 @@ REAL(dp) FUNCTION rouse_int(z,d_aref)
     
     ! INPUTS
     ! z = rouse number = wset/(0.4*ustar)
-    ! d_aref = dimensionless reference leven 
+    ! d_aref = dimensionless reference level 
     !        = (van rijn reference level)/ depth
 
     ! NOTE -- This uses a method from Guo and Julien (2004) 'Efficient
