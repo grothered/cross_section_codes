@@ -3920,13 +3920,15 @@ REAL(dp):: d, us, f_i(100), epsy_i(100)
 DO i=1,a
     d = depth(i)
     us=ustar(i)
+
+    ! Create vertical suspended sediment profile
     DO j=1,100
-        ! Create vertical suspended sediment profile
         f_i(j) = (d-j*d/100._dp)/d
     END DO 
-     
+    ! Create vertical eddy diffusivity profile     
     epsy_i = 0.24*d*us
 
+    output(i) = sum(epsy_i*f_i)*1.0_dp/d
 
 END DO
 
