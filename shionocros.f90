@@ -241,117 +241,8 @@ SUBROUTINE shear(nn,ys,bed,water,wslope,taus,ks, f,NNN,slopes, counter, Q, vegdr
         END IF
      
     END DO
+
     !Boundary conditions
-    !IF(.false.) THEN
-    !    ! Analytical method to get dU^2/dy at the lower boundaries,
-    !    ! assuming that U-> 0 as the depth -> 0, 
-    !    ! and that the friction factor is constant
-    !    !
-    !    ! I don't think this is a great method -
-    !    ! The equations do not include molecular viscosity, which is the real
-    !    ! reason that U -> 0. Hence, we might not expect that the analytical solution
-    !    ! behaves well when we force U-> 0 at the boundary. 
-    !    ! From shiono and knight, we can assume that for a linearly sloping bed element (in this case between the numerical boundary and the true boundary ) U1^2= A*depth^alpha +B*depth, where only A depends on U1^2. 
-    !    ! The solution when the slope is zero is detailed in shiono and knight.
-    !    
-    !    ! Calculate important coefficients
-    !    IF((lambdacon>0._dp).AND.(vegdrag(1)==0._dp)) THEN
-    !        b1=(bedl-bed(1))/(ysl-ys(1))
-    !        !if(abs(b1)>0._dp) THEN
-    !        power= -(sqrt(b1**2*f(1)*lambdacon**2+2._dp*sqrt(2._dp)*sqrt(b1**2+1._dp)*f(1)**(1.5_dp)*lambdacon))& 
-    !        /(b1*sqrt(f(1))*lambdacon*2._dp) -0.5_dp
-    !        IF(power<0._dp) THEN 
-    !            power= (sqrt(b1**2*f(1)*lambdacon**2+2._dp*sqrt(2._dp)*sqrt(b1**2+1._dp)*f(1)**(1.5_dp)*lambdacon))& 
-    !            /(b1*sqrt(f(1))*lambdacon*2._dp) -0.5_dp
-    !        END IF
-    !        Bconst=-8._dp*sqrt(2._dp)*g*wslope/(4._dp*b1**2*sqrt(f(1))*lambdacon-sqrt(2._dp)*sqrt(b1**2+1._dp)*f(1))
-    !        ! Compute these, assuming that the halfway depth is half the depth at 1. Note
-    !        ! that we don't really have to evaluate the derivative at halfway - so long as we
-    !        ! adjust the weighting of B(1)+0._dp in the lateral momentum coefficient weighting.
-    !        ! ss=0.5_dp
-    !        ! upart= (ss)**power*(-b1) 
-    !        ! constpart= -Bconst*(water-bed(1))*(ss)**power*(-b1)+ Bconst*(-b1)
-    !        ! end if
-
-!   !         IF(.true.) THEN
-    !            alpht(1)=  (bed(1)-water)/(power*b1*(ys(2)-ys(1))) 
-    !            alphb(1)= 0._dp
-    !            diag(1)= (water-bed(1))/(power*b1*(ys(2)-ys(1))) - 1._dp 
-    !            s(1)= (water-bed(1))*Bconst/power -(water-bed(1))*Bconst 
-    !        ELSE
-    !            diag(1)= rho*(f(1)/8._dp)*tbst(1)+rho*vegdrag(1)*(water-bed(1))
-    !            alphb(1)=0._dp
-    !            alpht(1)=0._dp
-    !        END IF
-
-    !    !if(Bconst<0._dp) THEN
-    !    !print*, 'Bconst < 0' , Bconst
-    !    !stop
-    !    !END IF
-
-    !    IF((lambdacon>0._dp).AND.(vegdrag(nn)==0._dp)) THEN
-    !        !!Calculate important coefficients
-    !        b1=(bedu-bed(nn))/(ysu-ys(nn)) !Bed slope
-    !        !if(abs(b1)>0._dp) THEN
-    !        power= -(sqrt(b1**2*f(nn)*lambdacon**2+2._dp*sqrt(2._dp)*sqrt(b1**2+1._dp)*f(nn)**(1.5_dp)*lambdacon))& 
-    !        /(b1*sqrt(f(nn))*lambdacon*2._dp) -0.5_dp
-    !     
-    !       IF(power<0._dp) THEN 
-    !            power= (sqrt(b1**2*f(nn)*lambdacon**2+2._dp*sqrt(2._dp)*sqrt(b1**2+1._dp)*f(nn)**(1.5_dp)*lambdacon))& 
-    !            /(b1*sqrt(f(nn))*lambdacon*2._dp) -0.5_dp
-    !        END IF
-    !        Bconst=-8._dp*sqrt(2._dp)*g*wslope/(4._dp*b1**2*sqrt(f(nn))*lambdacon-sqrt(2._dp)*sqrt(b1**2+1._dp)*f(nn))
-    !        !print*, power, Bconst, 'rhs'
-    !        !upart= (ss)**power*(-b1) 
-    !        !constpart= -Bconst*(water-bed(nn))*(ss)**power*(-b1)+ Bconst*(-b1)
-    !        !end if
-
-    !        alpht(nn)=0._dp
-    !        alphb(nn)= (water-bed(nn))/(power*b1*(ys(nn)-ys(nn-1))) !0._dp !- 1._dp/(.5_dp*(dyf(nn-1)+(ysu-ys(nn))))*(.5_dp*(B(nn)+B(nn-1))*1._dp/dyf(nn-1))
-    !        diag(nn) = -(water-bed(nn))/(power*b1*(ys(nn)-ys(nn-1))) -1._dp !rho*(f(nn)/8._dp)*tbst(nn)+rho*vegdrag(nn)*(water-bed(nn))  -alphb(nn) +& 
-    !         !1._dp/(.5_dp*(dyf(nn-1)+(ysu-ys(nn))))*(ss*(B(nn)+0._dp))*upart
-    !        s(nn) = (water-bed(nn))*Bconst/power -(water-bed(nn))*Bconst !s(nn) - 1._dp/(.5_dp*(dyf(nn-1)+(ysu-ys(nn))))*(ss*(B(nn)+0._dp))*constpart
-    !         !+ .5_dp*B(nn)*1._dp/dyf(nn-1)**2
-    !        !
-    !    ELSE
-    !        diag(nn)= rho*(f(nn)/8._dp)*tbst(nn)+rho*vegdrag(nn)*(water-bed(nn))
-    !        alphb(nn)=0._dp
-    !        alpht(nn)=0._dp
-    !    END IF
-    !END IF
-
-
-    !Assume that dU^2/dy at i=1/2 is = dU^2/dy at i=3/2 - so basically assuming
-    !that d/dy dU^2/dy is zero.
-    !IF(.false.) THEN
-    !    alpht(1)=  0._dp - 1._dp/(.5_dp*(dyf(1)+dyf(1)))*( .5_dp*(B(2)+B(1))*1._dp/dyf(1)) 
-    !    alphb(1)= 0._dp
-    !    diag(1)= rho*(f(1)/8._dp)*tbst(1) +rho*vegdrag(1)*(water-bed(1)) -alpht(1) - .5_dp*B(1)*1._dp/dyf(1)**2
-
-    !    alpht(1)= alpht(1) + .5_dp*B(1)*1._dp/dyf(1)**2
-
-    !    alpht(nn)=0._dp
-    !    alphb(nn)= 0._dp - 1._dp/(.5_dp*(dyf(nn-1)+dyf(nn-1)))*(.5_dp*(B(nn)+B(nn-1))*1._dp/dyf(nn-1))
-    !    diag(nn) =  rho*(f(nn)/8._dp)*tbst(nn)+rho*vegdrag(nn)*(water-bed(nn))  -alphb(nn) - .5_dp*B(nn)*1._dp/dyf(nn-1)**2
-    !    alphb(nn) = alphb(nn) + .5_dp*B(nn)*1._dp/dyf(nn-1)**2
-    !    !!!!!!!!
-    !END IF
-    !
-    !!!Assume that U^2 -> 0 as depth -> 0
-    !IF(.false.) THEN
-    !    alpht(1)=  0._dp - 1._dp/(.5_dp*(dyf(1)+dyf(1)))*( .5_dp*(B(2)+B(1))*1._dp/dyf(1)) 
-    !    alphb(1)= 0._dp
-    !    diag(1)= rho*(f(1)/8._dp)*tbst(1) +rho*vegdrag(1)*(water-bed(1)) -alpht(1) + .5_dp*B(1)*1._dp/dyf(1)**2
-    !    !end if
-    !    !if(.true.) THEN
-    !    !
-    !    !
-    !    alpht(nn)=0._dp
-    !    alphb(nn)= 0._dp - 1._dp/(.5_dp*(dyf(nn-1)+dyf(nn-1)))*(.5_dp*(B(nn)+B(nn-1))*1._dp/dyf(nn-1))
-    !    diag(nn) =  rho*(f(nn)/8._dp)*tbst(nn)+rho*vegdrag(nn)*(water-bed(nn))  -alphb(nn) + .5_dp*B(nn)*1._dp/dyf(nn-1)**2
-    !    !!!!!!!!
-    !END IF
-    !
     !!!Assume that U^2 -> 0 as depth -> 0, and we be careful about the edge
     IF(.FALSE.) THEN
         alpht(1)=  0._dp - 1._dp/(.5_dp*(dyf(1)+(ys(1)-ysl)))*( .5_dp*(B(2)+B(1))*1._dp/dyf(1)) 
@@ -408,78 +299,7 @@ SUBROUTINE shear(nn,ys,bed,water,wslope,taus,ks, f,NNN,slopes, counter, Q, vegdr
         IF(i>2) bandmat(5,i-2) = alphb2(i)
     END DO
 
-    !!Assume here that the local depth determines the shear - I think this is bad --
-    !Lateral momentum exchange will be important at the banks, and this approach
-    !neglects it entirely
-    !alpht(1)=  0._dp !- 1._dp/(.5_dp*(dyf(1)+dyf(1)))*( .5_dp*(B(2)+B(1))*1._dp/dyf(1)) 
-    !alphb(1)= 0._dp
-    !diag(1)= rho*(f(1)/8._dp)*tbst(1) +rho*vegdrag(1)*(water-bed(1)) !-alpht(1) + .5_dp*B(1)*1._dp/dyf(1)**2
-
-    !alpht(1)= alpht(1) + .5_dp*B(1)*1._dp/dyf(1)**2
-
-    !alpht(nn)=0._dp
-    !alphb(nn)= 0._dp! - 1._dp/(.5_dp*(dyf(nn-1)+dyf(nn-1)))*(.5_dp*(B(nn)+B(nn-1))*1._dp/dyf(nn-1))
-    !diag(nn) =  rho*(f(nn)/8._dp)*tbst(nn)+rho*vegdrag(nn)*(water-bed(nn)) ! -alphb(nn) + .5_dp*B(nn)*1._dp/dyf(nn-1)**2
-    !alphb(nn) = alphb(nn) + .5_dp*B(nn)*1._dp/dyf(nn-1)**2
-    !!!!!!!!!!
-
-
     ! Set up the matrix solution. 
-
-    !!!!!!!!!!!!!!!!!!!!!!!
-    !!FIX ANY PROBLEMS WITH DIAGONALS -- diag(i) cannot be zero (although I think
-    !physically it is possible ??) - so if this happens, just replace U^2(i) with the
-    !average of it's neighbours. 
-    !!!!!!!!!!!!!!!!!!!!!!!
-    !!!DO i=2, nn-1
-    !!!if(diag(i)==0._dp) THEN
-    !!!diag(i)=1._dp
-    !!!alphb(i)=-(ys(i+1)-ys(i))/(ys(i+1)-ys(i-1)) !0.5_dp
-    !!!alpht(i)=-(ys(i)-ys(i-1))/(ys(i+1)-ys(i-1))!0.5_dp
-    !!!s(i)=0._dp
-    !!!end if 
-    !!!end do
-    !!!
-    !!!if(diag(1)==0._dp) THEN
-    !!!diag(1)=1._dp
-    !!!alphb(1)=0._dp
-    !!!alpht(1)=-1._dp
-    !!!s(1)=0._dp
-    !!!end if
-    !!!
-    !!!if(diag(nn)==0._dp) THEN
-    !!!diag(nn)=1._dp
-    !!!alphb(nn)=-1._dp
-    !!!alpht(nn)=0._dp
-    !!!s(nn)=0._dp
-    !!!end if
-
-
-    !!Rename variables, because their values will be changed by DGTSV
-    !velsq=s!/diag
-    !l=alphb!/diag 
-    !ds=diag!/diag
-    !u=alpht!/diag
-
-    !!Check for errors
-    !DO i = 2, nn-1
-    !    flag= isnan(u(i))
-    !    IF(flag) THEN
-    !        PRINT*, "alpht is nan", nn, i, u(i),floor(u(i)), floor(u(i)+2),  B(i-1:i+1), ys(i-1:i+1), Bderiv(i-1:i+1), &
-    !        bed(i-1:i+1),slopes(i-1:i+1)
-    !        STOP
-    !    END IF
-    !END DO
-
-    ! Call the matrix solver.
-    ! call DGTSV(nn,1,l(2:nn),ds,u(1:nn-1), velsq,nn, info)
-    ! Solution when using DGTSV
-    ! taus= velsq*rho*(f/8._dp)  !Note that this is the shear at the bed 
-    !call DGTSVX('N', 'N', nn,1,l(2:nn),ds,u(1:nn-1),DLF(1:nn-1), DF(1:nn),DUF(1:nn-1),DU2(1:nn-2),IPV(1:nn), &
-    !       velsq(1:nn),nn, XXX(1:nn,1), nn, rcond, ferr, berr, work(1:(3*nn)), iwork(1:nn), info)
-    !!!write(13,*) rcond, ferr, berr
-    !!!!Solution when using DGTSVX
-    !taus= XXX(1:nn,1)*rho*(f/8._dp)
 
     ! Matrix solver -- use banded matrix solver, or if possible, tridiagonal
     ! solver
@@ -492,7 +312,9 @@ SUBROUTINE shear(nn,ys,bed,water,wslope,taus,ks, f,NNN,slopes, counter, Q, vegdr
         XXX(1:nn,1) = s(1:nn)
         call DGTSV(nn, 1, bandmat(4,1:nn-1), bandmat(3,1:nn), bandmat(2,2:nn), XXX(1:nn,1), nn, info)
     END IF
+    ! Determine tau
     taus = XXX(1:nn,1)*rho*(f/8._dp)
+
     !Check
     IF(info.ne.0) THEN
         IF((const_mesh).AND.(high_order_shear)) THEN
@@ -504,7 +326,7 @@ SUBROUTINE shear(nn,ys,bed,water,wslope,taus,ks, f,NNN,slopes, counter, Q, vegdr
     END IF
         
 
-
+    ! Detailed testing, doesn't work with newer matrix solvers
     IF(.FALSE.) THEN
         !do i=1,nn
         !        if(i>1) bandmat(1+1+i-(i-1),i-1)=alphb(i)
@@ -3987,6 +3809,9 @@ SUBROUTINE calc_friction(friction_type, grain_friction_type, rough_coef, water,&
 
                 !Roughness height due to mega_ripples - eqn 6e
                 !This seems to have a discontinuity, so I cut it for now.
+                PRINT*, 'ERROR: Mega-ripples roughness not yet implemented in vanrijn &
+                            roughness, in calc_friction '
+                stop
                 k_scmr=0.0_dp
                 !k_scmr = 2.0e-05_dp*f_fs*(water-bed(i))*(1.0_dp - exp(-0.05_dp*si))&
                 !            *(550._dp-si)
@@ -4026,29 +3851,15 @@ SUBROUTINE calc_friction(friction_type, grain_friction_type, rough_coef, water,&
         
     END SELECT
 
-    ! Trick to catch errors in setting the variable 'friction_type' 
-    !IF(f(1) == -9999.0_dp) THEN
-    !    print*, 'Crazy f value: probably there is a typo in the "friction_type" variable' 
-    !    stop
-    !END IF 
-        
-    ! VEGETATION DRAG
-    !DO i=1, a                
-    !    IF(bed(i)>veg_ht) THEN
-    !            vegdrag(i)= man_nveg**2*g*8._dp !/(max( water-bed(i),.05_dp)**(0.3333)) ! 2._dp!2._dp!500._dp!500._dp
-    !    ELSE
-    !            vegdrag(i)=0._dp
-    !    END IF
-    !END DO 
+    ! Vegetation drag
     WHERE (bed > veg_ht)
-            vegdrag= man_nveg**2*g*8._dp !/(max( water-bed(i),.05_dp)**(0.3333)) ! 2._dp!2._dp!500._dp!500._dp
+            vegdrag= man_nveg**2*g*8._dp 
     ELSEWHERE
             vegdrag=0._dp
     END WHERE
         
 
     ! Grain roughness
-    !IF(.TRUE.) THEN
     SELECT CASE (grain_friction_type)
         CASE('vanrijn')
             ! Van Rijn, fully turbulent flow
@@ -4092,29 +3903,7 @@ SUBROUTINE calc_friction(friction_type, grain_friction_type, rough_coef, water,&
             stop
 
     END SELECT
-    !END IF 
-    ! Laminar regime
-    !DO i=1,a
-    !    IF(Re(i)<2000._dp) f_g(i) = 64._dp/Re(i)
-    !END DO
-    !f_tmp(2:a-1) = 0.25_dp*(f_g(3:a) + 2.0_dp*f_g(2:a-1) + f_g(1:a-2))
-    !f_tmp(1) = 0.25_dp*(f_g(2) + 3.0_dp*f_g(1)) 
-    !f_tmp(a) = 0.25_dp*(f_g(a-1) + 3.0_dp*f_g(a))
-    !f_g = f_tmp 
 
-    !f_g = min(f_g,f)
-   
-    ! Strickler grain roughness relation 
-    ! n_grain = 0.04*ks^(1/6) with ks ~= d90
-    !DO i=1,a
-    !    f_g(i) = (0.04_dp**2*(3.0_dp*d50)**(onethird))& 
-    !            *8.0_dp*g/max(water-bed(i),1.0e-10_dp)**(onethird)
-    !END DO
-    !f_g = min(f_g,f)
-    ! Total roughness
-    !f = f+f_g
-
-    
     ! Compute vanrijn's (2007) roughness height 'a'
     dgravel=0.002_dp !According to van Rijn -- yes this is 2mm, not a typo
     IF(d50< 0.25_dp*dgravel) THEN
