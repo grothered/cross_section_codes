@@ -1228,47 +1228,6 @@ SUBROUTINE update_bed(a, dT, water, Q, bed,ys,Area, Width,bottom, ff,recrd, E, D
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!
     ! Calculate deposition rate
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-    !DO i=1, a
-
-    !    IF((bed(i)<(water-0._dp))) THEN 
-    !        IF(sus2d.eqv..false.) THEN  
-    !            Qd(i)=(wset/rhos)*C(i)
-    !            !!!This is the rate of deposition in m/s of SOLID MATERIAL, i.e.
-    !            !not accounting for the porosity of sediment
-    !        ELSE
-    !            IF(( abs(tau(i))>0._dp).and.(wset>0._dp)) THEN
-    !                Qd(i)=(wset/rhos)*C(i)*min( (water-bed(i)) &
-    !                    /(.1_dp*sqrt(abs(tau(i))/rho)*(water-bed(i))/wset*& 
-    !                    (1._dp-exp(-wset/(.1_dp*sqrt(abs(tau(i))/rho)*(water-bed(i)))*(water-bed(i))))) &
-    !                    , 20._dp) 
-    !                !!!This is the rate of deposition in m/s of SOLID MATERIAL,
-    !                !i.e. not accounting for the porosity of sediment, and the
-    !                !crazy factor accounts for the fact that C(i) is the average
-    !                !concentration, but we want the bottom concentration. We
-    !                !limit the ratio of these 2 to be a number, say 20-200 -
-    !                !whatever is written 
-    !            ELSE
-    !                Qd(i)= (wset/rhos)*C(i)*20._dp 
-    !                !So in this case the shear is zero, and whatever deposits
-    !                !should deposit fast 
-    !            END IF 
-    !        END IF 
-    !    ELSE
-    !        Qd(i)=0._dp
-    !    END IF 
-
-
-    !    IF(isnan(Qd(i)).or.(Qd(i)<0._dp)) THEN
-    !        PRINT*, "Qd(",i,") is nan", Qd(i)
-    !        STOP
-    !    END IF 
-
-    !END DO 
-
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    ! Calculate deposition rate
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!
     SELECT CASE(sus2d)
         CASE(.FALSE.)
             ! When we do not use the fully 2D suspended load routine
@@ -1311,54 +1270,6 @@ SUBROUTINE update_bed(a, dT, water, Q, bed,ys,Area, Width,bottom, ff,recrd, E, D
         END DO
     END IF
 
-    !!A check that I sometimes find useful.
-    !IF(crazy_check) THEN
-    !    
-    !    hss2(1:a)= ys+ys(a:1:-1)
-    !    IF(maxval(abs(hss2(1:a)))- minval(abs(hss2(1:a)))>0.000001) THEN
-    !        print*, "symm break in ys" , hss2(1:a), a 
-    !        print*, maxval(hss2(1:a))
-    !        stop
-    !    END IF
-
-    !    hss2(1:a)= bed-bed(a:1:-1)
-    !    IF(maxval(abs(hss2(1:a)))>0.0000001) THEN
-    !        print*, "symm break in height" 
-    !        print*, maxval(hss2(1:a))
-    !        stop
-    !    END IF
-
-
-    !    hss2(1:a)= slopes+slopes(a:1:-1)
-    !    IF(maxval(abs(hss2(1:a)))>0.0001) THEN
-    !        print*, "symm break in slopes", counter, maxloc(hss2(1:a)), minloc(hss2(1:a)), a/2. 
-    !        print*, maxval(hss2(1:a)), minval(hss2(1:a))
-    !        !  do i=1, a
-    !        ! print*, hss2(i), i
-    !        ! end do
-    !        stop
-    !    END IF
-
-    !    hss2(1:a)= taucrit(1:a,0)-taucrit(a:1:-1, 0)
-    !    IF(maxval(abs(hss2(1:a)))>0.0001) THEN
-    !        print*, "symm break in critical shear" 
-    !        print*, maxval(hss2(1:a))
-    !        stop
-    !    END IF
-
-    !    hss2(1:a)= Qe-Qe(a:1:-1)
-    !    IF(maxval(abs(hss2(1:a)))>0.0001) THEN
-    !        print*, "symm break in erosion rate", maxval(hss2(1:a))
-    !        stop
-    !    END IF
-
-    !    hss2(1:a)= Qd-Qd(a:1:-1)
-    !    IF(maxval(abs(hss2(1:a))).ne.0.) THEN
-    !        print*, "symm break in deposition rate",maxval(hss2(1:a))
-    !        stop
-    !    END IF
-
-    !END IF
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     ! SOLVE FOR THE UPDATED GEOMETRY
@@ -3357,7 +3268,8 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
             ! Exponential suspended sediment distribution
 
             ! Vertical eddy diffusivity
-            eddif_z= 0.067_dp*sqrt(abs(tau)/rho)*depth(1:a) 
+            !eddif_z= 0.067_dp*sqrt(abs(tau)/rho)*depth(1:a) 
+            eddif_z= 0.1_dp*sqrt(abs(tau)/rho)*depth(1:a) 
             !eddif_z= (lambdacon/2.0_dp)*sqrt(abs(tau)/rho)*depth(1:a) 
             
             !IF(.FALSE.) THEN
