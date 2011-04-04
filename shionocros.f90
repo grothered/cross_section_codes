@@ -3904,33 +3904,93 @@ END FUNCTION rouse_int
 !!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!
-SUBROUTINE int_epsy_f(epsy_model,sus_vert_prof,a,ustar,depth, output)
-INTEGER, INTENT(IN):: a
-CHARACTER(20), INTENT(IN):: epsy_model, sus_vert_prof
-REAL(dp), INTENT(IN):: ustar, depth
-REAL(dp), INTENT(OUT):: output
-DIMENSION ustar(a), depth(a), output(a)
+SUBROUTINE int_epsy_f(epsy_model,sus_vert_prof,& 
+                      a,ys,bed,ysl, ysu, bedl, bedu, &
+                      elev, ustar,wset, output1, output2)
+    ! PURPOSE: 
+    !   To calculate
+    !
+    ! Integral ( epsy*f) dz
+    ! and,
+    ! Integral (epsy*df/dy) dz
+    !
+    ! Where z is a vertical coordinate,
+    ! epsy is the horizontal eddy viscosity (varying in the vertical), and 
+    ! f defines the vertical profile of suspended sediment ( so c(z) = cbed*f(z) )
+    !
+    ! These integral is useful in computing the vertically integrated lateral flux of
+    ! suspended load = 
+    ! INT (epsy*dc/dy) dz = 
+    ! INT(epsy*cb*df/dy + epsy*f*dcb/dy) dz =
+    ! cb*INT(epsy*df/dy) dz + dcb/dy*INT(epsy*f) dz
+    !
+    ! OUTPUTS: 
+    !   output1 = Integral ( epsy*f) dz, evaluated between grid points (i.e. 0.5, 1.5, ...a+0.5)
+    !   output2 = Integral ( epsy*df/dy) dz, evaluated between grid points (i.e. 0.5, 1.5, ...a+0.5)
+    !
+    INTEGER, INTENT(IN):: a
+    CHARACTER(20), INTENT(IN):: epsy_model, sus_vert_prof
+    REAL(dp), INTENT(IN):: ys, bed, ysl, ysu, bedl, bedu, ustar, elev, wset
+    REAL(dp), INTENT(OUT):: output1, output2
+    DIMENSION ys(a), bed(a), ustar(a), output1(a+1), output2(a+1)
 
-! Local variables
-INTEGER:: i, j
+    ! Local variables
+    INTEGER:: i, j
 
-REAL(dp):: d, us, f_i(100), epsy_i(100)
+    REAL(dp):: d, us,bedh, f(100), epsy(100), z_tmp, bed_tmp(0:a+1), ustar_tmp(0:a+1), &
+                eps_z, ys_tmp(0:a+1), dbed_dy, depsz_dy, df_dy(a+1)
 
-! Compute vertical profiles of suspended sediment and lateral eddy viscosity
-DO i=1,a
-    d = depth(i)
-    us=ustar(i)
+    ! Predefine bed_tmp, ys, and ustar, including boundary values
+    bed_tmp(1:a) = bed
+    bed_tmp(0)   = bedl
+    bed_tmp(a+1) = bedu
 
-    ! Create vertical suspended sediment profile
-    DO j=1,100
-        f_i(j) = (d-j*d/100._dp)/d
-    END DO 
-    ! Create vertical eddy diffusivity profile     
-    epsy_i = 0.24*d*us
+    ys_tmp(1:a) = ys
+    ys_tmp(0)   = ysl
+    ys_tmp(a+1) = ysu
 
-    output(i) = sum(epsy_i*f_i)*1.0_dp/d
+    ustar_tmp(1:a) = ustar
+    ustar_tmp(0)   = 0.0_dp
+    ustar_tmp(a+1) = 0.0_dp
 
-END DO
+    DO i=1,a+1
+
+        ! Define depth, ustar, bed, epsz, at i-1/2
+        d = max(elev - 0.5_dp*(bed_tmp(i)+bed_tmp(i-1)), 0.0_dp) 
+        us= 0.5_dp*(ustar_tmp(i)+ustar_tmp(i-1))
+        bedh = 0.5_dp*(bed_tmp(i)+bed_tmp(i-1))
+        eps_z =0.5_dp*( 0.1_dp*ustar_tmp(i)*max(elev-bed_tmp(i),0.0_dp) + &
+                        0.1_dp*ustar_tmp(i-1)*max(elev-bed_tmp(i-1),0.0_dp)) 
+ 
+        ! Define depsz/dy and dbed/dy at i-1/2
+        depsz_dy = ( 0.1_dp*ustar_tmp(i)*max(elev-bed_tmp(i),0.0_dp) - &
+                     0.1_dp*ustar_tmp(i-1)*max(elev-bed_tmp(i-1),0.0_dp) &
+                     )/(ys_tmp(i)-ys_tmp(i-1))
+        dbed_dy = (bed_tmp(i) - bed_tmp(i-1))/(ys(i)-ys(i-1)) 
+         
+        ! Create vertical suspended sediment profile
+        DO j=1,100
+            ! z_tmp = elevation above bed = at 0.5, 1.5, ... 99.5 * depth/100.0 
+            z_tmp = bedh + (d/100._dp)*(j*1.0_dp-0.5_dp)
+        
+            ! Exponential vertical suspended sediment profile
+            f(j) = exp(-wset/eps_z*(z_tmp-bedh))
+
+            ! Create horizontal eddy diffusivity profile     
+            epsy(j) = 0.24*d*us
+
+            ! df/dy = df/deps_z * deps_z/dy + df/dbed*dbed/dy
+            df_dy(j) = -wset*(z_tmp-bedh)/eps_z**2*f(j)*depsz_dy + wset/eps_z*f(j)*dbed_dy
+        END DO 
+
+        !Integral (epsy*f) dz
+        output1(i) = sum(epsy*f)*d/(1.0_dp*100)
+        
+        !Integral (epsy*df/dy) dz
+        output2(i) = sum(epsy*df_dy)*d/(1.0_dp*100)
+
+    END DO
+    
 
 END SUBROUTINE int_epsy_f
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!
