@@ -1561,79 +1561,21 @@ SUBROUTINE update_bed(a, dT, water, Q, bed,ys,Area, Width,bottom, ff,recrd, E, D
         END IF
     END DO
 
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !!!Erosion due to undercutting. This does not seem to be the main thing
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !IF(.FALSE.) THEN
-    !    !if(normmov.eqv..false.) THEN !Switch on/off undercutting - if normmov is true, then undercutting has already happened
-    !    h_rhs=bed
-    !    DO i=2,a-1
-    !        ecu= abs(Qe(i)*sin(atan(slopes(i))))*mor*dT/(1._dp-voidf)
-    !        !So this is the lateral projection of the 'normal to the bed' amount of
-    !        !erosion. To account for undercutting, if ecu cuts past neighbouring points,
-    !        !then such points are replaced with a weighted average of the new bed(i) and the
-    !        !'normally eroded' position of bed(i).
-    !        IF(slopes(i)<0._dp) THEN
-    !            DO j=1, max(i+1,1)
-    !                IF( ecu > ys(i)-ys(i-j)) THEN
-    !                    !print*, 'undercut left ', ecu
-    !                    h_rhs(i-j)=min( ((ys(i)-ys(i-j))*(bedlast_tmp(i)+ ecu/slopes(i)+Qd(i)*mor*dT/(1._dp-voidf)) +& 
-    !                    (ys(i-j)-( ys(i)-ecu) )*bed(i))/ecu, h_rhs(i-j)) !Note that the slopes(i) is tan(atan(slopes(i))). This is an appropriately weighted average of the height at the perpendicularly eroded point, and the height at ys(i)
-    !                ELSE
-    !                    GOTO 1415
-    !                END IF	
-    !            END DO
-
-    !        ELSE !slopes >0
-    !            DO j=1, max(a-i,1)
-    !                IF(ecu > ys(i+j)-ys(i)) THEN			
-    !                        !print*, 'undercut right ', ecu
-    !                    h_rhs(i+j)= min( ( (ys(i+j)-ys(i))*(bedlast_tmp(i)-ecu/slopes(i)+ Qd(i)*mor*dT/(1._dp-voidf)) +&
-    !                    (ys(i)+ecu -ys(i+j) )*bed(i))/ecu, h_rhs(i+j))
-    !                ELSE
-    !                    GOTO 1415
-    !                END IF		
-    !                !bed(i+1)=bed(i)!max(bedlast_tmp(i), bed(i))
-    !            END DO
-    !        END IF !slopes > 0 
-
-    !        1415 CONTINUE 
-    !    END DO
-    !    bed=h_rhs
-    !END IF !Switch on/off undercutting
-
-
-    !IF(.FALSE.) THEN
-    !    DO i=1, a
-    !        DO j= 1, layers
-    !            IF(taucrit_dep(i,j)>bedlast_tmp(i)) THEN
-    !                print*, 'taucrit_dep prob', i, j, bedlast_tmp(i), taucrit_dep(i,j), counter
-    !            END IF
-
-    !            IF((taucrit_dep(i,j)> bedlast_tmp(i)- dt*mor*Qe(i)/(1._dp-voidf)).AND.(tau(i)<taucrit(i,j))) THEN
-    !                PRINT*, 'problem with taucrit_dep sinking', i, tau(i), j, taucrit(i,:), "and more", taucrit_dep(i,j), &
-    !                bedlast_tmp(i),dt*mor*Qe(i)/(1._dp-voidf)
-    !                STOP
-    !            END IF
-    !            !!!THIS NEEDS FURTHER THOUGHT IF it will be used for bedload
-    !            taucrit_dep(i,j)= min(taucrit_dep(i,j), bedlast_tmp(i)- dt*mor*Qe(i)/(1._dp-voidf))!, bed(i)-Qd(i)*mor*dt/(1._dp-voidf) ) !Note that we only consider old height - total erosion. Deposition (either suspended or through bedload) is assumed to add new sediment. Note that this adjustment to taucrit_dep will only change it if the old height less erosion cut into the taucrit_dep layer.
-    !        END DO
-    !    END DO
-    !END IF       
-
 
 END SUBROUTINE update_bed
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-SUBROUTINE roughmult(aa,rmu, vel, Q, A, width,tbst,depths, ys, f, vegdrag, counter, ysl, ysu, bedl, bedu,bed,water,g)
+SUBROUTINE roughmult(aa,rmu, vel, Q, A, width,tbst,depths, ys, f, vegdrag, &
+                     counter, ysl, ysu, bedl, bedu,bed,water,g)
     !This is for calculating the constant that we should multiply the friction
     !slope in the 1D model by, in order to account for the lateral distribution of
     !velocity. So it basicaly gives a roundness coefficient, although actually,
     !we get the (roughness coefficient/ depth) for numerical stability reasons
     INTEGER, INTENT(IN)::aa, counter
     REAL(dp), INTENT(IN OUT):: rmu
-    REAL(dp), INTENT(IN):: vel, Q, A, width,tbst, depths, ys, f, vegdrag, ysl, ysu, bedl, bedu, bed, water,g
+    REAL(dp), INTENT(IN):: vel, Q, A, width,tbst, depths, ys, f, vegdrag, ysl, ysu,&
+                           bedl, bedu, bed, water,g
     DIMENSION vel(aa),tbst(aa), depths(aa), ys(aa), f(aa), vegdrag(aa), bed(aa)
     
     INTEGER:: a2, i
@@ -1674,6 +1616,205 @@ SUBROUTINE roughmult(aa,rmu, vel, Q, A, width,tbst,depths, ys, f, vegdrag, count
     END IF
 
 END SUBROUTINE roughmult
+!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!
+SUBROUTINE calc_friction(friction_type, grain_friction_type, rough_coef, water,&
+                            a, bed, vel, man_nveg,d50,veg_ht, rhos, rho, g, f,&
+                            vegdrag,f_g, dsand, counter, a_ref) 
+    INTEGER, INTENT(IN):: a, counter
+    CHARACTER(LEN=20), INTENT(IN):: friction_type, grain_friction_type
+    REAL(dp), INTENT(IN):: rough_coef, water, man_nveg, d50, veg_ht, rhos, rho, g, dsand
+    REAL(dp), INTENT(IN):: bed, vel
+    REAL(dp), INTENT(IN OUT):: f, vegdrag, f_g, a_ref
+
+    DIMENSION bed(a), vel(a), f(a), vegdrag(a), f_g(a), a_ref(a)
+    
+    !INPUT: Various friction related parameters
+    !PURPOSE: calculate the value of the friction parameters 'f' and 'vegdrag'
+    !and 'f_g' (which is the grain related roughness)
+    
+    !LOCAL VARIABLES
+    REAL(dp)::ks, f_tmp(a), Re(a), f_glast(a)
+    REAL(dp):: dgravel, dsilt, f_cs, si, k_scr, k_scmr, k_scd, f_fs, k_sc, k_sg
+    INTEGER:: i, j
+    REAL(dp):: onethird = (1.0_dp/3.0_dp)
+
+
+    
+    !f(1) = -9999.0_dp !Trick to catch errors in setting the variable 'friction_type' 
+   
+
+    ! Friction factors
+    SELECT CASE(friction_type)
+    !IF(friction_type == 'manning') THEN
+        CASE('manning')
+            ! Manning style friction
+            DO i= 1, a
+                !f(i)= rough_coef**2*g*8._dp/(max( water-bed(i),200._dp*d50)**(onethird))!
+                f(i)= rough_coef**2*g*8._dp/(max( water-bed(i),1.0e-08_dp)**(onethird))!
+            END DO 
+
+            ! Now spatially average the friction
+            !DO i = 2, a-1
+            !    f_tmp(i) = 0.25_dp*(2.0_dp*f(i) + f(i+1) + f(i-1)) ! Average value of f in a cell centred at i 
+            !END DO
+            !    f_tmp(1) = 0.25_dp*(3.0_dp*f(1) + f(1+1))
+            !    f_tmp(a) = 0.25_dp*(3.0_dp*f(a) + f(a-1))
+           
+            !    f = f_tmp 
+    !END IF
+        CASE('darcy')
+    !IF(friction_type == 'darcy') THEN
+            !Darcy-weisbach style friction factor
+            f= rough_coef 
+    !END IF !m
+        CASE('ks') 
+    !IF(friction_type == 'ks') THEN
+            ! Roughness height style friction factor
+            ks = rough_coef
+
+            DO i=1,a
+            !f(i) = 8._dp*g/(18.0_dp*log10(12.0_dp*max((water-bed(i)),ks)/ks))**2
+            !f(i) = 8._dp*g/(18.0_dp*log10(12.0_dp*max((water-bed(i)),ks)/ks))**2
+            f(i) = 8.0_dp*(0.4_dp/log(max(water-bed(i), 3.0_dp*ks)/ks - 1.0_dp))**2
+            END DO
+    !END IF
+        CASE('vanrijn') 
+    !IF(friction_type == 'vanrijn') THEN
+            ! van Rijn (2007) friction -- note that I am concerned that there could
+            ! easily be typos in this paper (or in my coding of it!) 
+            ! First need to calculate roughness height
+            dgravel=0.002_dp !According to van Rijn -- yes this is 2mm, not a typo
+            dsilt = 0.000032_dp !According to van Rijn -- yes this is 32 micro m, not a typo
+
+            !Useful fudge constants f_cs, f_fs
+            f_cs = min( (0.25_dp*dgravel/ d50)**(1.5_dp), 1.0_dp)
+            f_fs = min(d50/(1.5_dp*dsand),1.0_dp) 
+
+            DO i = 1, a
+                si = (vel(i)**2)/((rhos-rho)/rho*g*d50)
+
+                ! Roughness height due to ripples, eqn 5e
+                k_scr = f_cs*d50*(85.0_dp-65.0_dp*tanh(0.015_dp*(si - 150.0_dp)))
+                k_scr = max(k_scr, 20.0_dp*dsilt) !Lower limit according to text
+
+
+                !Roughness height due to mega_ripples - eqn 6e
+                !This seems to have a discontinuity, so I cut it for now.
+                PRINT*, 'ERROR: Mega-ripples roughness not yet implemented in vanrijn &
+                            roughness, in calc_friction '
+                stop
+                k_scmr=0.0_dp
+                !k_scmr = 2.0e-05_dp*f_fs*(water-bed(i))*(1.0_dp - exp(-0.05_dp*si))&
+                !            *(550._dp-si)
+                !!6c, 6d, and the next one
+                !IF((si>550.0_dp).and.(d50>=1.5_dp*dsand)) k_scmr = 0.02_dp
+                !IF((si>550.0_dp).and.(d50<1.5_dp*dsand)) k_scmr = 200._dp*d50
+                !IF(d50<dsilt) k_scmr = 0._dp
+                !! In the text, states that k_scmr <= 0.2
+                !k_scmr = min(k_scmr, 0.2_dp)
+
+                !Roughness height due to dunes, eqn 7e -- note van Rijn typo in
+                !variable name
+                k_scd = 8.0e-05_dp*f_fs*(water-bed(i))*(1.0_dp - exp(-0.02_dp*si))*(600._dp-si)            
+                !Eqns 7c, &7d
+                IF((si>600._dp).or.(d50<dsilt))THEN
+                    k_scd=0._dp
+                END IF
+                !In the text, states that k_scd<1.0m
+                k_scd = min(k_scd, 1.0)
+
+                ! Total physical current roughness
+                k_sc = sqrt(k_scr**2 + k_scmr**2 + k_scd**2)        
+
+                ! Friction factor
+                f(i) =(8._dp*g/(18._dp*log10(12._dp*max(water-bed(i), k_sc)/(k_sc)))**2)  
+
+                IF((mod(counter,10000).eq.0).and.(i.eq.(a/2))) THEN
+                    print*, 'Roughnesses in channel centre:', k_scr, k_scmr, k_scd, k_sc, f(i), & 
+                        'depth', water-bed(i), 'si', (vel(i)**2)/((rhos-rho)/rho*g*d50)
+                END IF
+
+            END DO
+    
+        CASE DEFAULT
+            PRINT*, 'ERROR -- friction_type does not appear to be correctly specified in calc_shear'
+            stop
+        
+    END SELECT
+
+    ! Vegetation drag
+    WHERE (bed > veg_ht)
+            vegdrag= man_nveg**2*g*8._dp 
+    ELSEWHERE
+            vegdrag=0._dp
+    END WHERE
+        
+
+    ! Grain roughness
+    SELECT CASE (grain_friction_type)
+        CASE('vanrijn')
+            ! Van Rijn, fully turbulent flow
+             ! NOTE THAT vanrijn writes that tau = 0.5*f*rho*U^2 -- however, his
+             ! data in table2 of the paper are better predicted using the
+             ! 'normal' formula, tau = rho f/8 U^2 --- I think the paper must
+             ! have a type
+             f_g =(8._dp*g/(18._dp*log10(12._dp*max(water-bed, 20.0_dp*3.0_dp*d50)/(3._dp*d50)+0.0_dp)+0.0e+00_dp)**2)
+
+        CASE('colebrook') 
+            ! Colebrook and White, following Chanson (2004)
+            ! f = 0.25/(log10(ks/(3.71*4*d) + 2.51/(Re*sqrt(f))))^2
+            ! where Re = u_star*ks/kinematic_visc 
+            k_sg = 10.0_dp*d50
+            !!Re = max((sqrt(f_g/8.0_dp)*abs(vel))*k_sg/1.0e-06_dp, 10.0_dp)
+            Re = max(abs(vel)*max(water-bed, 20.0_dp*k_sg)/1.0e-06_dp, 10.0_dp)
+            !! Solve through iteration
+            f_glast=f_g+0.001_dp
+            DO i=1,a
+                j=0
+                DO WHILE(abs(f_glast(i) - f_g(i))>1.0e-08_dp)
+                    j=j+1
+                    f_glast(i)=f_g(i)
+                    f_g(i) = 0.25_dp/(log10( k_sg/(3.71_dp*4.0_dp*max(water-bed(i),20._dp*k_sg)) &
+                                  + 2.51_dp/(Re(i)*sqrt(f_glast(i))))  )**2
+                    IF(j>1000) THEN
+                        PRINT*,'f_g did not converge in ', j,' iterations' 
+                        stop
+                    END IF
+                END DO
+            END DO
+
+        CASE('onethird')
+            f_g = f/3._dp
+
+        CASE('one')
+            f_g = f
+        
+        CASE DEFAULT
+            PRINT*, 'ERROR: grain_friction_type does not appear to be specified correctly in calc_shear'
+            stop
+
+    END SELECT
+
+    ! Compute vanrijn's (2007) roughness height 'a'
+    dgravel=0.002_dp !According to van Rijn -- yes this is 2mm, not a typo
+    IF(d50< 0.25_dp*dgravel) THEN
+        f_cs=1.0_dp
+    ELSE
+        f_cs = (0.25_dp*dgravel/ d50)**(1.5_dp)
+    END IF
+    
+    DO i=1,a 
+        si = (vel(i)**2)/((rhos-rho)/rho*g*d50)
+        k_scr = f_cs*d50*(85.0_dp-65.0_dp*tanh(0.015_dp*(si - 150.0_dp)))
+        !a_ref = 0.5_dp*k_scr !, 0.01_dp*(water-bed(i))) !Reference level (m) 
+        !a_ref = max(0.01_dp, 0.5_dp*k_scr) !, 0.01_dp*(water-bed(i))) !Reference level (m) 
+        a_ref(i) = min(max(0.5_dp*k_scr, 0.01_dp*(water-bed(i))),0.5_dp*(water-bed(i))) !Reference level (m) 
+    END DO
+    
+
+END SUBROUTINE calc_friction
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -3640,205 +3781,6 @@ END SUBROUTINE dynamic_sus_dist
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!
-SUBROUTINE calc_friction(friction_type, grain_friction_type, rough_coef, water,&
-                            a, bed, vel, man_nveg,d50,veg_ht, rhos, rho, g, f,&
-                            vegdrag,f_g, dsand, counter, a_ref) 
-    INTEGER, INTENT(IN):: a, counter
-    CHARACTER(LEN=20), INTENT(IN):: friction_type, grain_friction_type
-    REAL(dp), INTENT(IN):: rough_coef, water, man_nveg, d50, veg_ht, rhos, rho, g, dsand
-    REAL(dp), INTENT(IN):: bed, vel
-    REAL(dp), INTENT(IN OUT):: f, vegdrag, f_g, a_ref
-
-    DIMENSION bed(a), vel(a), f(a), vegdrag(a), f_g(a), a_ref(a)
-    
-    !INPUT: Various friction related parameters
-    !PURPOSE: calculate the value of the friction parameters 'f' and 'vegdrag'
-    !and 'f_g' (which is the grain related roughness)
-    
-    !LOCAL VARIABLES
-    REAL(dp)::ks, f_tmp(a), Re(a), f_glast(a)
-    REAL(dp):: dgravel, dsilt, f_cs, si, k_scr, k_scmr, k_scd, f_fs, k_sc, k_sg
-    INTEGER:: i, j
-    REAL(dp):: onethird = (1.0_dp/3.0_dp)
-
-
-    
-    !f(1) = -9999.0_dp !Trick to catch errors in setting the variable 'friction_type' 
-   
-
-    ! Friction factors
-    SELECT CASE(friction_type)
-    !IF(friction_type == 'manning') THEN
-        CASE('manning')
-            ! Manning style friction
-            DO i= 1, a
-                !f(i)= rough_coef**2*g*8._dp/(max( water-bed(i),200._dp*d50)**(onethird))!
-                f(i)= rough_coef**2*g*8._dp/(max( water-bed(i),1.0e-08_dp)**(onethird))!
-            END DO 
-
-            ! Now spatially average the friction
-            !DO i = 2, a-1
-            !    f_tmp(i) = 0.25_dp*(2.0_dp*f(i) + f(i+1) + f(i-1)) ! Average value of f in a cell centred at i 
-            !END DO
-            !    f_tmp(1) = 0.25_dp*(3.0_dp*f(1) + f(1+1))
-            !    f_tmp(a) = 0.25_dp*(3.0_dp*f(a) + f(a-1))
-           
-            !    f = f_tmp 
-    !END IF
-        CASE('darcy')
-    !IF(friction_type == 'darcy') THEN
-            !Darcy-weisbach style friction factor
-            f= rough_coef 
-    !END IF !m
-        CASE('ks') 
-    !IF(friction_type == 'ks') THEN
-            ! Roughness height style friction factor
-            ks = rough_coef
-
-            DO i=1,a
-            !f(i) = 8._dp*g/(18.0_dp*log10(12.0_dp*max((water-bed(i)),ks)/ks))**2
-            !f(i) = 8._dp*g/(18.0_dp*log10(12.0_dp*max((water-bed(i)),ks)/ks))**2
-            f(i) = 8.0_dp*(0.4_dp/log(max(water-bed(i), 3.0_dp*ks)/ks - 1.0_dp))**2
-            END DO
-    !END IF
-        CASE('vanrijn') 
-    !IF(friction_type == 'vanrijn') THEN
-            ! van Rijn (2007) friction -- note that I am concerned that there could
-            ! easily be typos in this paper (or in my coding of it!) 
-            ! First need to calculate roughness height
-            dgravel=0.002_dp !According to van Rijn -- yes this is 2mm, not a typo
-            dsilt = 0.000032_dp !According to van Rijn -- yes this is 32 micro m, not a typo
-
-            !Useful fudge constants f_cs, f_fs
-            f_cs = min( (0.25_dp*dgravel/ d50)**(1.5_dp), 1.0_dp)
-            f_fs = min(d50/(1.5_dp*dsand),1.0_dp) 
-
-            DO i = 1, a
-                si = (vel(i)**2)/((rhos-rho)/rho*g*d50)
-
-                ! Roughness height due to ripples, eqn 5e
-                k_scr = f_cs*d50*(85.0_dp-65.0_dp*tanh(0.015_dp*(si - 150.0_dp)))
-                k_scr = max(k_scr, 20.0_dp*dsilt) !Lower limit according to text
-
-
-                !Roughness height due to mega_ripples - eqn 6e
-                !This seems to have a discontinuity, so I cut it for now.
-                PRINT*, 'ERROR: Mega-ripples roughness not yet implemented in vanrijn &
-                            roughness, in calc_friction '
-                stop
-                k_scmr=0.0_dp
-                !k_scmr = 2.0e-05_dp*f_fs*(water-bed(i))*(1.0_dp - exp(-0.05_dp*si))&
-                !            *(550._dp-si)
-                !!6c, 6d, and the next one
-                !IF((si>550.0_dp).and.(d50>=1.5_dp*dsand)) k_scmr = 0.02_dp
-                !IF((si>550.0_dp).and.(d50<1.5_dp*dsand)) k_scmr = 200._dp*d50
-                !IF(d50<dsilt) k_scmr = 0._dp
-                !! In the text, states that k_scmr <= 0.2
-                !k_scmr = min(k_scmr, 0.2_dp)
-
-                !Roughness height due to dunes, eqn 7e -- note van Rijn typo in
-                !variable name
-                k_scd = 8.0e-05_dp*f_fs*(water-bed(i))*(1.0_dp - exp(-0.02_dp*si))*(600._dp-si)            
-                !Eqns 7c, &7d
-                IF((si>600._dp).or.(d50<dsilt))THEN
-                    k_scd=0._dp
-                END IF
-                !In the text, states that k_scd<1.0m
-                k_scd = min(k_scd, 1.0)
-
-                ! Total physical current roughness
-                k_sc = sqrt(k_scr**2 + k_scmr**2 + k_scd**2)        
-
-                ! Friction factor
-                f(i) =(8._dp*g/(18._dp*log10(12._dp*max(water-bed(i), k_sc)/(k_sc)))**2)  
-
-                IF((mod(counter,10000).eq.0).and.(i.eq.(a/2))) THEN
-                    print*, 'Roughnesses in channel centre:', k_scr, k_scmr, k_scd, k_sc, f(i), & 
-                        'depth', water-bed(i), 'si', (vel(i)**2)/((rhos-rho)/rho*g*d50)
-                END IF
-
-            END DO
-    
-        CASE DEFAULT
-            PRINT*, 'ERROR -- friction_type does not appear to be correctly specified in calc_shear'
-            stop
-        
-    END SELECT
-
-    ! Vegetation drag
-    WHERE (bed > veg_ht)
-            vegdrag= man_nveg**2*g*8._dp 
-    ELSEWHERE
-            vegdrag=0._dp
-    END WHERE
-        
-
-    ! Grain roughness
-    SELECT CASE (grain_friction_type)
-        CASE('vanrijn')
-            ! Van Rijn, fully turbulent flow
-             ! NOTE THAT vanrijn writes that tau = 0.5*f*rho*U^2 -- however, his
-             ! data in table2 of the paper are better predicted using the
-             ! 'normal' formula, tau = rho f/8 U^2 --- I think the paper must
-             ! have a type
-             f_g =(8._dp*g/(18._dp*log10(12._dp*max(water-bed, 20.0_dp*3.0_dp*d50)/(3._dp*d50)+0.0_dp)+0.0e+00_dp)**2)
-
-        CASE('colebrook') 
-            ! Colebrook and White, following Chanson (2004)
-            ! f = 0.25/(log10(ks/(3.71*4*d) + 2.51/(Re*sqrt(f))))^2
-            ! where Re = u_star*ks/kinematic_visc 
-            k_sg = 10.0_dp*d50
-            !!Re = max((sqrt(f_g/8.0_dp)*abs(vel))*k_sg/1.0e-06_dp, 10.0_dp)
-            Re = max(abs(vel)*max(water-bed, 20.0_dp*k_sg)/1.0e-06_dp, 10.0_dp)
-            !! Solve through iteration
-            f_glast=f_g+0.001_dp
-            DO i=1,a
-                j=0
-                DO WHILE(abs(f_glast(i) - f_g(i))>1.0e-08_dp)
-                    j=j+1
-                    f_glast(i)=f_g(i)
-                    f_g(i) = 0.25_dp/(log10( k_sg/(3.71_dp*4.0_dp*max(water-bed(i),20._dp*k_sg)) &
-                                  + 2.51_dp/(Re(i)*sqrt(f_glast(i))))  )**2
-                    IF(j>1000) THEN
-                        PRINT*,'f_g did not converge in ', j,' iterations' 
-                        stop
-                    END IF
-                END DO
-            END DO
-
-        CASE('onethird')
-            f_g = f/3._dp
-
-        CASE('one')
-            f_g = f
-        
-        CASE DEFAULT
-            PRINT*, 'ERROR: grain_friction_type does not appear to be specified correctly in calc_shear'
-            stop
-
-    END SELECT
-
-    ! Compute vanrijn's (2007) roughness height 'a'
-    dgravel=0.002_dp !According to van Rijn -- yes this is 2mm, not a typo
-    IF(d50< 0.25_dp*dgravel) THEN
-        f_cs=1.0_dp
-    ELSE
-        f_cs = (0.25_dp*dgravel/ d50)**(1.5_dp)
-    END IF
-    
-    DO i=1,a 
-        si = (vel(i)**2)/((rhos-rho)/rho*g*d50)
-        k_scr = f_cs*d50*(85.0_dp-65.0_dp*tanh(0.015_dp*(si - 150.0_dp)))
-        !a_ref = 0.5_dp*k_scr !, 0.01_dp*(water-bed(i))) !Reference level (m) 
-        !a_ref = max(0.01_dp, 0.5_dp*k_scr) !, 0.01_dp*(water-bed(i))) !Reference level (m) 
-        a_ref(i) = min(max(0.5_dp*k_scr, 0.01_dp*(water-bed(i))),0.5_dp*(water-bed(i))) !Reference level (m) 
-    END DO
-    
-
-END SUBROUTINE calc_friction
-!!!!!!!!!!!!!!!!!!!!!!!!!
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!
 REAL(dp) FUNCTION rouse_int(z,d_aref)
     ! Suppose that Cbar = cbed*K
     ! Where Cbar is the depth-averaged sediment concentration
@@ -3953,6 +3895,7 @@ SUBROUTINE int_epsy_f(epsy_model,sus_vert_prof,&
     ustar_tmp(0)   = 0.0_dp
     ustar_tmp(a+1) = 0.0_dp
 
+    ! Loop through (0.5, 1.5, ... a+0.5) to compute integrals
     DO i=1,a+1
 
         ! Define depth, ustar, bed, epsz, at i-1/2
@@ -3980,7 +3923,8 @@ SUBROUTINE int_epsy_f(epsy_model,sus_vert_prof,&
             epsy(j) = 0.24*d*us
 
             ! df/dy = df/deps_z * deps_z/dy + df/dbed*dbed/dy
-            df_dy(j) = -wset*(z_tmp-bedh)/eps_z**2*f(j)*depsz_dy + wset/eps_z*f(j)*dbed_dy
+            df_dy(j) = -wset*(z_tmp-bedh)/eps_z**2*f(j)*depsz_dy + &
+                        wset/eps_z*f(j)*dbed_dy
         END DO 
 
         !Integral (epsy*f) dz
