@@ -1,8 +1,9 @@
 Module Pizzutotry
-!use matrix_solvers
+! Module to compute the shear using Pizzuto's approach
 
-INTEGER, PARAMETER, Private  :: dp = SELECTED_REAL_KIND(12, 60)
 
+!Module of important constants
+use global_defs
 
 contains
 

@@ -1,12 +1,18 @@
-PROGRAM crosser
+PROGRAM driver_xsect
+! Program to run the cross-sectional evolution
 
-USE crosssection !Module with most of the key routines
+USE global_defs !Module with some fundamental constants
+USE hydro_xsect !cross-sectional hydrodynamics
+USE suspended_xsect ! cross-sectional suspended sediment distribution
+USE bed_xsect ! cross-sectional sediment transport / bed evolution
+USE util_various ! Random utilities that don't fit nearly elsewhere
+
 IMPLICIT NONE
 ! Initialise variables -- there is no order to this, and some variables may be
 ! unused
 INTEGER:: nos, i,j, l, u, n, layers, ii, ind(1), indlast, Q_loop, jj, &
           writfreq, jmax, iii, iii2
-REAL(dp):: wslope, ar, Q, pi=atan(1.0_dp)*4._dp,  t, &
+REAL(dp):: wslope, ar, Q, t, &
            ys,bed, water, waterM, dists, tau,ks,tbst, Qe, Qbed, Qd, &
             f, aa, bb, cc, multa, bedold, &
             recrd,v, bedlast, hss, tss, ddd, hss2, handy, dqbeddx, &
@@ -779,7 +785,7 @@ close(8)
 close(9)
 close(10)
 
-End program      
+END PROGRAM      
 
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
