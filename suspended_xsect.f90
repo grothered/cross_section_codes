@@ -329,15 +329,13 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
         
         !! d/dy ( cb*INT(epsy*df/dy )dz  )
         IF(i<a) THEN
-            !Estimate of 1/dy_outer*(eddify* dbed/dy *cb) at i+1/2
-            M1_upper(i) = M1_upper(i) - 0.5_dp*tmp1*int_edif_dfdy(i)*(depth(i+1)/zetamult(i+1))  ! Note that depth(i)/zetamult(i)*Cbar = cb
-            M1_diag(i)  = M1_diag(i)  - 0.5_dp*tmp1*int_edif_dfdy(i)*(depth(i)/zetamult(i))
+            M1_upper(i) = M1_upper(i) - 0.5_dp*tmp1*int_edif_dfdy(i+1)*(depth(i+1)/zetamult(i+1))  ! Note that depth(i)/zetamult(i)*Cbar = cb
+            M1_diag(i)  = M1_diag(i)  - 0.5_dp*tmp1*int_edif_dfdy(i+1)*(depth(i)/zetamult(i))
         END IF
         
         IF(i>1) THEN
-            !Estimate of 1/dy_outer*(eddify*dbed/dy*cb) at i-1/2
-            M1_diag(i)   = M1_diag(i)   + 0.5_dp*tmp1*int_edif_dfdy(i-1)*(depth(i)/zetamult(i))  ! Note that depth(i)/zetamult(i)*Cbar = cb
-            M1_lower(i)  = M1_lower(i)  + 0.5_dp*tmp1*int_edif_dfdy(i-1)*(depth(i-1)/zetamult(i-1))
+            M1_diag(i)   = M1_diag(i)   + 0.5_dp*tmp1*int_edif_dfdy(i)*(depth(i)/zetamult(i))  ! Note that depth(i)/zetamult(i)*Cbar = cb
+            M1_lower(i)  = M1_lower(i)  + 0.5_dp*tmp1*int_edif_dfdy(i)*(depth(i-1)/zetamult(i-1))
         END IF 
 
     END DO
@@ -651,7 +649,7 @@ SUBROUTINE int_epsy_f(epsy_model,sus_vert_prof,&
             epsy(j) = 0.24*d*us
 
             ! df/dy = df/deps_z * deps_z/dy + df/dbed*dbed/dy
-            df_dy(j) = -wset*(z_tmp-bedh)/eps_z**2*f(j)*depsz_dy + &
+            df_dy(j) = +wset*(z_tmp-bedh)/eps_z**2*f(j)*depsz_dy + &
                         wset/eps_z*f(j)*dbed_dy
         END DO 
 
