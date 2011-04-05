@@ -278,7 +278,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
             call int_epsy_f(c1, c2, a, ys, bed, ysl, ysu,&
                              bedl, bedu, water, sqrt(abs(tau))/rho, wset, int_edif_f, &
                              int_edif_dfdy)
-            !print*, counter 
+            print*, counter 
             !Do j=1,a+1
             !    print*, int_edif_f(j), int_edif_dfdy(j)
             !END DO
