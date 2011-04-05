@@ -1,27 +1,31 @@
 #I'll try a makefile
 
-model: Pizzutotry_correction.o shionocros.o  shionoprog2.f90 
+model: global_defs.o util_various.o bed_xsect.o suspended_xsect.o hydro_xsect.o Pizzutotry_correction.o shionocros.o driver_xsect.f90 
 	gfortran -O3 -o $@ $^ lapack_gf_LINUX.a blas_gf_LINUX.a libslatec_gf.a
-#	gfortran -O3 -o model Pizzutotry_correction.o shionocros.o shionoprog2.f90 lapack_gf_LINUX.a blas_gf_LINUX.a libslatec_gf.a
-	
-#Pizzutotry_correction.mod: Pizzutotry_correction.o Pizzutotry_correction.f90
-#	gfortran    -c  -O3 Pizzutotry_correction.f90 
 
-#shionomodmovs24.mod: Pizzutotry_correction.mod shionocros.o shionocros.f90
-#	gfortran    -c  -O3 shionocros.f90
-
+#model: global_defs.o Pizzutotry_correction.o shionocros.o driver_xsect.f90 
+#	gfortran -O3 -o $@ $^ lapack_gf_LINUX.a blas_gf_LINUX.a libslatec_gf.a
 
 Pizzutotry_correction.o: Pizzutotry_correction.f90
-	gfortran -c -O3 Pizzutotry_correction.f90
+	gfortran -c -O3  $^
+
+#shionocros.o: shionocros.f90
 #	gfortran -c -O3 $^
 
-shionocros.o: Pizzutotry_correction.o shionocros.f90
-	gfortran -c -O3 shionocros.f90
-#	gfortran -c -O3 $^
+hydro_xsect.o: hydro_xsect.f90
+	gfortran -c -O3 $^
 
-#driver2.o: 
+suspended_xsect.o: suspended_xsect.f90
+	gfortran -c -O3 $^
 
-#shionomodmovS2.mod:  matrix_solvers.o mrgrnk.o shionomodmovS2.o
-#	gfortran    -c  
+bed_xsect.o: bed_xsect.f90
+	gfortran -c -O3 $^
+
+util_various.o: util_various.f90
+	gfortran -c -O3 $^
+
+global_defs.o: global_defs.f90
+	gfortran -c -O3 $^
+
 
 
