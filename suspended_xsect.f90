@@ -32,7 +32,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     DIMENSION ys(a), bed(a), tau(a),vel(a), Qe(a), cb(a), Cbar(a),Qbed(a), a_ref(a) 
 
     ! LOCAL VARIABLES
-    INTEGER:: i, info
+    INTEGER:: i, info, j
     LOGICAL:: halt
     REAL(dp):: depth(0:a+1), eddif_y(0:a+1), eddif_z(a), zetamult(0:a+1), vd(0:a+1), ys_temp(0:a+1)
     REAL(dp):: M1_lower(a), M1_diag(a), M1_upper(a), M1_upper2(a), M1_lower2(a)
@@ -40,10 +40,11 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     REAL(dp):: tmp1, dy, dy_outer, xlen, tmp2, Cref, z
     REAL(dp):: dQdx, dhdt, Cbar_old(a), dUd_dx(0:a+1)
     REAL(dp):: DLF(a), DF(a), DUF(a), DU2(a),rcond, ferr, berr, work(3*a), XXX(a, 1)
-    REAL(dp):: bandmat(5,a), AFB(7,a), RRR(a), CCC(a)
+    REAL(dp):: bandmat(5,a), AFB(7,a), RRR(a), CCC(a), int_edif_f(a+1), int_edif_dfdy(a+1)
     INTEGER::  IPV(a), iwork(a)   
     LOGICAL:: const_mesh
     CHARACTER(1):: EQUED
+    CHARACTER(5):: c1, c2
     ! This routine calculates C, Cbar in units m^3/m^3 --- however, elsewhere
     ! they are in kg/m^3 --- so we convert here, and convert back at the end of
     ! the routine
@@ -254,44 +255,89 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
         ! Calculate a centred dy
         dy_outer = 0.5*(ys_temp(i+1) - ys_temp(i-1))
         
-        ! d/dy ( eddify*d(depth Cbar)/dy)
-        
-        tmp1 = 0.5_dp*(eddif_y(i+1)+eddif_y(i))/(dy_outer*(ys_temp(i+1) - ys_temp(i)))
-        IF(i<a) THEN
-            ! 2 point derivative approx
-            M1_upper(i) = M1_upper(i) - tmp1*depth(i+1)
-            M1_diag(i)  = M1_diag(i)  + tmp1*depth(i)
-        END IF
+        !! d/dy ( eddify*d(depth Cbar)/dy)
+        !
+        !tmp1 = 0.5_dp*(eddif_y(i+1)+eddif_y(i))/(dy_outer*(ys_temp(i+1) - ys_temp(i)))
+        !IF(i<a) THEN
+        !    ! 2 point derivative approx
+        !    M1_upper(i) = M1_upper(i) - tmp1*depth(i+1)
+        !    M1_diag(i)  = M1_diag(i)  + tmp1*depth(i)
+        !END IF
  
-        tmp1 = 0.5_dp*(eddif_y(i) + eddif_y(i-1))/((ys_temp(i) - ys_temp(i-1))*dy_outer)
+        !tmp1 = 0.5_dp*(eddif_y(i) + eddif_y(i-1))/((ys_temp(i) - ys_temp(i-1))*dy_outer)
+        !IF(i>1) THEN
+        !    ! 2 point derivative approx
+        !    M1_diag(i)  = M1_diag(i)  + tmp1*depth(i)
+        !    M1_lower(i) = M1_lower(i) - tmp1*depth(i-1)
+        !END IF
+       
+        IF(i==1) THEN
+            ! Calculate important integration factors
+            c1='const'
+            c2='expon'
+            call int_epsy_f(c1, c2, a, ys, bed, ysl, ysu,&
+                             bedl, bedu, water, sqrt(abs(tau))/rho, wset, int_edif_f, &
+                             int_edif_dfdy)
+            !print*, counter 
+            !Do j=1,a+1
+            !    print*, int_edif_f(j), int_edif_dfdy(j)
+            !END DO
+            !int_edif_f = -int_edif_f
+            !int_edif_dfdy = -int_edif_dfdy
+        END IF
+
+        ! d/dy [ dcb/dy*(INT(eddify*f) dz) ]
+        tmp1 = 1.0_dp/dy_outer
+        tmp2 = 1.0_dp/(ys_temp(i+1)-ys_temp(i))
+        IF(i<a) THEN
+            ! 2 point derivative approx -- not cb = Cbar*depth/zetamult
+            M1_upper(i) = M1_upper(i) - tmp1*tmp2*int_edif_f(i+1)*depth(i+1)/zetamult(i+1)
+            M1_diag(i)  = M1_diag(i)  + tmp1*tmp2*int_edif_f(i+1)*depth(i)/zetamult(i)
+        END IF
+
+        tmp2 = 1.0_dp/(ys_temp(i)-ys_temp(i-1))
         IF(i>1) THEN
             ! 2 point derivative approx
-            M1_diag(i)  = M1_diag(i)  + tmp1*depth(i)
-            M1_lower(i) = M1_lower(i) - tmp1*depth(i-1)
+            M1_diag(i)  = M1_diag(i)  + tmp1*tmp2*int_edif_f(i)*depth(i)/zetamult(i)
+            M1_lower(i) = M1_lower(i) - tmp1*tmp2*int_edif_f(i)*depth(i-1)/zetamult(i-1)
         END IF
+        
 
-        ! d/dy ( eddify* dbed/dy * cb)
+        !! d/dy ( eddify* dbed/dy * cb)
 
-        ! First compute eddify*dbed/dy at i+1/2
-        tmp1 = 0.5_dp*(eddif_y(i+1)+eddif_y(i))
-        tmp1 = tmp1*( -(depth(i+1)-depth(i) )/(ys_temp(i+1)-ys_temp(i)))
-        tmp1 = tmp1/dy_outer
+        !! First compute eddify*dbed/dy at i+1/2
+        !tmp1 = 0.5_dp*(eddif_y(i+1)+eddif_y(i))
+        !tmp1 = tmp1*( -(depth(i+1)-depth(i) )/(ys_temp(i+1)-ys_temp(i)))
+        !tmp1 = tmp1/dy_outer
 
+        !IF(i<a) THEN
+        !    !Estimate of 1/dy_outer*(eddify* dbed/dy *cb) at i+1/2
+        !    M1_upper(i) = M1_upper(i) - 0.5_dp*tmp1*(depth(i+1)/zetamult(i+1))  ! Note that depth(i)/zetamult(i)*Cbar = cb
+        !    M1_diag(i)  = M1_diag(i)  - 0.5_dp*tmp1*(depth(i)/zetamult(i))
+        !END IF
+
+        !! Compute eddify*dbed/dy at i-1/2
+        !tmp1 = 0.5_dp*(eddif_y(i)+eddif_y(i-1))
+        !tmp1 = tmp1*( -(depth(i)-depth(i-1) )/(ys_temp(i)-ys_temp(i-1)))
+        !tmp1 = tmp1/dy_outer
+
+        !IF(i>1) THEN
+        !    !Estimate of 1/dy_outer*(eddify*dbed/dy*cb) at i-1/2
+        !    M1_diag(i)   = M1_diag(i)   + 0.5_dp*tmp1*(depth(i)/zetamult(i))  ! Note that depth(i)/zetamult(i)*Cbar = cb
+        !    M1_lower(i)  = M1_lower(i)  + 0.5_dp*tmp1*(depth(i-1)/zetamult(i-1))
+        !END IF 
+        
+        !! d/dy ( cb*INT(epsy*df/dy )dz  )
         IF(i<a) THEN
             !Estimate of 1/dy_outer*(eddify* dbed/dy *cb) at i+1/2
-            M1_upper(i) = M1_upper(i) - 0.5_dp*tmp1*(depth(i+1)/zetamult(i+1))  ! Note that depth(i)/zetamult(i)*Cbar = cb
-            M1_diag(i)  = M1_diag(i)  - 0.5_dp*tmp1*(depth(i)/zetamult(i))
+            M1_upper(i) = M1_upper(i) - 0.5_dp*tmp1*int_edif_dfdy(i)*(depth(i+1)/zetamult(i+1))  ! Note that depth(i)/zetamult(i)*Cbar = cb
+            M1_diag(i)  = M1_diag(i)  - 0.5_dp*tmp1*int_edif_dfdy(i)*(depth(i)/zetamult(i))
         END IF
-
-        ! Compute eddify*dbed/dy at i-1/2
-        tmp1 = 0.5_dp*(eddif_y(i)+eddif_y(i-1))
-        tmp1 = tmp1*( -(depth(i)-depth(i-1) )/(ys_temp(i)-ys_temp(i-1)))
-        tmp1 = tmp1/dy_outer
-
+        
         IF(i>1) THEN
             !Estimate of 1/dy_outer*(eddify*dbed/dy*cb) at i-1/2
-            M1_diag(i)   = M1_diag(i)   + 0.5_dp*tmp1*(depth(i)/zetamult(i))  ! Note that depth(i)/zetamult(i)*Cbar = cb
-            M1_lower(i)  = M1_lower(i)  + 0.5_dp*tmp1*(depth(i-1)/zetamult(i-1))
+            M1_diag(i)   = M1_diag(i)   + 0.5_dp*tmp1*int_edif_dfdy(i-1)*(depth(i)/zetamult(i))  ! Note that depth(i)/zetamult(i)*Cbar = cb
+            M1_lower(i)  = M1_lower(i)  + 0.5_dp*tmp1*int_edif_dfdy(i-1)*(depth(i-1)/zetamult(i-1))
         END IF 
 
     END DO
@@ -529,7 +575,7 @@ END FUNCTION rouse_int
 !!!!!!!!!!!!!!!!!!!!!!!!!!!
 SUBROUTINE int_epsy_f(epsy_model,sus_vert_prof,& 
                       a,ys,bed,ysl, ysu, bedl, bedu, &
-                      elev, ustar,wset, output1, output2)
+                      water, ustar,wset, int_edif_f, int_edif_dfdy)
     ! PURPOSE: 
     !   To calculate
     !
@@ -548,20 +594,21 @@ SUBROUTINE int_epsy_f(epsy_model,sus_vert_prof,&
     ! cb*INT(epsy*df/dy) dz + dcb/dy*INT(epsy*f) dz
     !
     ! OUTPUTS: 
-    !   output1 = Integral ( epsy*f) dz, evaluated between grid points (i.e. 0.5, 1.5, ...a+0.5)
-    !   output2 = Integral ( epsy*df/dy) dz, evaluated between grid points (i.e. 0.5, 1.5, ...a+0.5)
+    !   int_edif_f = Integral ( epsy*f) dz, evaluated between grid points (i.e. 0.5, 1.5, ...a+0.5)
+    !   int_edif_dfdy = Integral ( epsy*df/dy) dz, evaluated between grid points (i.e. 0.5, 1.5, ...a+0.5)
     !
     INTEGER, INTENT(IN):: a
-    CHARACTER(20), INTENT(IN):: epsy_model, sus_vert_prof
-    REAL(dp), INTENT(IN):: ys, bed, ysl, ysu, bedl, bedu, ustar, elev, wset
-    REAL(dp), INTENT(OUT):: output1, output2
-    DIMENSION ys(a), bed(a), ustar(a), output1(a+1), output2(a+1)
+    CHARACTER(len=5), INTENT(IN):: epsy_model, sus_vert_prof
+    REAL(dp), INTENT(IN):: ys, bed, ysl, ysu, bedl, bedu, ustar, water, wset
+    REAL(dp), INTENT(OUT):: int_edif_f, int_edif_dfdy
+    DIMENSION ys(a), bed(a), ustar(a), int_edif_f(a+1), int_edif_dfdy(a+1)
 
     ! Local variables
     INTEGER:: i, j
 
-    REAL(dp):: d, us,bedh, f(100), epsy(100), z_tmp, bed_tmp(0:a+1), ustar_tmp(0:a+1), &
-                eps_z, ys_tmp(0:a+1), dbed_dy, depsz_dy, df_dy(a+1)
+    REAL(dp):: d, us,bedh, f(100), epsy(100), df_dy(100), z_tmp, &
+                bed_tmp(0:a+1), ustar_tmp(0:a+1), &
+                eps_z, ys_tmp(0:a+1), dbed_dy, depsz_dy
 
     ! Predefine bed_tmp, ys, and ustar, including boundary values
     bed_tmp(1:a) = bed
@@ -580,17 +627,17 @@ SUBROUTINE int_epsy_f(epsy_model,sus_vert_prof,&
     DO i=1,a+1
 
         ! Define depth, ustar, bed, epsz, at i-1/2
-        d = max(elev - 0.5_dp*(bed_tmp(i)+bed_tmp(i-1)), 0.0_dp) 
+        d = max(water - 0.5_dp*(bed_tmp(i)+bed_tmp(i-1)), 0.0_dp) 
         us= 0.5_dp*(ustar_tmp(i)+ustar_tmp(i-1))
         bedh = 0.5_dp*(bed_tmp(i)+bed_tmp(i-1))
-        eps_z =0.5_dp*( 0.1_dp*ustar_tmp(i)*max(elev-bed_tmp(i),0.0_dp) + &
-                        0.1_dp*ustar_tmp(i-1)*max(elev-bed_tmp(i-1),0.0_dp)) 
+        eps_z =0.5_dp*( 0.1_dp*ustar_tmp(i)*max(water-bed_tmp(i),0.0_dp) + &
+                        0.1_dp*ustar_tmp(i-1)*max(water-bed_tmp(i-1),0.0_dp)) 
  
         ! Define depsz/dy and dbed/dy at i-1/2
-        depsz_dy = ( 0.1_dp*ustar_tmp(i)*max(elev-bed_tmp(i),0.0_dp) - &
-                     0.1_dp*ustar_tmp(i-1)*max(elev-bed_tmp(i-1),0.0_dp) &
+        depsz_dy = ( 0.1_dp*ustar_tmp(i)*max(water-bed_tmp(i),0.0_dp) - &
+                     0.1_dp*ustar_tmp(i-1)*max(water-bed_tmp(i-1),0.0_dp) &
                      )/(ys_tmp(i)-ys_tmp(i-1))
-        dbed_dy = (bed_tmp(i) - bed_tmp(i-1))/(ys(i)-ys(i-1)) 
+        dbed_dy = (bed_tmp(i) - bed_tmp(i-1))/(ys_tmp(i)-ys_tmp(i-1)) 
          
         ! Create vertical suspended sediment profile
         DO j=1,100
@@ -609,10 +656,10 @@ SUBROUTINE int_epsy_f(epsy_model,sus_vert_prof,&
         END DO 
 
         !Integral (epsy*f) dz
-        output1(i) = sum(epsy*f)*d/(1.0_dp*100)
+        int_edif_f(i) = sum(epsy*f)*d/(1.0_dp*100)
         
         !Integral (epsy*df/dy) dz
-        output2(i) = sum(epsy*df_dy)*d/(1.0_dp*100)
+        int_edif_dfdy(i) = sum(epsy*df_dy)*d/(1.0_dp*100)
 
     END DO
     
