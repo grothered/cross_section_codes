@@ -254,90 +254,95 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     DO i = 1, a
         ! Calculate a centred dy
         dy_outer = 0.5*(ys_temp(i+1) - ys_temp(i-1))
-        
-        !! d/dy ( eddify*d(depth Cbar)/dy)
-        !
-        !tmp1 = 0.5_dp*(eddif_y(i+1)+eddif_y(i))/(dy_outer*(ys_temp(i+1) - ys_temp(i)))
-        !IF(i<a) THEN
-        !    ! 2 point derivative approx
-        !    M1_upper(i) = M1_upper(i) - tmp1*depth(i+1)
-        !    M1_diag(i)  = M1_diag(i)  + tmp1*depth(i)
-        !END IF
+        IF(.FALSE.) THEN
+            ! Method with vertically constant eddy diffusivity
+    
+            ! d/dy ( eddify*d(depth Cbar)/dy)
+            
+            tmp1 = 0.5_dp*(eddif_y(i+1)+eddif_y(i))/(dy_outer*(ys_temp(i+1) - ys_temp(i)))
+            IF(i<a) THEN
+                ! 2 point derivative approx
+                M1_upper(i) = M1_upper(i) - tmp1*depth(i+1)
+                M1_diag(i)  = M1_diag(i)  + tmp1*depth(i)
+            END IF
+     
+            tmp1 = 0.5_dp*(eddif_y(i) + eddif_y(i-1))/((ys_temp(i) - ys_temp(i-1))*dy_outer)
+            IF(i>1) THEN
+                ! 2 point derivative approx
+                M1_diag(i)  = M1_diag(i)  + tmp1*depth(i)
+                M1_lower(i) = M1_lower(i) - tmp1*depth(i-1)
+            END IF
+            
+            ! d/dy ( eddify* dbed/dy * cb)
+
+            ! First compute eddify*dbed/dy at i+1/2
+            tmp1 = 0.5_dp*(eddif_y(i+1)+eddif_y(i))
+            tmp1 = tmp1*( -(depth(i+1)-depth(i) )/(ys_temp(i+1)-ys_temp(i)))
+            tmp1 = tmp1/dy_outer
+
+            IF(i<a) THEN
+                !Estimate of 1/dy_outer*(eddify* dbed/dy *cb) at i+1/2
+                M1_upper(i) = M1_upper(i) - 0.5_dp*tmp1*(depth(i+1)/zetamult(i+1))  ! Note that depth(i)/zetamult(i)*Cbar = cb
+                M1_diag(i)  = M1_diag(i)  - 0.5_dp*tmp1*(depth(i)/zetamult(i))
+            END IF
+
+            ! Compute eddify*dbed/dy at i-1/2
+            tmp1 = 0.5_dp*(eddif_y(i)+eddif_y(i-1))
+            tmp1 = tmp1*( -(depth(i)-depth(i-1) )/(ys_temp(i)-ys_temp(i-1)))
+            tmp1 = tmp1/dy_outer
+
+            IF(i>1) THEN
+                !Estimate of 1/dy_outer*(eddify*dbed/dy*cb) at i-1/2
+                M1_diag(i)   = M1_diag(i)   + 0.5_dp*tmp1*(depth(i)/zetamult(i))  ! Note that depth(i)/zetamult(i)*Cbar = cb
+                M1_lower(i)  = M1_lower(i)  + 0.5_dp*tmp1*(depth(i-1)/zetamult(i-1))
+            END IF
  
-        !tmp1 = 0.5_dp*(eddif_y(i) + eddif_y(i-1))/((ys_temp(i) - ys_temp(i-1))*dy_outer)
-        !IF(i>1) THEN
-        !    ! 2 point derivative approx
-        !    M1_diag(i)  = M1_diag(i)  + tmp1*depth(i)
-        !    M1_lower(i) = M1_lower(i) - tmp1*depth(i-1)
-        !END IF
-       
-        IF(i==1) THEN
-            ! Calculate important integration factors
-            c1='const'
-            c2='expon'
-            call int_epsy_f(c1, c2, a, ys, bed, ysl, ysu,&
-                             bedl, bedu, water, sqrt(abs(tau))/rho, wset, int_edif_f, &
-                             int_edif_dfdy)
-            print*, counter 
-            !Do j=1,a+1
-            !    print*, int_edif_f(j), int_edif_dfdy(j)
-            !END DO
-            !int_edif_f = -int_edif_f
-            !int_edif_dfdy = -int_edif_dfdy
+        ELSE
+            ! With numerical integration 
+            IF(i==1) THEN
+                ! Calculate important integration factors
+                c1='const'
+                c2='expon'
+                call int_epsy_f(c1, c2, a, ys, bed, ysl, ysu,&
+                                 bedl, bedu, water, sqrt(abs(tau)/rho), wset, int_edif_f, &
+                                 int_edif_dfdy)
+                !print*, counter 
+                !Do j=1,a+1
+                !    print*, int_edif_f(j), int_edif_dfdy(j)
+                !END DO
+                !int_edif_f = -int_edif_f
+                !int_edif_dfdy = -int_edif_dfdy
+            END IF
+
+            ! d/dy [ dcb/dy*(INT(eddify*f) dz) ]
+            tmp1 = 1.0_dp/dy_outer
+            tmp2 = 1.0_dp/(ys_temp(i+1)-ys_temp(i))
+            IF(i<a) THEN
+                ! 2 point derivative approx -- not cb = Cbar*depth/zetamult
+                M1_upper(i) = M1_upper(i) - tmp1*tmp2*int_edif_f(i+1)*depth(i+1)/zetamult(i+1)
+                M1_diag(i)  = M1_diag(i)  + tmp1*tmp2*int_edif_f(i+1)*depth(i)/zetamult(i)
+            END IF
+
+            tmp2 = 1.0_dp/(ys_temp(i)-ys_temp(i-1))
+            IF(i>1) THEN
+                ! 2 point derivative approx
+                M1_diag(i)  = M1_diag(i)  + tmp1*tmp2*int_edif_f(i)*depth(i)/zetamult(i)
+                M1_lower(i) = M1_lower(i) - tmp1*tmp2*int_edif_f(i)*depth(i-1)/zetamult(i-1)
+            END IF
+            
+
+            
+            !! d/dy ( cb*INT(epsy*df/dy )dz  )
+            IF(i<a) THEN
+                M1_upper(i) = M1_upper(i) - 0.5_dp*tmp1*int_edif_dfdy(i+1)*(depth(i+1)/zetamult(i+1))  ! Note that depth(i)/zetamult(i)*Cbar = cb
+                M1_diag(i)  = M1_diag(i)  - 0.5_dp*tmp1*int_edif_dfdy(i+1)*(depth(i)/zetamult(i))
+            END IF
+            
+            IF(i>1) THEN
+                M1_diag(i)   = M1_diag(i)   + 0.5_dp*tmp1*int_edif_dfdy(i)*(depth(i)/zetamult(i))  ! Note that depth(i)/zetamult(i)*Cbar = cb
+                M1_lower(i)  = M1_lower(i)  + 0.5_dp*tmp1*int_edif_dfdy(i)*(depth(i-1)/zetamult(i-1))
+            END IF 
         END IF
-
-        ! d/dy [ dcb/dy*(INT(eddify*f) dz) ]
-        tmp1 = 1.0_dp/dy_outer
-        tmp2 = 1.0_dp/(ys_temp(i+1)-ys_temp(i))
-        IF(i<a) THEN
-            ! 2 point derivative approx -- not cb = Cbar*depth/zetamult
-            M1_upper(i) = M1_upper(i) - tmp1*tmp2*int_edif_f(i+1)*depth(i+1)/zetamult(i+1)
-            M1_diag(i)  = M1_diag(i)  + tmp1*tmp2*int_edif_f(i+1)*depth(i)/zetamult(i)
-        END IF
-
-        tmp2 = 1.0_dp/(ys_temp(i)-ys_temp(i-1))
-        IF(i>1) THEN
-            ! 2 point derivative approx
-            M1_diag(i)  = M1_diag(i)  + tmp1*tmp2*int_edif_f(i)*depth(i)/zetamult(i)
-            M1_lower(i) = M1_lower(i) - tmp1*tmp2*int_edif_f(i)*depth(i-1)/zetamult(i-1)
-        END IF
-        
-
-        !! d/dy ( eddify* dbed/dy * cb)
-
-        !! First compute eddify*dbed/dy at i+1/2
-        !tmp1 = 0.5_dp*(eddif_y(i+1)+eddif_y(i))
-        !tmp1 = tmp1*( -(depth(i+1)-depth(i) )/(ys_temp(i+1)-ys_temp(i)))
-        !tmp1 = tmp1/dy_outer
-
-        !IF(i<a) THEN
-        !    !Estimate of 1/dy_outer*(eddify* dbed/dy *cb) at i+1/2
-        !    M1_upper(i) = M1_upper(i) - 0.5_dp*tmp1*(depth(i+1)/zetamult(i+1))  ! Note that depth(i)/zetamult(i)*Cbar = cb
-        !    M1_diag(i)  = M1_diag(i)  - 0.5_dp*tmp1*(depth(i)/zetamult(i))
-        !END IF
-
-        !! Compute eddify*dbed/dy at i-1/2
-        !tmp1 = 0.5_dp*(eddif_y(i)+eddif_y(i-1))
-        !tmp1 = tmp1*( -(depth(i)-depth(i-1) )/(ys_temp(i)-ys_temp(i-1)))
-        !tmp1 = tmp1/dy_outer
-
-        !IF(i>1) THEN
-        !    !Estimate of 1/dy_outer*(eddify*dbed/dy*cb) at i-1/2
-        !    M1_diag(i)   = M1_diag(i)   + 0.5_dp*tmp1*(depth(i)/zetamult(i))  ! Note that depth(i)/zetamult(i)*Cbar = cb
-        !    M1_lower(i)  = M1_lower(i)  + 0.5_dp*tmp1*(depth(i-1)/zetamult(i-1))
-        !END IF 
-        
-        !! d/dy ( cb*INT(epsy*df/dy )dz  )
-        IF(i<a) THEN
-            M1_upper(i) = M1_upper(i) - 0.5_dp*tmp1*int_edif_dfdy(i+1)*(depth(i+1)/zetamult(i+1))  ! Note that depth(i)/zetamult(i)*Cbar = cb
-            M1_diag(i)  = M1_diag(i)  - 0.5_dp*tmp1*int_edif_dfdy(i+1)*(depth(i)/zetamult(i))
-        END IF
-        
-        IF(i>1) THEN
-            M1_diag(i)   = M1_diag(i)   + 0.5_dp*tmp1*int_edif_dfdy(i)*(depth(i)/zetamult(i))  ! Note that depth(i)/zetamult(i)*Cbar = cb
-            M1_lower(i)  = M1_lower(i)  + 0.5_dp*tmp1*int_edif_dfdy(i)*(depth(i-1)/zetamult(i-1))
-        END IF 
-
     END DO
 
     !Sanity-check
@@ -630,7 +635,7 @@ SUBROUTINE int_epsy_f(epsy_model,sus_vert_prof,&
         bedh = 0.5_dp*(bed_tmp(i)+bed_tmp(i-1))
         eps_z =0.5_dp*( 0.1_dp*ustar_tmp(i)*max(water-bed_tmp(i),0.0_dp) + &
                         0.1_dp*ustar_tmp(i-1)*max(water-bed_tmp(i-1),0.0_dp)) 
- 
+        eps_z = max(eps_z,1.0e-012_dp) 
         ! Define depsz/dy and dbed/dy at i-1/2
         depsz_dy = ( 0.1_dp*ustar_tmp(i)*max(water-bed_tmp(i),0.0_dp) - &
                      0.1_dp*ustar_tmp(i-1)*max(water-bed_tmp(i-1),0.0_dp) &
