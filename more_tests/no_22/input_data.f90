@@ -62,9 +62,11 @@ alpha=0.000228 !The constant for the erosion formula E= alpha*(tau-taue)/sqrt(ta
 Qbedon=.TRUE. !Is bedload active
 bedload_type='vanrijn' ! 'mpm', 'vanrijn'
 talmon=.FALSE. !Do we use a talmon lateral bedload closure?
-resus_type = 'vanrijn' ! 'cohesive', 'vanrijn'
+resus_type = 'vanrijn'! ! 'cohesive', 'vanrijn', 'smithmac'
 
 susdist = .TRUE. !Do we have a laterally variable suspended load? This can ONLY treat the case of steady state. The total load flux (bedload + spsuended load) is assumed to be integrated_load_flux
+sus_vert_prof='exp' !'exp', 'Rouse'
+epsy_model='Parabola_const' ! 'Constant', 'Parabolic', 'Parabola_const'
 susQbal= .FALSE. !Is there a balance between the lateral flux of suspended load and bedload? Only relevant if susdist=.true.
 integrated_load_flux= -1.0 !The total flux (suspended load + bedload) through the cross-section, in kg/s =  (kg/m^3)*m^2*m/s. Only used if susdist=.true., but NOT in dynamic_sus_dist, which is presently in favour. Hence I set it negative.
 sus2d = .false. !Do we use a fully 2d suspended sediment - this is only applicable to the case with many cross sections strung together - the quasi 2d model.

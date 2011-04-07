@@ -33,7 +33,7 @@ Width = 100.0 !Width of computational domain (m)
 
 no_discharges=1
 Discharges = 29.4
-susconcs = 1.0e-03
+susconcs = 5.0e-03
 friction_type = 'manning'!, 'darcy', 'vanrijn'
 rough_coef=0.027
 grain_friction_type='vanrijn' !'colebrook'!'vanrijn'
@@ -52,7 +52,7 @@ wset = 0.014 ! Settling velocity of sediment in m/s
 voidf = 0.4 ! Void fraction (non sediment fraction) of bed = porosity
 lifttodrag = 0.0 ! Lift to drag coefficient ratio
 hlim = 0.01 ! If the mean depth of the cross section is < hlim (m), then it is treated as dry - so we don't calculate the shear stress
-mor = 10.0 !Morphological factor
+mor = 1.0 !Morphological factor
 rhos = 2600.0 !Density of solid sediment (kg/m^3)
 dsand = 0.000062 ! dsand from van Rijn (2004) bedload formula (m)
 d50 = 0.000149 !0.000062 ! median grain size for bedload formula (m)

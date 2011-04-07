@@ -302,8 +302,8 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
             IF(i==1) THEN
                 ! Calculate important integration factors
                 call int_epsy_f(epsy_model, sus_vert_prof, a, ys, bed, ysl, ysu,&
-                                 bedl, bedu, water, sqrt(abs(tau)/rho), wset, int_edif_f, &
-                                 int_edif_dfdy)
+                                 bedl, bedu, water, sqrt(abs(tau)/rho), wset,a_ref,&
+                                 int_edif_f, int_edif_dfdy)
             END IF
 
             ! d/dy [ dcb/dy*(INT(eddify*f) dz) ]
@@ -570,7 +570,8 @@ END FUNCTION rouse_int
 !!!!!!!!!!!!!!!!!!!!!!!!!!!
 SUBROUTINE int_epsy_f(epsy_model,sus_vert_prof,& 
                       a,ys,bed,ysl, ysu, bedl, bedu, &
-                      water, ustar,wset, int_edif_f, int_edif_dfdy)
+                      water, ustar,wset, a_ref, &
+                      int_edif_f, int_edif_dfdy)
     ! PURPOSE: 
     !   To calculate
     !
@@ -594,16 +595,17 @@ SUBROUTINE int_epsy_f(epsy_model,sus_vert_prof,&
     !
     INTEGER, INTENT(IN):: a
     CHARACTER(len=20), INTENT(IN):: epsy_model, sus_vert_prof
-    REAL(dp), INTENT(IN):: ys, bed, ysl, ysu, bedl, bedu, ustar, water, wset
+    REAL(dp), INTENT(IN):: ys, bed, ysl, ysu, bedl, bedu, ustar, water, wset, a_ref
     REAL(dp), INTENT(OUT):: int_edif_f, int_edif_dfdy
-    DIMENSION ys(a), bed(a), ustar(a), int_edif_f(a+1), int_edif_dfdy(a+1)
+    DIMENSION ys(a), bed(a), ustar(a), int_edif_f(a+1), int_edif_dfdy(a+1), a_ref(a)
 
     ! Local variables
     INTEGER:: i, j
 
     REAL(dp):: d, us,bedh, f(100), epsy(100), df_dy(100), z_tmp(100), &
                 bed_tmp(0:a+1), ustar_tmp(0:a+1), &
-                eps_z, ys_tmp(0:a+1), dbed_dy, depsz_dy
+                eps_z, ys_tmp(0:a+1), dbed_dy, depsz_dy, aref_tmp(0:a+1),&
+                arefh, daref_dy
 
     ! Predefine bed_tmp, ys, and ustar, including boundary values
     bed_tmp(1:a) = bed
@@ -617,21 +619,29 @@ SUBROUTINE int_epsy_f(epsy_model,sus_vert_prof,&
     ustar_tmp(1:a) = ustar
     ustar_tmp(0)   = 0.0_dp
     ustar_tmp(a+1) = 0.0_dp
+    
+    aref_tmp(1:a) = a_ref(1:a)
+    aref_tmp(0)   = 0.0_dp
+    aref_tmp(a+1) = 0.0_dp
 
     ! Loop through (0.5, 1.5, ... a+0.5) to compute integrals
     DO i=1,a+1
 
-        ! Define depth, ustar, bed, epsz, at i-1/2
+        ! Define depth, ustar, bed, aref, epsz, at i-1/2
         d = max(water - 0.5_dp*(bed_tmp(i)+bed_tmp(i-1)), 0.0_dp) 
         us= 0.5_dp*(ustar_tmp(i)+ustar_tmp(i-1))
         bedh = 0.5_dp*(bed_tmp(i)+bed_tmp(i-1))
+        arefh = 0.5_dp*(aref_tmp(i)+aref_tmp(i-1))
+
         eps_z =0.5_dp*( 0.1_dp*ustar_tmp(i)*max(water-bed_tmp(i),0.0_dp) + &
                         0.1_dp*ustar_tmp(i-1)*max(water-bed_tmp(i-1),0.0_dp)) 
         eps_z = max(eps_z,1.0e-012_dp) 
-        ! Define depsz/dy and dbed/dy at i-1/2
+
+        ! Define depsz/dy, daref/dy and dbed/dy at i-1/2
         depsz_dy = ( 0.1_dp*ustar_tmp(i)*max(water-bed_tmp(i),0.0_dp) - &
                      0.1_dp*ustar_tmp(i-1)*max(water-bed_tmp(i-1),0.0_dp) &
                      )/(ys_tmp(i)-ys_tmp(i-1))
+        daref_dy = (aref_tmp(i) - aref_tmp(i-1))/(ys_tmp(i)-ys_tmp(i-1)) 
         dbed_dy = (bed_tmp(i) - bed_tmp(i-1))/(ys_tmp(i)-ys_tmp(i-1)) 
         
 
@@ -651,6 +661,10 @@ SUBROUTINE int_epsy_f(epsy_model,sus_vert_prof,&
 
             CASE('Rouse')
                 print*, 'ROUSE not implemented in int_epsy_f'
+                f = (((water-z_tmp)/(z_tmp-bed_h) ) / &
+                    ( (water -(bed_h +arefh))/arefh ) )**(wset/(0.4_dp*us))
+                ! df_dy = df/dbedh*dbedh/dy + df/aref*daref/dy + df/dus*dus/dy
+                df_dy = NaN
                 stop
 
             CASE DEFAULT
