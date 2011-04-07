@@ -11,7 +11,7 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wset, Qe,lambdacon, &
                                 rho,rhos, g, d50, bedl,bedu, ysl, ysu, cb, Cbar, Qbed, &
-                                sconc, counter, high_order_Cflux, a_ref, sus_vert_prof)
+                                sconc, counter, high_order_Cflux, a_ref, sus_vert_prof, epsy_model)
     ! Calculate the cross-sectional distribution of suspended sediment using
     ! some ideas from /home/gareth/Documents/H_drive_Gareth/Gareth_and_colab
     ! s/Thesis/Hydraulic_morpho_model/channel_cross_section/paper/idea_for_
@@ -27,7 +27,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     REAL(dp), INTENT(IN):: delT, ys, bed, water, waterlast, tau, vel, wset, Qe, lambdacon, rho, rhos,g, & 
                                 d50, bedl, bedu,ysl,ysu, sconc, Q, Qbed, a_ref
     REAL(dp), INTENT(IN OUT):: cb, Cbar ! Near bed suspended sediment concentration, Depth averaged suspended sediment concentration
-    CHARACTER(20), INTENT(IN):: sus_vert_prof
+    CHARACTER(20), INTENT(IN):: sus_vert_prof, epsy_model
     LOGICAL, INTENT(IN):: high_order_Cflux
     DIMENSION ys(a), bed(a), tau(a),vel(a), Qe(a), cb(a), Cbar(a),Qbed(a), a_ref(a) 
 
@@ -44,7 +44,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     INTEGER::  IPV(a), iwork(a)   
     LOGICAL:: const_mesh
     CHARACTER(1):: EQUED
-    CHARACTER(5):: c1, c2
+    !CHARACTER(len=20):: c1, c2
     ! This routine calculates C, Cbar in units m^3/m^3 --- however, elsewhere
     ! they are in kg/m^3 --- so we convert here, and convert back at the end of
     ! the routine
@@ -301,17 +301,9 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
             ! With numerical integration 
             IF(i==1) THEN
                 ! Calculate important integration factors
-                c1='const'
-                c2='expon'
-                call int_epsy_f(c1, c2, a, ys, bed, ysl, ysu,&
+                call int_epsy_f(epsy_model, sus_vert_prof, a, ys, bed, ysl, ysu,&
                                  bedl, bedu, water, sqrt(abs(tau)/rho), wset, int_edif_f, &
                                  int_edif_dfdy)
-                !print*, counter 
-                !Do j=1,a+1
-                !    print*, int_edif_f(j), int_edif_dfdy(j)
-                !END DO
-                !int_edif_f = -int_edif_f
-                !int_edif_dfdy = -int_edif_dfdy
             END IF
 
             ! d/dy [ dcb/dy*(INT(eddify*f) dz) ]
@@ -587,7 +579,7 @@ SUBROUTINE int_epsy_f(epsy_model,sus_vert_prof,&
     ! Integral (epsy*df/dy) dz
     !
     ! Where z is a vertical coordinate,
-    ! epsy is the horizontal eddy viscosity (varying in the vertical), and 
+    ! epsy is the horizontal eddy diffusivity (varying in the vertical), and 
     ! f defines the vertical profile of suspended sediment ( so c(z) = cbed*f(z) )
     !
     ! These integral is useful in computing the vertically integrated lateral flux of
@@ -601,7 +593,7 @@ SUBROUTINE int_epsy_f(epsy_model,sus_vert_prof,&
     !   int_edif_dfdy = Integral ( epsy*df/dy) dz, evaluated between grid points (i.e. 0.5, 1.5, ...a+0.5)
     !
     INTEGER, INTENT(IN):: a
-    CHARACTER(len=5), INTENT(IN):: epsy_model, sus_vert_prof
+    CHARACTER(len=20), INTENT(IN):: epsy_model, sus_vert_prof
     REAL(dp), INTENT(IN):: ys, bed, ysl, ysu, bedl, bedu, ustar, water, wset
     REAL(dp), INTENT(OUT):: int_edif_f, int_edif_dfdy
     DIMENSION ys(a), bed(a), ustar(a), int_edif_f(a+1), int_edif_dfdy(a+1)
@@ -609,7 +601,7 @@ SUBROUTINE int_epsy_f(epsy_model,sus_vert_prof,&
     ! Local variables
     INTEGER:: i, j
 
-    REAL(dp):: d, us,bedh, f(100), epsy(100), df_dy(100), z_tmp, &
+    REAL(dp):: d, us,bedh, f(100), epsy(100), df_dy(100), z_tmp(100), &
                 bed_tmp(0:a+1), ustar_tmp(0:a+1), &
                 eps_z, ys_tmp(0:a+1), dbed_dy, depsz_dy
 
@@ -641,22 +633,47 @@ SUBROUTINE int_epsy_f(epsy_model,sus_vert_prof,&
                      0.1_dp*ustar_tmp(i-1)*max(water-bed_tmp(i-1),0.0_dp) &
                      )/(ys_tmp(i)-ys_tmp(i-1))
         dbed_dy = (bed_tmp(i) - bed_tmp(i-1))/(ys_tmp(i)-ys_tmp(i-1)) 
-         
-        ! Create vertical suspended sediment profile
-        DO j=1,100
-            ! z_tmp = elevation above bed = at 0.5, 1.5, ... 99.5 * depth/100.0 
-            z_tmp = bedh + (d/100._dp)*(j*1.0_dp-0.5_dp)
         
-            ! Exponential vertical suspended sediment profile
-            f(j) = exp(-wset/eps_z*(z_tmp-bedh))
 
-            ! Create horizontal eddy diffusivity profile     
-            epsy(j) = 0.24*d*us
+         
+        !z_tmp = elevation above bed = at 0.5, 1.5, ... 99.5 * depth/100.0 
+        z_tmp = bedh + (d/100._dp)*( (/ (j,j=1,100) /)*1.0_dp-0.5_dp)
+       
+        ! Create vertical suspended sediment profile
+        SELECT CASE(sus_vert_prof) 
+            CASE('exp') 
+                ! Exponential vertical suspended sediment profile
+                f = exp(-wset/eps_z*(z_tmp-bedh))
+                
+                ! df/dy = df/deps_z * deps_z/dy + df/dbed*dbed/dy
+                df_dy = +wset*(z_tmp-bedh)/eps_z**2*f*depsz_dy + &
+                                wset/eps_z*f*dbed_dy
 
-            ! df/dy = df/deps_z * deps_z/dy + df/dbed*dbed/dy
-            df_dy(j) = +wset*(z_tmp-bedh)/eps_z**2*f(j)*depsz_dy + &
-                        wset/eps_z*f(j)*dbed_dy
-        END DO 
+            CASE('Rouse')
+                print*, 'ROUSE not implemented in int_epsy_f'
+                stop
+
+            CASE DEFAULT
+                print*, 'ERROR: Invalid value of sus_vert_prof in int_epsy_f'
+                stop
+
+        END SELECT
+
+        ! Create horizontal eddy diffusivity profile     
+        SELECT CASE(epsy_model)
+            CASE('constant')
+                epsy = 0.24*d*us ! Constant
+            CASE('Parabolic')
+                epsy = 0.4_dp*us*d*(z_tmp-bedh)*(water-z_tmp)/(0.25_dp*d**2) ! Parabolic
+            CASE('Parabola_const')
+                ! Parabolic lower half, constant upper half
+                epsy = 0.4_dp*us*d*min(z_tmp-bedh, d*0.5_dp)*max(water-z_tmp,d*0.5_dp)/(0.25_dp*d**2)
+            CASE DEFAULT
+                print*, 'ERROR: Invalid value of epsy_model in int_epsy_f'
+                stop
+                
+        END SELECT    
+
 
         !Integral (epsy*f) dz
         int_edif_f(i) = sum(epsy*f)*d/(1.0_dp*100)

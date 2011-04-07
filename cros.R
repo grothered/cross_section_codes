@@ -303,11 +303,11 @@ get_extra<-function(l){
 }
 
 
-X_conserve<-function(ind){
+X_conserve<-function(ind, wset=0.016){
     # Function to compare downslope bedload with deposition less erosion
     # Only valid for an even grid
     qbl = diff(Qb_g[ind,])/msc[1,2]
-    D_les_E = -Qe[ind,] + Cbed[ind,]*0.016/2600
+    D_les_E = -Qe[ind,] + Cbed[ind,]*wset/2600
     
     cbind(qbl, D_les_E)
 }

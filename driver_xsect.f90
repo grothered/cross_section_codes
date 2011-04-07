@@ -32,7 +32,7 @@ LOGICAL::  flag, susdist, sus2d, readin, geo, remesh, norm, vertical, &
              variable_timestep, high_order_shear, high_order_bedload, &
             high_order_Cflux
 CHARACTER(LEN=20):: friction_type, grain_friction_type, resus_type, &
-                    bedload_type, sus_vert_prof
+                    bedload_type, sus_vert_prof, epsy_model
 NAMELIST /inputdata/ nos,writfreq,jmax, layers, hlim, mor, mu, tauinc,&
                 erconst,lifttodrag,sconc,rho,lincrem,wset, voidf, t, dt, &
                 susdist,readin, geo, waterM, width, smax, rough_coef, &
@@ -43,7 +43,7 @@ NAMELIST /inputdata/ nos,writfreq,jmax, layers, hlim, mor, mu, tauinc,&
                 integrated_load_flux, friction_type, no_discharges, &
                 discharges, susconcs, high_order_shear, &
                 high_order_bedload, high_order_Cflux, grain_friction_type, &
-                resus_type, bedload_type, sus_vert_prof
+                resus_type, bedload_type, sus_vert_prof, epsy_model
 
 ALLOCATABLE ys(:), bed(:), dists(:), tau(:),ks(:),tbst(:),& 
             recrd(:), bedlast(:), hss(:), tss(:),  hss2(:), Qe(:),& 
@@ -486,7 +486,8 @@ DO Q_loop= 1, no_discharges!15
                 !ELSE
                 call dynamic_sus_dist(u-l+1, DT1, ys(l:u), bed(l:u), water, waterlast, Q, tau(l:u), vel(l:u), wset, & 
                                         Qe(l:u), lambdacon, rho,rhos, g, d50, bedl,bedu, ysl, ysu, C(l:u),&
-                                        Cbar(l:u), Qbed(l:u), sconc, j, high_order_Cflux, a_ref(l:u), sus_vert_prof)
+                                        Cbar(l:u), Qbed(l:u), sconc, j, high_order_Cflux, a_ref(l:u), sus_vert_prof,&
+                                        epsy_model)
 
                 ! Set C in dry parts of the channel to zero
                 IF(l>1) THEN
