@@ -207,19 +207,19 @@ END SUBROUTINE calc_resus_bedload
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-SUBROUTINE update_bed(a, dT, water, Q, bed,ys,Area, Width,bottom, ff,recrd, E, D,C,rmu,a2, inuc,tau,NN,counter&
-    ,slopes, hlim,mor,taucrit_dep,layers, taucrit_dep_ys, nos, taucrit, vegdrag, susdist,rho, Qe, Qbed, & 
+SUBROUTINE update_bed(a, dT, water, Q, bed,ys,Area, Width,bottom, ff,recrd, E, D,C,rmu,a2, inuc,tau,taug,NN, &
+    counter,slopes, hlim,mor,taucrit_dep,layers, taucrit_dep_ys, nos, taucrit, vegdrag, susdist,rho, Qe, Qbed, & 
     wset,dqbeddx, rhos, voidf, d50, g, kvis, norm, vertical, lambdacon, tbston, Qbedon, normmov,sus2d,ysl, & 
     ysu,bedl,bedu,iii, bedlast, susQbal, talmon, high_order_bedload)
 
     INTEGER, INTENT(IN)::a,a2,counter,layers, nos, iii
     REAL(dp), INTENT(IN)::water,Q, Width, Area, bottom, ff, hlim,mor, vegdrag, dt, rho, Qbed, Qe, dqbeddx, &
-        rhos, voidf, d50, g, kvis,wset, lambdacon, ysl,ysu, bedlast!QbedI, dQbedI
+        rhos, voidf, d50, g, kvis,wset, lambdacon, ysl,ysu, bedlast, taug !QbedI, dQbedI
     REAL(dp), INTENT(IN OUT):: bed, recrd, E, D,rmu,inuc,tau, NN, ys,C,taucrit_dep, taucrit_dep_ys, slopes, & 
         taucrit, bedu, bedl
     LOGICAL, INTENT(IN):: susdist, norm, vertical, tbston, Qbedon, normmov, sus2d, susQbal, talmon, high_order_bedload
-    DIMENSION bed(a),ys(a), ff(a),recrd(0:a),tau(a), NN(a),slopes(a),taucrit_dep(nos,layers),C(a),taucrit_dep_ys(nos), & 
-        taucrit(nos,0:layers), vegdrag(a), Qbed(a), Qe(a), dqbeddx(a), bedlast(a) ! 
+    DIMENSION bed(a),ys(a), ff(a),recrd(0:a),tau(a),taug(a), NN(a),slopes(a),taucrit_dep(nos,layers),C(a),&
+        taucrit_dep_ys(nos),taucrit(nos,0:layers), vegdrag(a), Qbed(a), Qe(a), dqbeddx(a), bedlast(a) ! 
 
     INTEGER::i, j, bgwet, up, bfall, jj,dstspl, jjj, minX,maxX, storindex(a), info,ii, indd(a,layers), n(a), b(1)
     REAL(dp):: val, tmp1,tmp2 
@@ -314,8 +314,10 @@ SUBROUTINE update_bed(a, dT, water, Q, bed,ys,Area, Width,bottom, ff,recrd, E, D
         ! Qby = -qb_G*d(bed)/dy
         tmp1 = (rho*g*(rhos/rho-1._dp)*d50) ! A constant in the lateral bedload formula
         DO i=1, a
-            IF(tau(i).ne.0._dp) THEN
+            IF(abs(taug(i))>taucrit(i,0)) THEN
                 !Choose downslope bedload relation
+                !Note that if taug>taucrit, then tau>0, so we will not divide by
+                !zero
                 IF(talmon.eqv..FALSE.) THEN
                     ! Simple downslope bedslope relation 
                     qb_G(i)= -abs(Qbed(i))*sqrt(abs(taucrit(i,0))/tau(i))
