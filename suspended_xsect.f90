@@ -606,7 +606,7 @@ SUBROUTINE int_epsy_f(epsy_model,sus_vert_prof,&
                 bed_tmp(0:a+1), ustar_tmp(0:a+1), &
                 eps_z, ys_tmp(0:a+1), dbed_dy, depsz_dy, aref_tmp(0:a+1),&
                 arefh, daref_dy, dus_dy, df_dbedh(100), df_darefh(100), df_dus(100), &
-                tmp2(100), z2surf(100), z2bed(100)
+                tmp2(100), z2surf(100), z2bed(100), z2ratio(100)
 
     ! Predefine bed_tmp, ys, and ustar, including boundary values
     bed_tmp(1:a) = bed
@@ -663,6 +663,10 @@ SUBROUTINE int_epsy_f(epsy_model,sus_vert_prof,&
             CASE('Rouse')
                  
                 IF((d*0.3_dp>arefh)) THEN !.and.(us>wset)) THEN
+                    !FIXME: d*0.3_dp > arefh --- this is to be consistent with
+                    !the 'rouse_int' function, which only converges for
+                    !d>2arefh (I apparently built in some safety after a bad
+                    !experience)
                     !z_tmp = elevation above bed = at 0.5, 1.5, ... 99.5 * depth/100.0,
                     ! adjusted so z>arefh 
                     z_tmp = bedh+arefh+ ((d-arefh)/100._dp)*( (/ (j,j=1,100) /)*1.0_dp-0.5_dp)
@@ -671,9 +675,9 @@ SUBROUTINE int_epsy_f(epsy_model,sus_vert_prof,&
                     ! Useful shorthand variables, which save computation
                     z2surf= water-z_tmp ! Distance from z_tmp to the surface
                     z2bed = z_tmp-bedh  ! Distance from z_tmp to the bed
-                    
+                    z2ratio = z2surf/(z2bed+arefh) ! A ratio that comes up a lot
                     ! Calculate vertical profile of suspended sediment
-                    f = (((z2surf)/(z2bed+arefh) ) / &
+                    f = ((z2ratio ) / &
                         ( (water -(bedh +arefh))/arefh ) )**(wset/(0.4_dp*us))
 
                     !print*, water, d, arefh, minval(z_tmp), maxval(z_tmp)
@@ -692,7 +696,7 @@ SUBROUTINE int_epsy_f(epsy_model,sus_vert_prof,&
 
                     ! tmp2 = Useful variable to reduce computations
                     tmp2=(wset/0.4_dp)*(z2bed+arefh)*(d-arefh)*& 
-                         (arefh*(z2surf)/((z2bed+arefh)*(d-arefh)))**(wset/(0.4_dp*us)) &
+                         (arefh*(z2ratio)/(d-arefh))**(wset/(0.4_dp*us)) &
                          /(arefh*us*(z2surf))
                     ! df/darefh, evaluated using maxima (symbolic algebra) 
                     ! -- see code in the file lat_flux.max
@@ -702,8 +706,8 @@ SUBROUTINE int_epsy_f(epsy_model,sus_vert_prof,&
                     df_darefh = tmp2* & 
                         1.0_dp*& !(wset/0.4_dp)*(z_tmp-bedh+arefh)*(d-arefh)*& 
                         1.0_dp*& !(arefh*(water-z_tmp)/((z_tmp-bedh+arefh)*(d-arefh)))**(wset/(0.4_dp*us))*&
-                        (arefh*(z2surf)/((z2bed+arefh)**2*(d-arefh))+arefh*(z2surf)/&
-                        ((z2bed+arefh)*(d-arefh)**2)) !/(arefh*us*(water-z_tmp))
+                        (arefh*(z2surf)/((z2bed+arefh)**2*(d-arefh))+arefh*(z2ratio)/&
+                        ((d-arefh)**2)) !/(arefh*us*(water-z_tmp))
 
                     ! df/dus, evaluated using maxima (symbolic algebra) 
                     ! -- see code in the file lat_flux.max
@@ -714,8 +718,8 @@ SUBROUTINE int_epsy_f(epsy_model,sus_vert_prof,&
                     df_dus = tmp2*  &
                         1.0_dp*& !(wset/0.4_dp)*(z_tmp-bedh+arefh)*(d-arefh)*&
                         1.0_dp*& !(arefh*(water-z_tmp)/((z_tmp-bedh+arefh)*(d-arefh)))**(wset/(0.4_dp*us))*&
-                        ((z2surf)/((z2bed+arefh)*(d-arefh))-arefh*(z2surf)/((z2bed+arefh)**2&
-                        *(d-arefh))+arefh*(z2surf)/((z2bed+arefh)*(d-arefh)**2))!& 
+                        ((z2ratio)/((d-arefh))-arefh*(z2surf)/((z2bed+arefh)**2&
+                        *(d-arefh))+arefh*(z2ratio)/((d-arefh)**2))!& 
                         !/(arefh*us*(water-z_tmp))
 
                     ! df_dy = df/dbedh*dbedh/dy + df/aref*daref/dy + df/dus*dus/dy
