@@ -29,6 +29,7 @@ depends(h,y);
 depends(K1,y);
 
 /* suspended sediment vertical profile */
+/*FIXME: CHECK IF THIS IS CORRECT*/
  f: [ (Y-z)/(Y- (h + aref))*aref/(z-h+aref)]^(k/ustar) ;
 diff(f,h);
 diff(f,aref);

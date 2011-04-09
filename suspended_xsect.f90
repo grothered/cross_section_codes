@@ -667,29 +667,25 @@ SUBROUTINE int_epsy_f(epsy_model,sus_vert_prof,&
                     !the 'rouse_int' function, which only converges for
                     !d>2arefh (I apparently built in some safety after a bad
                     !experience)
+                    PRINT*, 'CHECK IF THE ROUSE PROFILE IS CORRECT HERE AND ELSEWHERE'
+                    stop
                     !z_tmp = elevation above bed = at 0.5, 1.5, ... 99.5 * depth/no_subints.0,
                     ! adjusted so z>arefh 
                     z_tmp = bedh+arefh+ ((d-arefh)/no_subints*1.0_dp)*( (/ (j,j=1,no_subints) /)*1.0_dp-0.5_dp)
-
 
                     ! Useful shorthand variables, which save computation
                     z2surf= water-z_tmp ! Distance from z_tmp to the surface
                     z2bed = z_tmp-bedh  ! Distance from z_tmp to the bed
                     z2ratio = z2surf/(z2bed+arefh) ! A ratio that comes up a lot
+
                     ! Calculate vertical profile of suspended sediment
                     f = ((z2ratio ) / &
                         ( (water -(bedh +arefh))/arefh ) )**(wset/(0.4_dp*us))
 
-                    !print*, water, d, arefh, minval(z_tmp), maxval(z_tmp)
-                    !DO j=1,no_subints
-                    !    print*, j, f(j), ((water-z_tmp(j))/(z_tmp(j)-bedh+arefh))**(wset/(0.4_dp*us))
-                    !END DO
-                    !    stop
-
                     ! Calculate derivative of f. This is difficult -- try
                     ! df_dy = df/dbedh*dbedh/dy + df/aref*daref/dy + df/dus*dus/dy
 
-                    ! df/dbedh, evaluated using maxima (symbolic algebra) 
+                    ! Step1: df/dbedh, evaluated using maxima (symbolic algebra) 
                     ! -- see code in the file lat_flux.max
                     df_dbedh =(arefh*d/((z2bed+arefh)*(d-arefh)))**(wset/(0.4_dp*us)) 
 
@@ -698,7 +694,8 @@ SUBROUTINE int_epsy_f(epsy_model,sus_vert_prof,&
                     tmp2=(wset/0.4_dp)*(z2bed+arefh)*(d-arefh)*& 
                          (arefh*(z2ratio)/(d-arefh))**(wset/(0.4_dp*us)) &
                          /(arefh*us*(z2surf))
-                    ! df/darefh, evaluated using maxima (symbolic algebra) 
+
+                    ! Step2: df/darefh, evaluated using maxima (symbolic algebra) 
                     ! -- see code in the file lat_flux.max
                     ! I then change 'k' to 'wset/0.4' and 'Y-h' to 'd'
                     ! and 'ustar' to 'us' and 'aref' to 'arefh' and 'Y' to 'water'
@@ -709,7 +706,7 @@ SUBROUTINE int_epsy_f(epsy_model,sus_vert_prof,&
                         (arefh*(z2surf)/((z2bed+arefh)**2*(d-arefh))+arefh*(z2ratio)/&
                         ((d-arefh)**2)) !/(arefh*us*(water-z_tmp))
 
-                    ! df/dus, evaluated using maxima (symbolic algebra) 
+                    ! Step3: df/dus, evaluated using maxima (symbolic algebra) 
                     ! -- see code in the file lat_flux.max
                     ! Turns out to have much similarity to df_darefh
                     ! I then change 'k' to 'wset/0.4' and 'Y-h' to 'd'
@@ -722,14 +719,14 @@ SUBROUTINE int_epsy_f(epsy_model,sus_vert_prof,&
                         *(d-arefh))+arefh*(z2ratio)/((d-arefh)**2))!& 
                         !/(arefh*us*(water-z_tmp))
 
-                    ! df_dy = df/dbedh*dbedh/dy + df/aref*daref/dy + df/dus*dus/dy
+                    ! Step4: df_dy = df/dbedh*dbedh/dy + df/aref*daref/dy + df/dus*dus/dy
                     df_dy = df_dbedh*dbed_dy + df_darefh*daref_dy + df_dus*dus_dy
-                    DO j=1,no_subints
-                        IF(isnan(df_dy(j))) THEN
-                            print*, 'df_dy is nan', j, dbed_dy, daref_dy, dus_dy
-                            stop
-                        END IF
-                    END DO
+                    !DO j=1,no_subints
+                    !    IF(isnan(df_dy(j))) THEN
+                    !        print*, 'df_dy is nan', j, dbed_dy, daref_dy, dus_dy
+                    !        stop
+                    !    END IF
+                    !END DO
                     !print*, maxval(abs(df_dy)), maxval(abs(f)), dbed_dy, daref_dy, dus_dy
                 ELSE
                     !z_tmp = elevation above bed = at 0.5, 1.5, ... 99.5 * depth/no_subints.0,
