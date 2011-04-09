@@ -303,7 +303,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
                 ! Calculate important integration factors
                 call int_epsy_f(epsy_model, sus_vert_prof, a, ys, bed, ysl, ysu,&
                                  bedl, bedu, water, sqrt(abs(tau)/rho), wset,a_ref,&
-                                 int_edif_f, int_edif_dfdy)
+                                 int_edif_f, int_edif_dfdy,100)
             END IF
 
             ! d/dy [ dcb/dy*(INT(eddify*f) dz) ]
@@ -571,7 +571,7 @@ END FUNCTION rouse_int
 SUBROUTINE int_epsy_f(epsy_model,sus_vert_prof,& 
                       a,ys,bed,ysl, ysu, bedl, bedu, &
                       water, ustar,wset, a_ref, &
-                      int_edif_f, int_edif_dfdy)
+                      int_edif_f, int_edif_dfdy, no_subints)
     ! PURPOSE: 
     !   To calculate
     !
@@ -593,7 +593,7 @@ SUBROUTINE int_epsy_f(epsy_model,sus_vert_prof,&
     !   int_edif_f = Integral ( epsy*f) dz, evaluated between grid points (i.e. 0.5, 1.5, ...a+0.5)
     !   int_edif_dfdy = Integral ( epsy*df/dy) dz, evaluated between grid points (i.e. 0.5, 1.5, ...a+0.5)
     !
-    INTEGER, INTENT(IN):: a
+    INTEGER, INTENT(IN):: a, no_subints
     CHARACTER(len=20), INTENT(IN):: epsy_model, sus_vert_prof
     REAL(dp), INTENT(IN):: ys, bed, ysl, ysu, bedl, bedu, ustar, water, wset, a_ref
     REAL(dp), INTENT(OUT):: int_edif_f, int_edif_dfdy
@@ -602,11 +602,11 @@ SUBROUTINE int_epsy_f(epsy_model,sus_vert_prof,&
     ! Local variables
     INTEGER:: i, j
 
-    REAL(dp):: d, us,bedh, f(100), epsy(100), df_dy(100), z_tmp(100), &
+    REAL(dp):: d, us,bedh, f(no_subints), epsy(no_subints), df_dy(no_subints), z_tmp(no_subints), &
                 bed_tmp(0:a+1), ustar_tmp(0:a+1), &
                 eps_z, ys_tmp(0:a+1), dbed_dy, depsz_dy, aref_tmp(0:a+1),&
-                arefh, daref_dy, dus_dy, df_dbedh(100), df_darefh(100), df_dus(100), &
-                tmp2(100), z2surf(100), z2bed(100), z2ratio(100)
+                arefh, daref_dy, dus_dy, df_dbedh(no_subints), df_darefh(no_subints), df_dus(no_subints), &
+                tmp2(no_subints), z2surf(no_subints), z2bed(no_subints), z2ratio(no_subints)
 
     ! Predefine bed_tmp, ys, and ustar, including boundary values
     bed_tmp(1:a) = bed
@@ -650,8 +650,8 @@ SUBROUTINE int_epsy_f(epsy_model,sus_vert_prof,&
         ! Create vertical suspended sediment profile
         SELECT CASE(sus_vert_prof) 
             CASE('exp') 
-                !z_tmp = elevation above bed = at 0.5, 1.5, ... 99.5 * depth/100.0 
-                z_tmp = bedh + (d/100._dp)*( (/ (j,j=1,100) /)*1.0_dp-0.5_dp)
+                !z_tmp = elevation above bed = at 0.5, 1.5, ... 99.5 * depth/no_subints.0 
+                z_tmp = bedh + (d/no_subints*1.0_dp)*( (/ (j,j=1,no_subints) /)*1.0_dp-0.5_dp)
 
                 ! Exponential vertical suspended sediment profile
                 f = exp(-wset/eps_z*(z_tmp-bedh))
@@ -667,9 +667,9 @@ SUBROUTINE int_epsy_f(epsy_model,sus_vert_prof,&
                     !the 'rouse_int' function, which only converges for
                     !d>2arefh (I apparently built in some safety after a bad
                     !experience)
-                    !z_tmp = elevation above bed = at 0.5, 1.5, ... 99.5 * depth/100.0,
+                    !z_tmp = elevation above bed = at 0.5, 1.5, ... 99.5 * depth/no_subints.0,
                     ! adjusted so z>arefh 
-                    z_tmp = bedh+arefh+ ((d-arefh)/100._dp)*( (/ (j,j=1,100) /)*1.0_dp-0.5_dp)
+                    z_tmp = bedh+arefh+ ((d-arefh)/no_subints*1.0_dp)*( (/ (j,j=1,no_subints) /)*1.0_dp-0.5_dp)
 
 
                     ! Useful shorthand variables, which save computation
@@ -681,7 +681,7 @@ SUBROUTINE int_epsy_f(epsy_model,sus_vert_prof,&
                         ( (water -(bedh +arefh))/arefh ) )**(wset/(0.4_dp*us))
 
                     !print*, water, d, arefh, minval(z_tmp), maxval(z_tmp)
-                    !DO j=1,100
+                    !DO j=1,no_subints
                     !    print*, j, f(j), ((water-z_tmp(j))/(z_tmp(j)-bedh+arefh))**(wset/(0.4_dp*us))
                     !END DO
                     !    stop
@@ -724,7 +724,7 @@ SUBROUTINE int_epsy_f(epsy_model,sus_vert_prof,&
 
                     ! df_dy = df/dbedh*dbedh/dy + df/aref*daref/dy + df/dus*dus/dy
                     df_dy = df_dbedh*dbed_dy + df_darefh*daref_dy + df_dus*dus_dy
-                    DO j=1,100
+                    DO j=1,no_subints
                         IF(isnan(df_dy(j))) THEN
                             print*, 'df_dy is nan', j, dbed_dy, daref_dy, dus_dy
                             stop
@@ -732,9 +732,9 @@ SUBROUTINE int_epsy_f(epsy_model,sus_vert_prof,&
                     END DO
                     !print*, maxval(abs(df_dy)), maxval(abs(f)), dbed_dy, daref_dy, dus_dy
                 ELSE
-                    !z_tmp = elevation above bed = at 0.5, 1.5, ... 99.5 * depth/100.0,
+                    !z_tmp = elevation above bed = at 0.5, 1.5, ... 99.5 * depth/no_subints.0,
                     ! adjusted so z>arefh 
-                    z_tmp = bedh+arefh+ ((d-arefh)/100._dp)*( (/ (j,j=1,100) /)*1.0_dp-0.5_dp)
+                    z_tmp = bedh+arefh+ ((d-arefh)/no_subints*1.0_dp)*( (/ (j,j=1,no_subints) /)*1.0_dp-0.5_dp)
                     f = 1.0_dp
                     df_dy= 0.0_dp
                 END IF
@@ -762,10 +762,10 @@ SUBROUTINE int_epsy_f(epsy_model,sus_vert_prof,&
 
 
         !Integral (epsy*f) dz
-        int_edif_f(i) = sum(epsy*f)*d/(1.0_dp*100)
+        int_edif_f(i) = sum(epsy*f)*d/(1.0_dp*no_subints)
         
         !Integral (epsy*df/dy) dz
-        int_edif_dfdy(i) = sum(epsy*df_dy)*d/(1.0_dp*100)
+        int_edif_dfdy(i) = sum(epsy*df_dy)*d/(1.0_dp*no_subints)
 
         !print*,'#########', i, int_edif_f(i), int_edif_dfdy(i) 
         !print*, epsy, df_dy
