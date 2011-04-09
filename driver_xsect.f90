@@ -490,6 +490,8 @@ DO Q_loop= 1, no_discharges!15
                                         epsy_model)
 
                 ! Set C in dry parts of the channel to zero
+                ! This is not done earlier, because we needed to store the old
+                ! values of C for the dynamic_sus_dist routine
                 IF(l>1) THEN
                     Cbar(1:(l-1)) = 0._dp
                     C(1:(l-1)) = 0._dp
@@ -501,6 +503,10 @@ DO Q_loop= 1, no_discharges!15
                 END IF
         
 
+            ELSE
+                ! Constnat suspended sediment concentration
+                C(l:u) = sconc
+                Cbar(l:u) = sconc
             END IF
            
         

@@ -605,7 +605,8 @@ SUBROUTINE int_epsy_f(epsy_model,sus_vert_prof,&
     REAL(dp):: d, us,bedh, f(100), epsy(100), df_dy(100), z_tmp(100), &
                 bed_tmp(0:a+1), ustar_tmp(0:a+1), &
                 eps_z, ys_tmp(0:a+1), dbed_dy, depsz_dy, aref_tmp(0:a+1),&
-                arefh, daref_dy
+                arefh, daref_dy, df_dbedh(100), df_darefh(100), df_dus(100), &
+                dus_dy
 
     ! Predefine bed_tmp, ys, and ustar, including boundary values
     bed_tmp(1:a) = bed
@@ -637,12 +638,13 @@ SUBROUTINE int_epsy_f(epsy_model,sus_vert_prof,&
                         0.1_dp*ustar_tmp(i-1)*max(water-bed_tmp(i-1),0.0_dp)) 
         eps_z = max(eps_z,1.0e-012_dp) 
 
-        ! Define depsz/dy, daref/dy and dbed/dy at i-1/2
+        ! Define depsz/dy, daref/dy and dbed/dy, dustar/dy at i-1/2
         depsz_dy = ( 0.1_dp*ustar_tmp(i)*max(water-bed_tmp(i),0.0_dp) - &
                      0.1_dp*ustar_tmp(i-1)*max(water-bed_tmp(i-1),0.0_dp) &
                      )/(ys_tmp(i)-ys_tmp(i-1))
         daref_dy = (aref_tmp(i) - aref_tmp(i-1))/(ys_tmp(i)-ys_tmp(i-1)) 
         dbed_dy = (bed_tmp(i) - bed_tmp(i-1))/(ys_tmp(i)-ys_tmp(i-1)) 
+        dus_dy = (ustar_tmp(i) - ustar_tmp(i-1))/(ys_tmp(i)-ys_tmp(i-1)) 
         
 
          
@@ -660,12 +662,42 @@ SUBROUTINE int_epsy_f(epsy_model,sus_vert_prof,&
                                 wset/eps_z*f*dbed_dy
 
             CASE('Rouse')
-                print*, 'ROUSE not implemented in int_epsy_f'
-                f = (((water-z_tmp)/(z_tmp-bed_h) ) / &
+                !print*, 'ROUSE not implemented in int_epsy_f'
+                f = (((water-z_tmp)/(z_tmp-bed_h+arefh) ) / &
                     ( (water -(bed_h +arefh))/arefh ) )**(wset/(0.4_dp*us))
+
+                ! Calculate derivative of f. This is difficult -- try
                 ! df_dy = df/dbedh*dbedh/dy + df/aref*daref/dy + df/dus*dus/dy
-                df_dy = NaN
-                stop
+
+                ! df/dbedh, evaluated using maxima (symbolic algebra) 
+                ! -- see code in the file lat_flux.max
+                df_dbedh =(arefh*d/((z_tmp-bed_h+arefh)*(d-arefh)))**(wset/(0.4_dp*us)) 
+
+                ! df/darefh, evaluated using maxima (symbolic algebra) 
+                ! -- see code in the file lat_flux.max
+                ! I then change 'k' to 'wset/0.4' and 'Y-h' to 'd'
+                ! and 'ustar' to 'us' and 'aref' to 'arefh' and 'Y' to 'water'
+                ! and 'z' to 'z_tmp'
+                df_darefh = & 
+                        (wset/0.4_dp)*(z_tmp-h+arefh)*(d-arefh)*& 
+                        (arefh*(water-z_tmp)/((z_tmp-h+arefh)*(d-arefh)))**(wset/(0.4_dp*us))*&
+                        (arefh*(water-z_tmp)/((z_tmp-h+arefh)**2*(d-arefh))+arefh*(water-z_tmp)/&
+                        ((z_tmp-h+arefh)*(d-arefh)**2))/(arefh*us*(water-z_tmp))
+
+                ! df/dus, evaluated using maxima (symbolic algebra) 
+                ! -- see code in the file lat_flux.max
+                ! I then change 'k' to 'wset/0.4' and 'Y-h' to 'd'
+                ! and 'ustar' to 'us' and 'aref' to 'arefh' and 'Y' to 'water'
+                ! and 'z' to 'z_tmp'
+                df_dus =  &
+                        (wset/0.4_dp)*(z_tmp-h+arefh)*(d-arefh)*&
+                        (arefh*(water-z_tmp)/((z_tmp-h+arefh)*(d-arefh)))**(wset/(0.4_dp*us))*&
+                        ((water-z_tmp)/((z_tmp-h+arefh)*(d-arefh))-arefh*(water-z_tmp)/((z_tmp-h+arefh)**2&
+                        *(d-arefh))+arefh*(water-z_tmp)/((z_tmp-h+arefh)*(d-arefh)**2))& 
+                        /(arefh*us*(water-z_tmp))
+
+                ! df_dy = df/dbedh*dbedh/dy + df/aref*daref/dy + df/dus*dus/dy
+                df_dy = df_dbedh*dbed_dy + df_darefh*daref_dy + df_dus*dus_dy
 
             CASE DEFAULT
                 print*, 'ERROR: Invalid value of sus_vert_prof in int_epsy_f'

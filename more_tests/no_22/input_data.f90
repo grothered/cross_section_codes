@@ -35,7 +35,7 @@ no_discharges = 7
 Discharges = 6.44    6.44    6.44    6.44    6.44    6.44    6.44 
 susconcs =   5.0e-04 2.0e-04 1.0e-04 5.0e-05 1.0e-05 5.0e-06 0.0e-06 !manning=.true. !Do we use a manning friction factor? If not, then we use a Darcy Weisbach friction factor, calculated as f=man_n**2*8.*9.8 -i.e., the equivalent manning friction value if the depth were 1 everywhere. Hence, the variable man_n is used to set either a manning or darcy friction. Same deal for vegetation drag
 friction_type = 'manning' !'manning'!, 'darcy', 'vanrijn', 'ks'
-grain_friction_type  = 'vanrijn' ! 'vanrijn', 'colebrook', 'onethird' -- model for bed shear acting on grains 
+grain_friction_type  = 'one' ! 'vanrijn', 'colebrook', 'onethird','one' -- model for bed shear acting on grains 
 rough_coef =0.03 ! A value depending on the friction type. if 'manning' = Mannings n for the basic bed, if 'ks' = value of ks, if 'darcy' = f, etc, if 'vanrijn', then the value is not used.
 man_nveg = 0.3 !Mannings n for vegetated regions
 veg_ht = 9.0e+20 !Height at which vegetation is assumed to occur.
@@ -61,7 +61,7 @@ kvis = 1.0E-06 !Kinematic viscosity of water.
 alpha=0.00228 !The constant for the erosion formula E= alpha*(tau-taue)/sqrt(taue)
 Qbedon=.TRUE. !Is bedload active
 bedload_type='vanrijn' ! 'mpm', 'vanrijn'
-talmon=.TRUE. !Do we use a talmon lateral bedload closure?
+talmon=.FALSE. !Do we use a talmon lateral bedload closure?
 resus_type = 'vanrijn'! ! 'cohesive', 'vanrijn', 'smithmac'
 
 susdist = .TRUE. !Do we have a laterally variable suspended load? This can ONLY treat the case of steady state. The total load flux (bedload + spsuended load) is assumed to be integrated_load_flux

@@ -1,0 +1,52 @@
+/* Maxima code to try to calculate:
+   int_{aref+h}^{Y} eps_y*d/dy(C) dz
+   where eps_y varies parabolically with z
+   and C has a rouse distribution with z
+
+   make z a vertical coordinate.
+   now, in many papers, z is made to be the distance from the bed
+   however, I want dz/dy = 0, and so I will make z an arbitary vertical
+   coordinate
+
+   eps_y = (1/6)(l*ustar*d)*(z-h)*(Y-z)
+   C = cb*[ (Y-z)/(Y- h + aref)*aref/(z-h)]^R
+   where Y is the free surface elevation (independent of y)
+   cb is the near bed suspendede sediment concentration,
+   aref is the reference height above the bed, and 
+   R is the rouse number = wset/(0.4 ustar)
+
+   Suppose C = cb*f
+   It follows that:
+   int_{aref+h}^{Y} eps_y*d/dy(C) dz =
+   int_{aref+h}^{Y} eps_y*f*d(cb)/dy + epsy*cb*df/dy dz = 
+   d(cb)/dy* A1 + cb*A2  */
+
+depends(aref,y);
+depends(cb,y);
+depends(ustar,y);
+depends(R,y);
+depends(h,y);
+depends(K1,y);
+
+/* suspended sediment vertical profile */
+ f: [ (Y-z)/(Y- (h + aref))*aref/(z-h+aref)]^(k/ustar) ;
+diff(f,h);
+diff(f,aref);
+diff(f,ustar);
+/*f: K1*(1-exp(-(z-h)/K1)); */
+
+/* lateral eddy viscosity vertical profile */
+/*epsy: (1/6)*(l*ustar*(Y-h))*(z-h)*(Y-z);*/
+/*epsy: (1/6)*(l*ustar*(Y-h)); 
+
+a1: f*epsy;*/
+
+/* Coefficient of cb  */
+/*A1: integrate(a1,z,h+aref,Y);*/
+/*A1: integrate(a1,z,h,Y);*/
+
+/*a2: diff(f,y);*/
+
+/* Coefficient of d(cb)/dy */
+/*A2: integrate(a2*epsy,z, h+aref,Y);*/
+/*A2: integrate(a2*epsy,z, h,Y);*/
