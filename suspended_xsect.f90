@@ -605,8 +605,8 @@ SUBROUTINE int_epsy_f(epsy_model,sus_vert_prof,&
     REAL(dp):: d, us,bedh, f(100), epsy(100), df_dy(100), z_tmp(100), &
                 bed_tmp(0:a+1), ustar_tmp(0:a+1), &
                 eps_z, ys_tmp(0:a+1), dbed_dy, depsz_dy, aref_tmp(0:a+1),&
-                arefh, daref_dy, df_dbedh(100), df_darefh(100), df_dus(100), &
-                dus_dy
+                arefh, daref_dy, dus_dy, df_dbedh(100), df_darefh(100), df_dus(100), &
+                tmp2(100)
 
     ! Predefine bed_tmp, ys, and ustar, including boundary values
     bed_tmp(1:a) = bed
@@ -622,8 +622,8 @@ SUBROUTINE int_epsy_f(epsy_model,sus_vert_prof,&
     ustar_tmp(a+1) = 0.0_dp
     
     aref_tmp(1:a) = a_ref(1:a)
-    aref_tmp(0)   = 0.0_dp
-    aref_tmp(a+1) = 0.0_dp
+    aref_tmp(0)   = a_ref(1)
+    aref_tmp(a+1) = a_ref(a)
 
     ! Loop through (0.5, 1.5, ... a+0.5) to compute integrals
     DO i=1,a+1
@@ -647,13 +647,12 @@ SUBROUTINE int_epsy_f(epsy_model,sus_vert_prof,&
         dus_dy = (ustar_tmp(i) - ustar_tmp(i-1))/(ys_tmp(i)-ys_tmp(i-1)) 
         
 
-         
-        !z_tmp = elevation above bed = at 0.5, 1.5, ... 99.5 * depth/100.0 
-        z_tmp = bedh + (d/100._dp)*( (/ (j,j=1,100) /)*1.0_dp-0.5_dp)
-       
         ! Create vertical suspended sediment profile
         SELECT CASE(sus_vert_prof) 
             CASE('exp') 
+                !z_tmp = elevation above bed = at 0.5, 1.5, ... 99.5 * depth/100.0 
+                z_tmp = bedh + (d/100._dp)*( (/ (j,j=1,100) /)*1.0_dp-0.5_dp)
+
                 ! Exponential vertical suspended sediment profile
                 f = exp(-wset/eps_z*(z_tmp-bedh))
                 
@@ -662,42 +661,74 @@ SUBROUTINE int_epsy_f(epsy_model,sus_vert_prof,&
                                 wset/eps_z*f*dbed_dy
 
             CASE('Rouse')
-                !print*, 'ROUSE not implemented in int_epsy_f'
-                f = (((water-z_tmp)/(z_tmp-bed_h+arefh) ) / &
-                    ( (water -(bed_h +arefh))/arefh ) )**(wset/(0.4_dp*us))
+                 
+                IF((d>arefh).and.(us>wset)) THEN
+                    !z_tmp = elevation above bed = at 0.5, 1.5, ... 99.5 * depth/100.0,
+                    ! adjusted so z>arefh 
+                    z_tmp = bedh+arefh+ ((d-arefh)/100._dp)*( (/ (j,j=1,100) /)*1.0_dp-0.5_dp)
+                    ! Calculate vertical profile of suspended sediment
+                    f = (((water-z_tmp)/(z_tmp-bedh+arefh) ) / &
+                        ( (water -(bedh +arefh))/arefh ) )**(wset/(0.4_dp*us))
 
-                ! Calculate derivative of f. This is difficult -- try
-                ! df_dy = df/dbedh*dbedh/dy + df/aref*daref/dy + df/dus*dus/dy
+                    !print*, water, d, arefh, minval(z_tmp), maxval(z_tmp)
+                    !DO j=1,100
+                    !    print*, j, f(j), ((water-z_tmp(j))/(z_tmp(j)-bedh+arefh))**(wset/(0.4_dp*us))
+                    !END DO
+                    !    stop
 
-                ! df/dbedh, evaluated using maxima (symbolic algebra) 
-                ! -- see code in the file lat_flux.max
-                df_dbedh =(arefh*d/((z_tmp-bed_h+arefh)*(d-arefh)))**(wset/(0.4_dp*us)) 
+                    ! Calculate derivative of f. This is difficult -- try
+                    ! df_dy = df/dbedh*dbedh/dy + df/aref*daref/dy + df/dus*dus/dy
 
-                ! df/darefh, evaluated using maxima (symbolic algebra) 
-                ! -- see code in the file lat_flux.max
-                ! I then change 'k' to 'wset/0.4' and 'Y-h' to 'd'
-                ! and 'ustar' to 'us' and 'aref' to 'arefh' and 'Y' to 'water'
-                ! and 'z' to 'z_tmp'
-                df_darefh = & 
-                        (wset/0.4_dp)*(z_tmp-h+arefh)*(d-arefh)*& 
-                        (arefh*(water-z_tmp)/((z_tmp-h+arefh)*(d-arefh)))**(wset/(0.4_dp*us))*&
-                        (arefh*(water-z_tmp)/((z_tmp-h+arefh)**2*(d-arefh))+arefh*(water-z_tmp)/&
-                        ((z_tmp-h+arefh)*(d-arefh)**2))/(arefh*us*(water-z_tmp))
+                    ! df/dbedh, evaluated using maxima (symbolic algebra) 
+                    ! -- see code in the file lat_flux.max
+                    df_dbedh =(arefh*d/((z_tmp-bedh+arefh)*(d-arefh)))**(wset/(0.4_dp*us)) 
 
-                ! df/dus, evaluated using maxima (symbolic algebra) 
-                ! -- see code in the file lat_flux.max
-                ! I then change 'k' to 'wset/0.4' and 'Y-h' to 'd'
-                ! and 'ustar' to 'us' and 'aref' to 'arefh' and 'Y' to 'water'
-                ! and 'z' to 'z_tmp'
-                df_dus =  &
-                        (wset/0.4_dp)*(z_tmp-h+arefh)*(d-arefh)*&
-                        (arefh*(water-z_tmp)/((z_tmp-h+arefh)*(d-arefh)))**(wset/(0.4_dp*us))*&
-                        ((water-z_tmp)/((z_tmp-h+arefh)*(d-arefh))-arefh*(water-z_tmp)/((z_tmp-h+arefh)**2&
-                        *(d-arefh))+arefh*(water-z_tmp)/((z_tmp-h+arefh)*(d-arefh)**2))& 
-                        /(arefh*us*(water-z_tmp))
 
-                ! df_dy = df/dbedh*dbedh/dy + df/aref*daref/dy + df/dus*dus/dy
-                df_dy = df_dbedh*dbed_dy + df_darefh*daref_dy + df_dus*dus_dy
+                    ! tmp2 = Useful variable to reduce computations
+                    tmp2=(wset/0.4_dp)*(z_tmp-bedh+arefh)*(d-arefh)*& 
+                         (arefh*(water-z_tmp)/((z_tmp-bedh+arefh)*(d-arefh)))**(wset/(0.4_dp*us)) &
+                         /(arefh*us*(water-z_tmp))
+
+                    ! df/darefh, evaluated using maxima (symbolic algebra) 
+                    ! -- see code in the file lat_flux.max
+                    ! I then change 'k' to 'wset/0.4' and 'Y-h' to 'd'
+                    ! and 'ustar' to 'us' and 'aref' to 'arefh' and 'Y' to 'water'
+                    ! and 'z' to 'z_tmp', 'h' to 'bedh'
+                    df_darefh = tmp2* & 
+                        1.0_dp*& !(wset/0.4_dp)*(z_tmp-bedh+arefh)*(d-arefh)*& 
+                        1.0_dp*& !(arefh*(water-z_tmp)/((z_tmp-bedh+arefh)*(d-arefh)))**(wset/(0.4_dp*us))*&
+                        (arefh*(water-z_tmp)/((z_tmp-bedh+arefh)**2*(d-arefh))+arefh*(water-z_tmp)/&
+                        ((z_tmp-bedh+arefh)*(d-arefh)**2)) !/(arefh*us*(water-z_tmp))
+
+                    ! df/dus, evaluated using maxima (symbolic algebra) 
+                    ! -- see code in the file lat_flux.max
+                    ! Turns out to have much similarity to df_darefh
+                    ! I then change 'k' to 'wset/0.4' and 'Y-h' to 'd'
+                    ! and 'ustar' to 'us' and 'aref' to 'arefh' and 'Y' to 'water'
+                    ! and 'z' to 'z_tmp', 'h' to 'bedh'
+                    df_dus = tmp2*  &
+                        1.0_dp*& !(wset/0.4_dp)*(z_tmp-bedh+arefh)*(d-arefh)*&
+                        1.0_dp*& !(arefh*(water-z_tmp)/((z_tmp-bedh+arefh)*(d-arefh)))**(wset/(0.4_dp*us))*&
+                        ((water-z_tmp)/((z_tmp-bedh+arefh)*(d-arefh))-arefh*(water-z_tmp)/((z_tmp-bedh+arefh)**2&
+                        *(d-arefh))+arefh*(water-z_tmp)/((z_tmp-bedh+arefh)*(d-arefh)**2))!& 
+                        !/(arefh*us*(water-z_tmp))
+
+                    ! df_dy = df/dbedh*dbedh/dy + df/aref*daref/dy + df/dus*dus/dy
+                    df_dy = df_dbedh*dbed_dy + df_darefh*daref_dy + df_dus*dus_dy
+                    DO j=1,100
+                        IF(isnan(df_dy(j))) THEN
+                            print*, 'df_dy is nan', j, dbed_dy, daref_dy, dus_dy
+                            stop
+                        END IF
+                    END DO
+                    !print*, maxval(abs(df_dy)), maxval(abs(f)), dbed_dy, daref_dy, dus_dy
+                ELSE
+                    !z_tmp = elevation above bed = at 0.5, 1.5, ... 99.5 * depth/100.0,
+                    ! adjusted so z>arefh 
+                    z_tmp = bedh+arefh+ ((d-arefh)/100._dp)*( (/ (j,j=1,100) /)*1.0_dp-0.5_dp)
+                    f = 1.0_dp
+                    df_dy= 0.0_dp
+                END IF
 
             CASE DEFAULT
                 print*, 'ERROR: Invalid value of sus_vert_prof in int_epsy_f'
@@ -727,8 +758,10 @@ SUBROUTINE int_epsy_f(epsy_model,sus_vert_prof,&
         !Integral (epsy*df/dy) dz
         int_edif_dfdy(i) = sum(epsy*df_dy)*d/(1.0_dp*100)
 
+        !print*,'#########', i, int_edif_f(i), int_edif_dfdy(i) 
+        !print*, epsy, df_dy
     END DO
-    
+   
 
 END SUBROUTINE int_epsy_f
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!
