@@ -135,8 +135,8 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     END SELECT
 
     ! Limit zetamult to a non-zero value to avoid division problems
-    zetamult(0)   = 1.0e-012_dp
-    zetamult(a+1) = 1.0e-012_dp
+    zetamult(0)   = 1.0_dp
+    zetamult(a+1) = 1.0_dp
     zetamult = max(zetamult, 1.0e-012)
 
 
