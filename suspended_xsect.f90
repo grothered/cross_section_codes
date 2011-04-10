@@ -631,7 +631,7 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
                 bed_tmp(0:a+1), ustar_tmp(0:a+1), &
                 eps_z, ys_tmp(0:a+1), dbed_dy, depsz_dy, aref_tmp(0:a+1),&
                 arefh, daref_dy, dus_dy, df_dbedh(no_subints), df_darefh(no_subints), df_dus(no_subints), &
-                tmp2(no_subints), z2surf(no_subints), z2bed(no_subints), z2ratio(no_subints)
+                tmp2(no_subints), z2surf(no_subints), z2bed(no_subints), z2ratio(no_subints), dz
 
     ! Predefine bed_tmp, ys, and ustar, including boundary values
     bed_tmp(1:a) = bed
@@ -772,10 +772,11 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
 
 
         !Integral (edify*f) dz
-        int_edif_f(i) = sum(edify*f)*(z_tmp(no_subints)-z_tmp(1))/(1.0_dp*no_subints)
+        dz = (z_tmp(no_subints)-z_tmp(1))/(1.0_dp*no_subints)
+        int_edif_f(i) = sum(edify*f)*dz
         
         !Integral (edify*df/dy) dz
-        int_edif_dfdy(i) = sum(edify*df_dy)*(z_tmp(no_subints)-z_tmp(1))/(1.0_dp*no_subints)
+        int_edif_dfdy(i) = sum(edify*df_dy)*dz
 
         !print*,'#########', i, int_edif_f(i), int_edif_dfdy(i) 
         !print*, edify, df_dy
