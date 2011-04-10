@@ -772,10 +772,10 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
 
 
         !Integral (edify*f) dz
-        int_edif_f(i) = sum(edify*f)*d/(1.0_dp*no_subints)
+        int_edif_f(i) = sum(edify*f)*(z_tmp(no_subints)-z_tmp(1))/(1.0_dp*no_subints)
         
         !Integral (edify*df/dy) dz
-        int_edif_dfdy(i) = sum(edify*df_dy)*d/(1.0_dp*no_subints)
+        int_edif_dfdy(i) = sum(edify*df_dy)*(z_tmp(no_subints)-z_tmp(1))/(1.0_dp*no_subints)
 
         !print*,'#########', i, int_edif_f(i), int_edif_dfdy(i) 
         !print*, edify, df_dy
