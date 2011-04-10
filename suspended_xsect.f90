@@ -692,16 +692,15 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
                     !the 'rouse_int' function, which only converges for
                     !d>2arefh (I apparently built in some safety after a bad
                     !experience)
-                    PRINT*, 'CHECK IF THE ROUSE PROFILE IS CORRECT HERE AND ELSEWHERE'
-                    stop
+
                     !z_tmp = elevation above bed = at 0.5, 1.5, ... 99.5 * depth/no_subints.0,
                     ! adjusted so z>arefh 
                     z_tmp = bedh+arefh+ ((d-arefh)/no_subints*1.0_dp)*( (/ (j,j=1,no_subints) /)*1.0_dp-0.5_dp)
 
                     ! Useful shorthand variables, which save computation
-                    z2surf= water-z_tmp ! Distance from z_tmp to the surface
+                    !z2surf= water-z_tmp ! Distance from z_tmp to the surface
                     z2bed = z_tmp-bedh  ! Distance from z_tmp to the bed
-                    z2ratio = z2surf/(z2bed) ! A ratio that comes up a lot
+                    !z2ratio = z2surf/(z2bed) ! A ratio that comes up a lot
 
                     ! Calculate vertical profile of suspended sediment
                     f = ( (d/z2bed-1.0_dp)/(d/arefh -1.0_dp))**(wset/(0.4_dp*us))
@@ -725,13 +724,13 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
                     ! -- see code in the file lat_flux.max
                     ! [2.5E+0*wset*(Y-h)*(((Y-h)/(z-h)-1)/((Y-h)/aref-1))**(2.5E+0*wset/
                     !     1   ustar)/(aref**2*ustar*((Y-h)/aref-1))]
-                    df_darefh = (wset/0.4_dp)*d*f/(arefh**2*us*(d/aref-1.0_dp))
+                    df_darefh = (wset/0.4_dp)*d*f/(arefh**2*us*(d/arefh-1.0_dp))
 
                     ! Step3: df/dus, evaluated using maxima (symbolic algebra) 
                     ! -- see code in the file lat_flux.max
                     ! [-2.5E+0*wset*(((Y-h)/(z-h)-1)/((Y-h)/aref-1))**(2.5E+0*wset/ustar
                     !     1   )*log(((Y-h)/(z-h)-1)/((Y-h)/aref-1))/ustar**2]
-                    df_dus = (wset/0.4_dp)*f*log((d/z2bed-1.0_dp)/(d/aref-1.0_dp))/us**2
+                    df_dus = (wset/0.4_dp)*f*log((d/z2bed-1.0_dp)/(d/arefh-1.0_dp))/us**2
 
                     ! Step4: df_dy = df/dbedh*dbedh/dy + df/aref*daref/dy + df/dus*dus/dy
                     df_dy = df_dbedh*dbed_dy + df_darefh*daref_dy + df_dus*dus_dy
