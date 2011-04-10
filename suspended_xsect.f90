@@ -11,23 +11,30 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wset, Qe,lambdacon, &
                                 rho,rhos, g, d50, bedl,bedu, ysl, ysu, cb, Cbar, Qbed, &
-                                sconc, counter, high_order_Cflux, a_ref, sus_vert_prof, epsy_model)
+                                sconc, counter, high_order_Cflux, a_ref, sus_vert_prof, edify_model)
     ! Calculate the cross-sectional distribution of suspended sediment using
     ! some ideas from /home/gareth/Documents/H_drive_Gareth/Gareth_and_colab
     ! s/Thesis/Hydraulic_morpho_model/channel_cross_section/paper/idea_for_
     ! simplified_cross_sectional_sus
     
     ! We solve the equation
+    !
     ! depth d (Cbar) / dt + U*depth dCbar/dx +
-    ! V*depth* d(Cbar)/dy - d/dy( eddif_y d(depth Cbar)/dy + eddif_y*cb*dh/dy) -
+    ! V*depth* d(Cbar)/dy - d/dy( Fl ) -
     ! (Es - ws*cb) = 0.
-    ! With suitable approximations for dCbar/dx and V
+    !
+    ! With suitable approximations for dCbar/dx and V, and if needed, numerical
+    ! integration to calculate Fl (the lateral flux)
+    ! Numerically, we use (linear) implicit discretizations, except for the
+    ! dCbar/dx term (explicit)
     
     INTEGER, INTENT(IN)::a, counter
     REAL(dp), INTENT(IN):: delT, ys, bed, water, waterlast, tau, vel, wset, Qe, lambdacon, rho, rhos,g, & 
                                 d50, bedl, bedu,ysl,ysu, sconc, Q, Qbed, a_ref
-    REAL(dp), INTENT(IN OUT):: cb, Cbar ! Near bed suspended sediment concentration, Depth averaged suspended sediment concentration
-    CHARACTER(20), INTENT(IN):: sus_vert_prof, epsy_model
+    ! cb = Near bed suspended sediment concentration, 
+    ! Cbar = Depth averaged suspended sediment concentration
+    REAL(dp), INTENT(IN OUT):: cb, Cbar 
+    CHARACTER(20), INTENT(IN):: sus_vert_prof, edify_model
     LOGICAL, INTENT(IN):: high_order_Cflux
     DIMENSION ys(a), bed(a), tau(a),vel(a), Qe(a), cb(a), Cbar(a),Qbed(a), a_ref(a) 
 
@@ -42,10 +49,9 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     REAL(dp):: DLF(a), DF(a), DUF(a), DU2(a),rcond, ferr, berr, work(3*a), XXX(a, 1)
     REAL(dp):: bandmat(5,a), AFB(7,a), RRR(a), CCC(a), int_edif_f(a+1), int_edif_dfdy(a+1)
     INTEGER::  IPV(a), iwork(a)   
-    LOGICAL:: const_mesh
     CHARACTER(1):: EQUED
-    !CHARACTER(len=20):: c1, c2
-    ! This routine calculates C, Cbar in units m^3/m^3 --- however, elsewhere
+
+    ! This routine calculates cb, Cbar in units m^3/m^3 --- however, elsewhere
     ! they are in kg/m^3 --- so we convert here, and convert back at the end of
     ! the routine
     cb = cb/rhos
@@ -61,32 +67,9 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     ys_temp(0) = ysl
     ys_temp(a+1) = ysu
 
-    ! Lateral eddy diffusivity
-    IF(lambdacon>0._dp) THEN
-        eddif_y(1:a)= lambdacon*sqrt(abs(tau)/rho)*depth(1:a)
-    ELSE
-        IF(counter.eq.1) print*, 'WARNING: Using default eddy diffusivity &
-                                    of 0.2 in in dynamic_sus_dist, because &
-                                    lambdacon = 0.0'
-        eddif_y(1:a)= 0.2_dp*sqrt(abs(tau)/rho)*depth(1:a) 
-    END IF
-    ! Include zero depth boundaries 0 and a+1
-    eddif_y(0) = 0._dp
-    eddif_y(a+1) = 0._dp
-   
-    !IF(.FALSE.) THEN
-    !    eddif_y(1:a)=maxval(eddif_y(1:a)) !eddif_y(1:a)+0.01_dp
-    !    IF(counter.eq.1.) PRINT*, 'WARNING: constant eddy diff'
-    !END IF 
-    
-
-    !IF(.FALSE.) THEN
-    !    eddif_y=0._dp
-    !    IF(counter.eq.1) print*, 'WARNING: Zero eddy diffusivity in dynamic_sus_dist'
-    !END IF
 
     ! Calculate the value of 'zetamult', where:
-    ! zetamult*cbed = depth integrated sediment concentration = Cbar*d  
+    ! zetamult*cbed = Cbar*d = depth integrated sediment concentration
     SELECT CASE(sus_vert_prof) 
 
         CASE('exp')
@@ -104,6 +87,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
             
             DO i=1, a
                 IF((eddif_z(i)>0._dp).and.(depth(i)>0.0e-00_dp)) THEN 
+                    ! Ikeda and Izumi (1991)
                     zetamult(i)= eddif_z(i)/wset*(1._dp-exp(-(wset/eddif_z(i))*max(depth(i),0._dp)) )
                 ELSE 
                     zetamult(i)=1.0e-012_dp !1.0e-04_dp
@@ -142,11 +126,9 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
 
     ! Solve initially for the depth - averaged suspended sediment concentration
     ! depth d (Cbar) / dt + U*depth*dCbar/dx +
-    ! V*depth* d(Cbar)/dy - d/dy( eddif_y d(depth Cbar)/dy + eddif_y*cb*dh/dy) -
+    ! V*depth* d(Cbar)/dy - d/dy( Fl ) -
     ! (Es - ws*cb) = 0.
     !
-    ! We treat everything implicitly except the dCbar/dx term
-    
     
     M1_diag = 0._dp
     M1_lower = 0._dp
@@ -165,68 +147,61 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
         RHS(i)     = RHS(i)     + Cbar(i)*depth(i)/delT
     END DO
         
-    !Check if the mesh is constant -- because if it is, we can use high order
-    !derivative methods
-    IF(maxval(dy_all) - minval(dy_all) < 1.0e-010_dp) THEN
-        const_mesh=.TRUE.
-    ELSE
-        const_mesh=.FALSE.
-    END IF 
-
     ! Advection term -- dC/dx is = (C - C/mean_C*desired_C)/x_length_scale
     dy_all = (ys_temp(2:a+1)-ys_temp(0:a-1))*0.5_dp
     tmp1 = sum(Cbar*vel*depth(1:a)*dy_all) !Cbar flux
     tmp2 =sconc*abs(Q) - sum(Qbed(1:a)*dy_all) !Desired Cbar flux = 'Measure of total load less bedload'
     tmp2 = max(tmp2, 0._dp)
-
-    IF(mod(counter,1000).eq.0) PRINT*, 'sus flux is =', tmp1, '; desired flux is', tmp2
     xlen=1000._dp ! dx
+
+    ! Write output to monitor convegence
+    IF(mod(counter,1000).eq.0) PRINT*, 'sus flux is =', tmp1, '; desired flux is', tmp2
     
     DO i=1,a
-        !Time centred implicit
-        !M1_diag(i) = M1_diag(i) + 0.5_dp*vel(i)*depth(i)*(1._dp-tmp2/tmp1)/xlen !*(1._dp - tmp2/max(tmp1,1.0e-06))/xlen        
-        !RHS(i) = RHS(i) - 0.5_dp*vel(i)*depth(i)*(Cbar(i) - Cbar(i)*tmp2/tmp1)/xlen
         !Explicit
         Cref = Cbar(i)*tmp2/tmp1
-        !Cref = tmp2/Q 
-        !Cref = Cbar(i) + (tmp2-tmp1)/Q 
-        !Cref = Cbar(i)*tmp2/tmp1 - xlen/max(vel(i),1.0e-02)*(Qe(i) - 0._dp*wset*depth(i)*Cbar(i)/zetamult(i))
         RHS(i) = RHS(i) - vel(i)*depth(i)*(Cbar(i) - Cref)/xlen
-
-        !M1_diag(i) = M1_diag(i) + vel(i)*depth(i)*(1._dp/max(vel(i),1.0e-02)*wset*depth(i)/zetamult(i) )
     END DO 
              
-    !END IF
-
-
     DO i = 1, a
         !PRINT*, 'SANITY CHECK a'
         IF(isnan(vd(i))) print*, 'vd(', i,') is NAN'
         IF(isnan(M1_diag(i))) print*, 'M1_diag(', i,') is NaN a'    
         IF(isnan(M1_lower(i))) print*, 'M1_upper(', i,') is NaN a'    
         IF(isnan(M1_upper(i))) print*, 'M1_upper(', i,') is NaN a'    
-
     END DO
-    ! Vd Advection term -- requires prior calculation of vd, using an
-    ! approximate model
-    vd(0) = 0._dp ! lateral velocity*depth at zero depth boundary
+
+    ! Vd Advection term -- requires calculation of vd, using an
+    ! approximate model. Here we use the 2D continuity equation:
+    !
+    ! dwater/dt + d(U*d)/dx + d(V*d)/dy = 0
+    ! 
+    ! in the form:
+    !
+    ! V*d = int( -dwater/dt - d(U*d)/dx) dy 
+    ! 
+    ! with appropriate boundary conditions 
+    vd(0) = 0._dp ! =  (lateral velocity)*(depth at zero depth boundary)=0
     vd(a+1) = 0._dp 
 
+    ! Estimate d(ud)/dx, using
+    ! d(U*d)/dx ~ Ud/Q*dQ/dx --- approximate model for longitudinal momentum derivative
     dUd_dx = 0._dp !Predefine
- 
-    dhdt = (water - waterlast)/delT
-    dQdx = - (ys_temp(a+1) - ys_temp(0))*dhdt  ! dQ/dx = -B* dh/dt, from the cross-sectionally integrated continuity equation
 
+    ! dQ/dx = -B* dh/dt, from the cross-sectionally integrated continuity equation
+    dhdt = (water - waterlast)/delT
+    dQdx = - (ys_temp(a+1) - ys_temp(0))*dhdt  
 
     DO i = 1, a
-        ! Estimate d(ud)/dx, using
-        ! d(U*d)/dx ~ Ud/Q*dQ/dx --- approximate model for longitudinal momentum derivative
         IF(Q.ne.0._dp) dUd_dx(i) = (vel(i)*depth(i)/Q)*dQdx  
-        ! Integrate to get Vd
-        vd(i) = vd(i-1) - (ys_temp(i)-ys_temp(i-1))*(dhdt +0.5_dp*(dUd_dx(i)+dUd_dx(i-1)) )  ! Approximate model for Vd(y) = int_{left_bank}^{y} [- dh/dt -dUd/dx ] dy -- so we are integrating with a trapezoidal type rule
-        IF(depth(i)==0._dp) vd(i) =0._dp
-        ! Upwind discretization of the advective term (FIXME -- consider making
-        ! use of a higher order discretization)
+
+        ! Vd(y) = int_{left_bank}^{y} [- dh/dt -dUd/dx ] dy
+        vd(i) = vd(i-1) - (ys_temp(i)-ys_temp(i-1))*(dhdt +0.5_dp*(dUd_dx(i)+dUd_dx(i-1)) )  
+
+        IF(depth(i)==0._dp) vd(i) = 0._dp
+
+        ! Upwind discretization of the advective term -- fill out the matrices
+        ! (FIXME -- consider making use of a higher order discretization)
         IF((i.ne.1).and.(i.ne.a)) THEN
             IF(vd(i) < 0.0) THEN 
                 dy = ys_temp(i+1) - ys_temp(i)
@@ -240,7 +215,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
         END IF
 
     END DO
-    !write(12,*) vd(1:a)     
+
     DO i = 1, a
         !PRINT*, 'SANITY CHECK b'
         IF(isnan(vd(i))) print*, 'vd(', i,') is NAN'
@@ -254,9 +229,44 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     DO i = 1, a
         ! Calculate a centred dy
         dy_outer = 0.5*(ys_temp(i+1) - ys_temp(i-1))
-        IF(.FALSE.) THEN
-            ! Method with vertically constant eddy diffusivity
+
+        ! Treat the cases with vertically constant / variable lateral eddy
+        ! diffusivity differently
+        IF(edify_model=='Constant') THEN
+            ! Method with vertically constant lateral eddy diffusivity
+            ! This does not require numerical integration to calculate the
+            ! lateral flux:
+            ! int ( eddif_y * d(cb*f)/dy ) dz
+            ! -- so is much faster than the case with vertically
+            ! variable lateral eddy diffusivity. 
+            ! Note though that the code for the case with vertically variable
+            ! lateral eddy diffusivity can also treat the case with vertically
+            ! constant lateral eddy diffusivity -- but it is slower.
     
+            ! Lateral eddy diffusivity
+            IF(lambdacon>0._dp) THEN
+                eddif_y(1:a)= lambdacon*sqrt(abs(tau)/rho)*depth(1:a)
+            ELSE
+                IF(counter.eq.1) print*, 'WARNING: Using default eddy diffusivity &
+                                            of 0.2 in in dynamic_sus_dist, because &
+                                            lambdacon = 0.0'
+                eddif_y(1:a)= 0.2_dp*sqrt(abs(tau)/rho)*depth(1:a) 
+            END IF
+            ! Include zero depth boundaries 0 and a+1
+            eddif_y(0) = 0._dp
+            eddif_y(a+1) = 0._dp
+           
+            !IF(.FALSE.) THEN
+            !    eddif_y(1:a)=maxval(eddif_y(1:a)) !eddif_y(1:a)+0.01_dp
+            !    IF(counter.eq.1.) PRINT*, 'WARNING: constant eddy diff'
+            !END IF 
+            
+            !IF(.FALSE.) THEN
+            !    eddif_y=0._dp
+            !    IF(counter.eq.1) print*, 'WARNING: Zero eddy diffusivity in dynamic_sus_dist'
+            !END IF
+   
+ 
             ! d/dy ( eddify*d(depth Cbar)/dy)
             
             tmp1 = 0.5_dp*(eddif_y(i+1)+eddif_y(i))/(dy_outer*(ys_temp(i+1) - ys_temp(i)))
@@ -298,15 +308,30 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
             END IF
  
         ELSE
-            ! With numerical integration 
+            ! Case with vertically variable eddy diffusivity. This requires
+            ! numerical integration to calculate the flux terms. We calculate
+            !
+            ! int( Fl) dz = int( eddif_y* d(cb*f)/dy ) dz
+            !
+            ! where eddif_y is the lateral eddy diffusivity, which varies with
+            ! z, and f defines the vertical profile of suspended sediment
+            !
+            ! Practically, the integration is based on the following method:
+            !
+            ! int( eddif_y*d(cb*f)/dy ) dz = 
+            ! int( eddif_y*cb*df/dy + eddif_y*f*dcb/dy) dz = 
+            ! cb* int( eddif_y * df/dy) dz + dcb/dy* int(eddif_y*f) dz = 
+            ! cb*(int_edif_dfdy) + dcb/dy*(int_edif_f)
+
             IF(i==1) THEN
-                ! Calculate important integration factors
-                call int_epsy_f(epsy_model, sus_vert_prof, a, ys, bed, ysl, ysu,&
+                ! Calculate important integration factors int_edif_dfdy and
+                ! int_edif_f
+                call int_edify_f(edify_model, sus_vert_prof, a, ys, bed, ysl, ysu,&
                                  bedl, bedu, water, sqrt(abs(tau)/rho), wset,a_ref,&
                                  int_edif_f, int_edif_dfdy,100)
             END IF
 
-            ! d/dy [ dcb/dy*(INT(eddify*f) dz) ]
+            ! d/dy [ dcb/dy*(int(eddif_y*f) dz) ]
             tmp1 = 1.0_dp/dy_outer
             tmp2 = 1.0_dp/(ys_temp(i+1)-ys_temp(i))
             IF(i<a) THEN
@@ -324,7 +349,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
             
 
             
-            !! d/dy ( cb*INT(epsy*df/dy )dz  )
+            !! d/dy ( cb*INT(edify*df/dy )dz  )
             IF(i<a) THEN
                 M1_upper(i) = M1_upper(i) - 0.5_dp*tmp1*int_edif_dfdy(i+1)*(depth(i+1)/zetamult(i+1))  ! Note that depth(i)/zetamult(i)*Cbar = cb
                 M1_diag(i)  = M1_diag(i)  - 0.5_dp*tmp1*int_edif_dfdy(i+1)*(depth(i)/zetamult(i))
@@ -568,33 +593,33 @@ END FUNCTION rouse_int
 !!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!
-SUBROUTINE int_epsy_f(epsy_model,sus_vert_prof,& 
+SUBROUTINE int_edify_f(edify_model,sus_vert_prof,& 
                       a,ys,bed,ysl, ysu, bedl, bedu, &
                       water, ustar,wset, a_ref, &
                       int_edif_f, int_edif_dfdy, no_subints)
     ! PURPOSE: 
     !   To calculate
     !
-    ! Integral ( epsy*f) dz
+    ! Integral ( edify*f) dz
     ! and,
-    ! Integral (epsy*df/dy) dz
+    ! Integral (edify*df/dy) dz
     !
     ! Where z is a vertical coordinate,
-    ! epsy is the horizontal eddy diffusivity (varying in the vertical), and 
+    ! edify is the horizontal eddy diffusivity (varying in the vertical), and 
     ! f defines the vertical profile of suspended sediment ( so c(z) = cbed*f(z) )
     !
     ! These integral is useful in computing the vertically integrated lateral flux of
     ! suspended load = 
-    ! INT (epsy*dc/dy) dz = 
-    ! INT(epsy*cb*df/dy + epsy*f*dcb/dy) dz =
-    ! cb*INT(epsy*df/dy) dz + dcb/dy*INT(epsy*f) dz
+    ! INT (edify*dc/dy) dz = 
+    ! INT(edify*cb*df/dy + edify*f*dcb/dy) dz =
+    ! cb*INT(edify*df/dy) dz + dcb/dy*INT(edify*f) dz
     !
     ! OUTPUTS: 
-    !   int_edif_f = Integral ( epsy*f) dz, evaluated between grid points (i.e. 0.5, 1.5, ...a+0.5)
-    !   int_edif_dfdy = Integral ( epsy*df/dy) dz, evaluated between grid points (i.e. 0.5, 1.5, ...a+0.5)
+    !   int_edif_f = Integral ( edify*f) dz, evaluated between grid points (i.e. 0.5, 1.5, ...a+0.5)
+    !   int_edif_dfdy = Integral ( edify*df/dy) dz, evaluated between grid points (i.e. 0.5, 1.5, ...a+0.5)
     !
     INTEGER, INTENT(IN):: a, no_subints
-    CHARACTER(len=20), INTENT(IN):: epsy_model, sus_vert_prof
+    CHARACTER(len=20), INTENT(IN):: edify_model, sus_vert_prof
     REAL(dp), INTENT(IN):: ys, bed, ysl, ysu, bedl, bedu, ustar, water, wset, a_ref
     REAL(dp), INTENT(OUT):: int_edif_f, int_edif_dfdy
     DIMENSION ys(a), bed(a), ustar(a), int_edif_f(a+1), int_edif_dfdy(a+1), a_ref(a)
@@ -602,7 +627,7 @@ SUBROUTINE int_epsy_f(epsy_model,sus_vert_prof,&
     ! Local variables
     INTEGER:: i, j
 
-    REAL(dp):: d, us,bedh, f(no_subints), epsy(no_subints), df_dy(no_subints), z_tmp(no_subints), &
+    REAL(dp):: d, us,bedh, f(no_subints), edify(no_subints), df_dy(no_subints), z_tmp(no_subints), &
                 bed_tmp(0:a+1), ustar_tmp(0:a+1), &
                 eps_z, ys_tmp(0:a+1), dbed_dy, depsz_dy, aref_tmp(0:a+1),&
                 arefh, daref_dy, dus_dy, df_dbedh(no_subints), df_darefh(no_subints), df_dus(no_subints), &
@@ -737,39 +762,39 @@ SUBROUTINE int_epsy_f(epsy_model,sus_vert_prof,&
                 END IF
 
             CASE DEFAULT
-                print*, 'ERROR: Invalid value of sus_vert_prof in int_epsy_f'
+                print*, 'ERROR: Invalid value of sus_vert_prof in int_edify_f'
                 stop
 
         END SELECT
 
         ! Create horizontal eddy diffusivity profile     
-        SELECT CASE(epsy_model)
+        SELECT CASE(edify_model)
             CASE('constant')
-                epsy = 0.24*d*us ! Constant
+                edify = 0.24*d*us ! Constant
             CASE('Parabolic')
-                epsy = 0.4_dp*us*d*(z_tmp-bedh)*(water-z_tmp)/(0.25_dp*d**2) ! Parabolic
+                edify = 0.4_dp*us*d*(z_tmp-bedh)*(water-z_tmp)/(0.25_dp*d**2) ! Parabolic
             CASE('Parabola_const')
                 ! Parabolic lower half, constant upper half
-                epsy = 0.4_dp*us*d*min(z_tmp-bedh, d*0.5_dp)*max(water-z_tmp,d*0.5_dp)/(0.25_dp*d**2)
+                edify = 0.4_dp*us*d*min(z_tmp-bedh, d*0.5_dp)*max(water-z_tmp,d*0.5_dp)/(0.25_dp*d**2)
             CASE DEFAULT
-                print*, 'ERROR: Invalid value of epsy_model in int_epsy_f'
+                print*, 'ERROR: Invalid value of edify_model in int_edify_f'
                 stop
                 
         END SELECT    
 
 
-        !Integral (epsy*f) dz
-        int_edif_f(i) = sum(epsy*f)*d/(1.0_dp*no_subints)
+        !Integral (edify*f) dz
+        int_edif_f(i) = sum(edify*f)*d/(1.0_dp*no_subints)
         
-        !Integral (epsy*df/dy) dz
-        int_edif_dfdy(i) = sum(epsy*df_dy)*d/(1.0_dp*no_subints)
+        !Integral (edify*df/dy) dz
+        int_edif_dfdy(i) = sum(edify*df_dy)*d/(1.0_dp*no_subints)
 
         !print*,'#########', i, int_edif_f(i), int_edif_dfdy(i) 
-        !print*, epsy, df_dy
+        !print*, edify, df_dy
     END DO
    
 
-END SUBROUTINE int_epsy_f
+END SUBROUTINE int_edify_f
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!
