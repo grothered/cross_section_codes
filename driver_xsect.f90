@@ -253,25 +253,18 @@ DO Q_loop= 1, no_discharges!15
         ! Update the critical shear layers to account for any slope effects
         DO i = 1, nos
             DO jj= 0, layers
-                !if((bed(i)> 0._dp).and.(jj>1)) mu= mu*100.5_dp
+
                 multa=1._dp
-                IF(.FALSE.) THEN !A convenient way to make clear that this code doesn't matter
+                IF(.FALSE.) THEN 
+                    ! Compute slope-related reduction in critical shear stress
                     aa= mu**2*(mu*lifttodrag-1._dp)/(mu*lifttodrag+1._dp)
                     bb= -2._dp*mu**2*lifttodrag*cos(atan(slopes(i)))*mu/(1._dp+mu*lifttodrag) 
                     cc= mu**2*cos(atan(slopes(i)))**2 - sin(atan(slopes(i)))**2
-                    !!!!if((bed(i)> 0._dp).and.(jj>1)) mu= mu/100.5_dp
-                    multa= (-bb - sqrt(bb**2-4._dp*aa*cc))/ (2._dp*aa) !We multiply this by the critical shear on a flat bed to get the critical shear on a slope. 
-                    !Correct for any problems
-                    !IF((multa<0.2_dp).OR.(isnan(multa))) THEN
-                    !    multa=0.2_dp !1000._dp*epsilon(multa)
-                    !     !  print*,  'multaprob'
-                    !      !stop
-                    !END IF
+                    !multa*(critical shear on a flat bed) = critical shear on a slope.
+                    multa= (-bb - sqrt(bb**2-4._dp*aa*cc))/ (2._dp*aa)  
                     IF((j==1).and.(i==1).and.(jj==0)) PRINT*, 'WARNING: Slope dependent critical shear stress' 
-                END IF !!GET RID OF THE ABOVE CHUNCK OF CODE
+                END IF
 
-                !if(bed(i)>-100.3_dp) multa=1._dp
-                !if((jj>-1).AND.(abs(slopes(i))<mu)) multa=1._dp
                 taucrit(i,jj) = erconst*(1._dp+ jj*1._dp)*max(multa,1.0e-01_dp)
 
                 IF( isnan(taucrit(i,jj))) THEN
@@ -281,19 +274,6 @@ DO Q_loop= 1, no_discharges!15
 
             END DO 
         END DO
-
-        !FIXME: Outdated 
-        !Update the maximum slope that layers are permitted at (with regard to the geotech routine)
-        !IF(.FALSE.) THEN
-        !    DO i = 1, nos
-        !        DO jj= 0, layers
-        !            slpmx(i,jj)=smax
-        !            IF(bed(i)>-1._dp) slpmx(i,jj)=smax !4._dp
-        !            !end if
-        !        END DO 
-        !    END DO
-        !END IF
-
 
         !!Update taucrit_dep
         !$OMP PARALLEL DO
@@ -453,7 +433,12 @@ DO Q_loop= 1, no_discharges!15
             ! Calculate depth-averaged velocity
             vel = 0._dp 
             vel(l:u)=sqrt(abs(tau(l:u))/rho*8._dp/f(l:u))*sign(1._dp+0._dp*tau(l:u), tau(l:u))
-            
+          
+            ! Calculate grain shear stress 
+            ! NOTE THAT vanrijn writes that taug = 0.5*f_g*rho*U^2 -- however, his
+            ! data in table2 of the paper are better predicted using the
+            ! 'normal' formula, tau = rho f/8 U^2 --- I think the paper must
+            ! have a typo
             tau_g = 0._dp
             !tau_g(l:u) = 0.5_dp*rho*vel(l:u)**2*(f_g(l:u))*sign(1._dp+0._dp*tau(l:u), tau(l:u))
             !Following Abdel-Fattah et al 2004

@@ -720,13 +720,9 @@ SUBROUTINE calc_friction(friction_type, grain_friction_type, rough_coef, water,&
     REAL(dp):: onethird = (1.0_dp/3.0_dp)
 
 
-    
-    !f(1) = -9999.0_dp !Trick to catch errors in setting the variable 'friction_type' 
-   
-
     ! Friction factors
     SELECT CASE(friction_type)
-    !IF(friction_type == 'manning') THEN
+
         CASE('manning')
             ! Manning style friction
             DO i= 1, a
@@ -742,14 +738,12 @@ SUBROUTINE calc_friction(friction_type, grain_friction_type, rough_coef, water,&
             !    f_tmp(a) = 0.25_dp*(3.0_dp*f(a) + f(a-1))
            
             !    f = f_tmp 
-    !END IF
+
         CASE('darcy')
-    !IF(friction_type == 'darcy') THEN
             !Darcy-weisbach style friction factor
             f= rough_coef 
-    !END IF !m
+
         CASE('ks') 
-    !IF(friction_type == 'ks') THEN
             ! Roughness height style friction factor
             ks = rough_coef
 
@@ -758,9 +752,8 @@ SUBROUTINE calc_friction(friction_type, grain_friction_type, rough_coef, water,&
             !f(i) = 8._dp*g/(18.0_dp*log10(12.0_dp*max((water-bed(i)),ks)/ks))**2
             f(i) = 8.0_dp*(0.4_dp/log(max(water-bed(i), 3.0_dp*ks)/ks - 1.0_dp))**2
             END DO
-    !END IF
+
         CASE('vanrijn') 
-    !IF(friction_type == 'vanrijn') THEN
             ! van Rijn (2007) friction -- note that I am concerned that there could
             ! easily be typos in this paper (or in my coding of it!) 
             ! First need to calculate roughness height
