@@ -330,6 +330,8 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
                 call int_edify_f(edify_model, sus_vert_prof, a, ys, bed, ysl, ysu,&
                                  bedl, bedu, water, sqrt(abs(tau)/rho), wset,a_ref,&
                                  int_edif_f, int_edif_dfdy,100)
+                !int_edif_f=0._dp
+                !int_edif_dfdy=0._dp
             END IF
 
             ! d/dy [ dcb/dy*(int(eddif_y*f) dz) ]
