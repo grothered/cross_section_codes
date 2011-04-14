@@ -90,7 +90,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
                     ! Ikeda and Izumi (1991)
                     zetamult(i)= eddif_z(i)/wset*(1._dp-exp(-(wset/eddif_z(i))*max(depth(i),0._dp)) )
                 ELSE 
-                    zetamult(i)=1.0e-06_dp !1.0e-04_dp
+                    zetamult(i)=1.0e-08_dp !1.0e-04_dp
                 END IF
             END DO
 
