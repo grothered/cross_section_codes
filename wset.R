@@ -115,6 +115,9 @@ vrijn_bed<-function(vel, h, d50, d90){
 }
 
 test_vrijn_bed<-function(){
+    # Compares the predictions of the vanrijn bedload formula with some data
+    # presented in van Rijn (2007a)
+
     #Measurement data from Table 2 of vanrijn 2007a
     d50 = c(1050, 1050, 950, 530, 530, 530, 530, 530, 690, 400, 400, 400, 400, 400)/1e+06
     d90 = c(1750, 1750, 1550, 700, 700, 700, 900, 1300, 1270, 1000, 1000, 1000, 1000, 1000)/1e+06

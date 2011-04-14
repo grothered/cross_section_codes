@@ -24,7 +24,8 @@ REAL(dp):: wslope, ar, Q, t, &
             tauinc, erconst, lifttodrag, vegdrag, sconc, rho, ysold, &
             lincrem, wset, voidf, smax, rough_coef, man_nveg, veg_ht,rhos,&
             dsand, d50, g, kvis, lambdacon, alpha, &
-            ysl,ysu,bedl, bedu, wdthx, TR, storer(9), tmp, tmp2, a_ref
+            ysl,ysu,bedl, bedu, wdthx, TR, storer(9), tmp, tmp2, a_ref, &
+            failure_slope
 INTEGER::  remesh_freq, no_discharges
 REAL(dp):: discharges(1000), susconcs(1000)
 LOGICAL::  flag, susdist, sus2d, readin, geo, remesh, norm, vertical, & 
@@ -43,7 +44,8 @@ NAMELIST /inputdata/ nos,writfreq,jmax, layers, hlim, mor, mu, tauinc,&
                 integrated_load_flux, friction_type, no_discharges, &
                 discharges, susconcs, high_order_shear, &
                 high_order_bedload, high_order_Cflux, grain_friction_type, &
-                resus_type, bedload_type, sus_vert_prof, edify_model
+                resus_type, bedload_type, sus_vert_prof, edify_model, &
+                failure_slope
 
 ALLOCATABLE ys(:), bed(:), dists(:), tau(:),ks(:),tbst(:),& 
             recrd(:), bedlast(:), hss(:), tss(:),  hss2(:), Qe(:),& 
@@ -255,7 +257,8 @@ DO Q_loop= 1, no_discharges!15
             DO jj= 0, layers
 
                 multa=1._dp
-                IF(.FALSE.) THEN 
+                IF(.TRUE.) THEN 
+                    IF((j.eq.1).and.(i.eq.1)) print*, 'WARNING: Critical shear on a slope is reduced'
                     ! Compute slope-related reduction in critical shear stress
                     aa= mu**2*(mu*lifttodrag-1._dp)/(mu*lifttodrag+1._dp)
                     bb= -2._dp*mu**2*lifttodrag*cos(atan(slopes(i)))*mu/(1._dp+mu*lifttodrag) 
@@ -338,7 +341,7 @@ DO Q_loop= 1, no_discharges!15
             STOP
         END IF
 
-        IF ((Area<0.02).OR.(maxval(water-bed(l:u))<.05)) THEN 
+        IF ((Area<0.0002).OR.(maxval(water-bed(l:u))<.01)) THEN 
             !If we let the area go to zero, then the continuity model will allow
             !very very high velocities (since Q/A can be very large). This is
             !unrealistic because in practise the flat water slope assumption
@@ -435,10 +438,10 @@ DO Q_loop= 1, no_discharges!15
             vel(l:u)=sqrt(abs(tau(l:u))/rho*8._dp/f(l:u))*sign(1._dp+0._dp*tau(l:u), tau(l:u))
           
             ! Calculate grain shear stress 
-            ! NOTE THAT vanrijn writes that taug = 0.5*f_g*rho*U^2 -- however, his
+            ! NOTE that vanrijn writes that taug = 0.5*f_g*rho*U^2 -- however, his
             ! data in table2 of the paper are better predicted using the
             ! 'normal' formula, tau = rho f/8 U^2 --- I think the paper must
-            ! have a typo
+            ! have a typo. See the function test_vrijn_bed() in wset.R
             tau_g = 0._dp
             !tau_g(l:u) = 0.5_dp*rho*vel(l:u)**2*(f_g(l:u))*sign(1._dp+0._dp*tau(l:u), tau(l:u))
             !Following Abdel-Fattah et al 2004
@@ -586,38 +589,18 @@ DO Q_loop= 1, no_discharges!15
                 ! These methods change DT1 during the evolution of the
                 ! cross-section
                 
-                !FIXME: At the moment, this slows the morphological evolution,
-                !but has no effect on the actual time t - so it can only produce
-                !the correct solutions for steady state computations
-
                 IF(j.eq.1) print*, ' Warning: Variable timestep is ONLY valid for &
                         STEADY UNIFORM EQUILIBRIUM computations'
 
-                !IF(.FALSE.) THEN
-                !    ! Change the timestep according to the rate of deposition
-                !    DT1 = min(DT,0.003_dp/max(abs(maxval(C(l:u)*wset/rhos)*mor), 0.0000001_dp)) 
-                !ELSEIF(.FALSE.) THEN
-                !    ! Change the timestep according to the rate of morphological
-                !    ! change
-                !    DT1 = min(DT,0.003_dp/max(maxval(abs(bed(l:u) - bedlast(l:u))), 0.0000001_dp)) 
-                !ELSEIF(.TRUE.) THEN
-                    !tmp = max(maxval(abs(wset*C/rhos- Qe))/1.0_dp, maxval(abs(bed - bedlast)/DT1))
-                    tmp = min(max(maxval(abs(wset*C/rhos- Qe)), maxval(abs(recrd(l-1:u)))), &
-                              maxval(abs(bed(l+1:u-1) - bedlast(l+1:u-1))) )
-                    tmp2 = minval(ys(2:nos) - ys(1:nos-1)) 
-                    !tmp = max(maxval(abs(wset*C/rhos- Qe)), maxval(abs(bed - bedlast)))
-                    !tmp = max(maxval(abs(recrd(l-1:u)))*0.1_dp, maxval(abs(bed - bedlast)))
-                    !tmp = max(maxval(abs(bed - bedlast)/DT1), 0.00001_dp)
-                    !DT1_old = DT1
-                    !tmp = maxval(abs(wset*C/rhos- Qe))*1.00_dp
-                    DT1 = min(max(1.0e-03_dp*tmp2/max(tmp,1.0e-020_dp), 1.0_dp), 100.0_dp*3600.0_dp)
-                    ! Get bed to accelerate 
-                    !mor = min(max(3.0e-03_dp/(maxval(abs(bed-bedlast))/DT1_old*DT1), 1.0_dp), 5._dp)
-                !END IF
+                tmp = min(max(maxval(abs(wset*C/rhos- Qe)), maxval(abs(recrd(l-1:u)))), &
+                          maxval(abs(bed(l+1:u-1) - bedlast(l+1:u-1))) )
+                tmp2 = minval(ys(2:nos) - ys(1:nos-1)) 
+                DT1 = min(max(1.0e-03_dp*tmp2/max(tmp,1.0e-020_dp), 1.0_dp), 100.0_dp*3600.0_dp)
 
             ELSE
                 DT1 = DT
             END IF 
+
             ! Add random sedimentation to the channel
             ! This is a technique to prevent the channel from converging to a
             ! marginally stable state where tau_g < taucrit, which is dependent
@@ -653,11 +636,6 @@ DO Q_loop= 1, no_discharges!15
             !                            max((water-bed(i))*0.01_dp, min(0.02_dp, (water-bed(i))*0.1_dp)), water) 
             !END DO
                 
-            !bed(l:u)= min(bed(l:u), water-0.00001_dp)
-
-            !slopes((l):(u)) = (bed(l+1:u+1)-bed(l-1:u-1))/(ys(l+1:u+1)-ys(l-1:u-1))
-            !slopes(l)=(bed(l+1)-bed(l))/(ys(l+1)-ys(l))
-            !slopes(u)=(bed(u-1)-bed(u))/(ys(u-1)-ys(u))
         END DO
 
         ! Basic limiting of the channel slope -- to circumvent the numerically
@@ -667,13 +645,16 @@ DO Q_loop= 1, no_discharges!15
             !FIXME: At present, this is only valid(mass conserving) with a uniform mesh
             ! Move from centre of channel to left bank
             DO i=nos/2,2,-1
-                IF(abs(bed(i)-bed(i-1))>(ys(i)-ys(i-1))) THEN
+                IF(abs(bed(i)-bed(i-1))>failure_slope*(ys(i)-ys(i-1))) THEN
                     IF(bed(i)>bed(i-1)) THEN
-                        tmp = bed(i)-(bed(i-1) + ys(i)-ys(i-1))
+                        ! Note the 'explicit' nature of the computation:
+                        ! bed(post_failure) = bed(pre_failure) +
+                        !                     failure_amount(pre_failure)
+                        tmp = bed(i)-(bed(i-1) + failure_slope*(ys(i)-ys(i-1)) )
                         hss(i) = hss(i)-tmp*0.5_dp
                         hss(i-1) = hss(i-1) + tmp*0.5_dp    
                     ELSE
-                        tmp = bed(i-1)-(bed(i) + ys(i)-ys(i-1))
+                        tmp = bed(i-1)-(bed(i) + failure_slope*(ys(i)-ys(i-1)) )
                         hss(i) = hss(i)+tmp*0.5_dp
                         hss(i-1) = hss(i-1) - tmp*0.5_dp    
 
@@ -683,18 +664,16 @@ DO Q_loop= 1, no_discharges!15
             END DO
             ! Move from centre of channel to right bank
             DO i=nos/2,nos-1,1
-                IF(abs(bed(i)-bed(i+1))>(ys(i+1)-ys(i))) THEN
+                IF(abs(bed(i)-bed(i+1))>failure_slope*(ys(i+1)-ys(i))) THEN
                     IF(bed(i)>bed(i+1)) THEN
-                        tmp = bed(i)-(bed(i+1) + ys(i+1)-ys(i))
+                        tmp = bed(i)-(bed(i+1) + failure_slope*(ys(i+1)-ys(i)) )
                         hss(i) = hss(i)-tmp*0.5_dp
                         hss(i+1) = hss(i+1) + tmp*0.5_dp    
                     ELSE
-                        tmp = bed(i+1)-(bed(i) + ys(i+1)-ys(i))
+                        tmp = bed(i+1)-(bed(i) + failure_slope*(ys(i+1)-ys(i)) )
                         hss(i) = hss(i)+tmp*0.5_dp
                         hss(i+1) = hss(i+1) - tmp*0.5_dp    
-
                     END IF
-                    
                 END IF
             END DO
 

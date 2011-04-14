@@ -33,7 +33,7 @@ Width = 100.0 !Width of computational domain (m)
 
 no_discharges=1
 Discharges = 29.4
-susconcs = 1.0e-03
+susconcs = 1.0e-04
 friction_type = 'manning'!, 'darcy', 'vanrijn'
 rough_coef=0.027
 grain_friction_type='vanrijn' !'colebrook'!'vanrijn'
@@ -45,7 +45,8 @@ tbston=.true. !When true (false) this term switches on (off) the sqrt(1+slopes^2
 
 layers=1 !The number of bed layers
 lincrem = 1000.031 ! The distance between bed layers (m). Set it to a very high number to avoid the multi bed layers having any influence.
-mu = 10000.60 !Angle of repose - this can be used to influence the critical shear stress if the code is adjusted
+mu = .60 !Angle of repose - this can be used to influence the critical shear stress if the code is adjusted
+failure_slope = 1.5 ! Slope at which mass failure occurs
 tauinc = 0.00 ! A DEFUNCT constant (Pa)
 erconst = 0.13  ! The constant determining the min critical shear and the critical shear increment
 wset = 0.014 ! Settling velocity of sediment in m/s
@@ -67,21 +68,21 @@ resus_type = 'vanrijn'! ! 'cohesive', 'vanrijn', 'smithmac'
 susdist = .TRUE. !Do we have a laterally variable suspended load? This can ONLY treat the case of steady state. The total load flux (bedload + spsuended load) is assumed to be integrated_load_flux
 sus_vert_prof='Rouse' !'exp', 'Rouse'
 edify_model='Parabola_const' ! 'Constant', 'Parabolic', 'Parabola_const'
-susQbal= .FALSE. !Is there a balance between the lateral flux of suspended load and bedload? Only relevant if susdist=.true.
-integrated_load_flux=-1.0 !The total flux (suspended load + bedload) through the cross-section, in kg/s =  (kg/m^3)*m^2*m/s. Only used if susdist=.true.
+susQbal= .FALSE. ! DEPRECIATED: Is there a balance between the lateral flux of suspended load and bedload? Only relevant if susdist=.true.
+integrated_load_flux=-1.0 !DEPRECIATED: The total flux (suspended load + bedload) through the cross-section, in kg/s =  (kg/m^3)*m^2*m/s. Only used if susdist=.true.
 sus2d = .false. !Do we use a fully 2d suspended sediment - this is only applicable to the case with many cross sections strung together - the quasi 2d model.
 norm=.false. !Is erosion to be directed normal to the bed?
-vertical=.true. !Is the vertical shear method (SKM) to be used (support for Pizzuto method may not be complete, and in this case it should be .true.
+vertical=.true. ! POORLY TESTED .false. CASE: Is the vertical shear method (SKM) to be used (support for Pizzuto method may not be complete, and in this case it should be .true.
 
 readin = .FALSE. !Do we read the initial conditions from a file?
-geo = .false. !Do we use the 'geotech' algorithm to prevent steep slopes? This is also a bit outdated
-smax= 200.0 !The max slope when geo=.true. A bit outdated
+geo = .false. ! RARELY USE .true. ANYMORE: Do we use the 'geotech' algorithm to prevent steep slopes? This is also a bit outdated
+smax= 200.0 ! DEPRECIATED: The max slope when geo=.true. A bit outdated
 remesh=.FALSE. !Do we remesh
 remesh_freq= 5000 !How many time steps before we consider remesh (only active if remesh=.true.)
 normmov=.false. !Do the bed points actually shift with the D-E vector? This is only supported for pure suspended load without bed layers.
 
-high_order_shear=.FALSE. ! Do we try to use a higher order estimate of derivatives in the shear approximation
-high_order_bedload=.FALSE. !Do we try to use a higher order estimate of derivatives in the downslope bedload approximation
-high_order_Cflux=.FALSE. ! Do we try to use a higher order estimate of derivatives in the dynamic_sus_dist routine
+high_order_shear=.FALSE. !LITTLE EXPERIENCE WITH .true. CASE: Do we try to use a higher order estimate of derivatives in the shear approximation
+high_order_bedload=.FALSE. !LITTLE EXPERIENCE WITH .true CASE: Do we try to use a higher order estimate of derivatives in the downslope bedload approximation
+high_order_Cflux=.FALSE. !DEPRECIATED: Do we try to use a higher order estimate of derivatives in the dynamic_sus_dist routine
 /
 

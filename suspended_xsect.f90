@@ -242,30 +242,31 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
             ! Note though that the code for the case with vertically variable
             ! lateral eddy diffusivity can also treat the case with vertically
             ! constant lateral eddy diffusivity -- but it is slower.
-    
-            ! Lateral eddy diffusivity
-            IF(lambdacon>0._dp) THEN
-                eddif_y(1:a)= lambdacon*sqrt(abs(tau)/rho)*depth(1:a)
-            ELSE
-                IF(counter.eq.1) print*, 'WARNING: Using default eddy diffusivity &
-                                            of 0.2 in in dynamic_sus_dist, because &
-                                            lambdacon = 0.0'
-                eddif_y(1:a)= 0.2_dp*sqrt(abs(tau)/rho)*depth(1:a) 
-            END IF
-            ! Include zero depth boundaries 0 and a+1
-            eddif_y(0) = 0._dp
-            eddif_y(a+1) = 0._dp
-           
-            !IF(.FALSE.) THEN
-            !    eddif_y(1:a)=maxval(eddif_y(1:a)) !eddif_y(1:a)+0.01_dp
-            !    IF(counter.eq.1.) PRINT*, 'WARNING: constant eddy diff'
-            !END IF 
-            
-            !IF(.FALSE.) THEN
-            !    eddif_y=0._dp
-            !    IF(counter.eq.1) print*, 'WARNING: Zero eddy diffusivity in dynamic_sus_dist'
-            !END IF
    
+            IF(i==1) THEN 
+                ! Lateral eddy diffusivity
+                IF(lambdacon>0._dp) THEN
+                    eddif_y(1:a)= lambdacon*sqrt(abs(tau)/rho)*depth(1:a)
+                ELSE
+                    IF(counter.eq.1) print*, 'WARNING: Using default eddy diffusivity &
+                                                of 0.2 in in dynamic_sus_dist, because &
+                                                lambdacon = 0.0'
+                    eddif_y(1:a)= 0.2_dp*sqrt(abs(tau)/rho)*depth(1:a) 
+                END IF
+                ! Include zero depth boundaries 0 and a+1
+                eddif_y(0) = 0._dp
+                eddif_y(a+1) = 0._dp
+               
+                !IF(.FALSE.) THEN
+                !    eddif_y(1:a)=maxval(eddif_y(1:a)) !eddif_y(1:a)+0.01_dp
+                !    IF(counter.eq.1.) PRINT*, 'WARNING: constant eddy diff'
+                !END IF 
+                
+                !IF(.FALSE.) THEN
+                !    eddif_y=0._dp
+                !    IF(counter.eq.1) print*, 'WARNING: Zero eddy diffusivity in dynamic_sus_dist'
+                !END IF
+            END IF 
  
             ! d/dy ( eddify*d(depth Cbar)/dy)
             

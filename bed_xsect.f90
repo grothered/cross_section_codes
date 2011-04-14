@@ -346,6 +346,14 @@ SUBROUTINE update_bed(a, dT, water, Q, bed,ys,Area, Width,bottom, ff,recrd, E, D
         qb_G(0) = 0.0_dp
         qb_G(a) = 0.0_dp
     END IF
+    
+    IF(.TRUE.) THEN
+        IF(counter.eq.1) print*, 'WARNING: qb_G(i+1/2) set to zero if taug(i) or taug(i+1) < taucrit'
+        DO i=1,a-1
+           IF((tau(i)<=taucrit(i,0)).AND.(tau(i+1)<=taucrit(i+1,0))) qb_G(i)=0._dp
+        END DO 
+    END IF
+
     !Next we check if qb_G =0 everywhere. If so, then there is no point solving the
     !matrix equation.
     IF(maxval(abs(qb_G)).EQ.0._dp) THEN 

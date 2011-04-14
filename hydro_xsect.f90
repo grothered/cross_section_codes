@@ -649,7 +649,7 @@ SUBROUTINE roughmult(aa,rmu, vel, Q, A, width,tbst,depths, ys, f, vegdrag, &
                      counter, ysl, ysu, bedl, bedu,bed,water,g)
     !This is for calculating the constant that we should multiply the friction
     !slope in the 1D model by, in order to account for the lateral distribution of
-    !velocity. So it basicaly gives a roundness coefficient, although actually,
+    !velocity. So it basicaly gives a roughness coefficient, although actually,
     !we get the (roughness coefficient/ depth) for numerical stability reasons
     INTEGER, INTENT(IN)::aa, counter
     REAL(dp), INTENT(IN OUT):: rmu
@@ -831,8 +831,13 @@ SUBROUTINE calc_friction(friction_type, grain_friction_type, rough_coef, water,&
              ! NOTE THAT vanrijn writes that tau = 0.5*f*rho*U^2 -- however, his
              ! data in table2 of the paper are better predicted using the
              ! 'normal' formula, tau = rho f/8 U^2 --- I think the paper must
-             ! have a type
+             ! have a typo
              f_g =(8._dp*g/(18._dp*log10(12._dp*max(water-bed, 20.0_dp*3.0_dp*d50)/(3._dp*d50)+0.0_dp)+0.0e+00_dp)**2)
+             
+             ! Note that this version (log instead of log10) gave me nice
+             ! results in an early version of the code --- but it is not
+             ! correct!
+             !f_g =(8._dp*g/(18._dp*log(12._dp*max(water-bed, 20.0_dp*3.0_dp*d50)/(3._dp*d50)+0.0_dp)+0.0e+00_dp)**2)
 
         CASE('colebrook') 
             ! Colebrook and White, following Chanson (2004)
