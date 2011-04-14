@@ -115,6 +115,9 @@ SUBROUTINE calc_resus_bedload(a, dT, water, Q, bed,ys,Area, Width,bottom, ff,rec
                             d_star = (d50*((rhos/rho-1._dp)*g/kvis**2)**(1._dp/3._dp))  !Van Rijn d_star parameter
                             c_a = 0.015_dp*max(dsand/d50,1.0_dp)*d50/(a_ref(i)*d_star**0.3_dp)* & 
                                     (max(0._dp,abs(tau(i))-taucrit(i,jj))/taucrit(i,jj))**1.5_dp ! Van Rijn reference concentration, in m^3/m^3     
+                            !IF(c_a>150.0_dp) THEN
+                                 
+                            !END IF
                             Qelocal = wset*c_a*sllength(i) !/rhos !Rate of erosion in m/s of SOLID material
                             
                         CASE('smithmac')

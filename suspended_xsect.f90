@@ -90,7 +90,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
                     ! Ikeda and Izumi (1991)
                     zetamult(i)= eddif_z(i)/wset*(1._dp-exp(-(wset/eddif_z(i))*max(depth(i),0._dp)) )
                 ELSE 
-                    zetamult(i)=1.0e-012_dp !1.0e-04_dp
+                    zetamult(i)=1.0e-06_dp !1.0e-04_dp
                 END IF
             END DO
 
@@ -121,7 +121,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     ! Limit zetamult to a non-zero value to avoid division problems
     zetamult(0)   = 1.0_dp
     zetamult(a+1) = 1.0_dp
-    zetamult = max(zetamult, 1.0e-012)
+    zetamult = max(zetamult, 1.0e-08)
 
 
     ! Solve initially for the depth - averaged suspended sediment concentration
@@ -662,7 +662,7 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
 
         eps_z =0.5_dp*( 0.1_dp*ustar_tmp(i)*max(water-bed_tmp(i),0.0_dp) + &
                         0.1_dp*ustar_tmp(i-1)*max(water-bed_tmp(i-1),0.0_dp)) 
-        eps_z = max(eps_z,1.0e-012_dp) 
+        eps_z = max(eps_z,1.0e-08_dp) 
 
         ! Define depsz/dy, daref/dy and dbed/dy, dustar/dy at i-1/2
         depsz_dy = ( 0.1_dp*ustar_tmp(i)*max(water-bed_tmp(i),0.0_dp) - &
