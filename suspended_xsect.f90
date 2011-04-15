@@ -11,7 +11,8 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wset, Qe,lambdacon, &
                                 rho,rhos, g, d50, bedl,bedu, ysl, ysu, cb, Cbar, Qbed, &
-                                sconc, counter, high_order_Cflux, a_ref, sus_vert_prof, edify_model)
+                                sconc, counter, high_order_Cflux, a_ref, sus_vert_prof, edify_model, &
+                                x_len_scale)
     ! Calculate the cross-sectional distribution of suspended sediment using
     ! some ideas from /home/gareth/Documents/H_drive_Gareth/Gareth_and_colab
     ! s/Thesis/Hydraulic_morpho_model/channel_cross_section/paper/idea_for_
@@ -30,7 +31,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     
     INTEGER, INTENT(IN)::a, counter
     REAL(dp), INTENT(IN):: delT, ys, bed, water, waterlast, tau, vel, wset, Qe, lambdacon, rho, rhos,g, & 
-                                d50, bedl, bedu,ysl,ysu, sconc, Q, Qbed, a_ref
+                                d50, bedl, bedu,ysl,ysu, sconc, Q, Qbed, a_ref, x_len_scale
     ! cb = Near bed suspended sediment concentration, 
     ! Cbar = Depth averaged suspended sediment concentration
     REAL(dp), INTENT(IN OUT):: cb, Cbar 
@@ -44,7 +45,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     REAL(dp):: depth(0:a+1), eddif_y(0:a+1), eddif_z(a), zetamult(0:a+1), vd(0:a+1), ys_temp(0:a+1)
     REAL(dp):: M1_lower(a), M1_diag(a), M1_upper(a), M1_upper2(a), M1_lower2(a)
     REAL(dp):: RHS(a), dy_all(a)
-    REAL(dp):: tmp1, dy, dy_outer, xlen, tmp2, Cref, z
+    REAL(dp):: tmp1, dy, dy_outer, tmp2, Cref, z
     REAL(dp):: dQdx, dhdt, Cbar_old(a), dUd_dx(0:a+1)
     REAL(dp):: DLF(a), DF(a), DUF(a), DU2(a),rcond, ferr, berr, work(3*a), XXX(a, 1)
     REAL(dp):: bandmat(5,a), AFB(7,a), RRR(a), CCC(a), int_edif_f(a+1), int_edif_dfdy(a+1)
@@ -152,7 +153,6 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     tmp1 = sum(Cbar*vel*depth(1:a)*dy_all) !Cbar flux
     tmp2 =sconc*abs(Q) - sum(Qbed(1:a)*dy_all) !Desired Cbar flux = 'Measure of total load less bedload'
     tmp2 = max(tmp2, 0._dp)
-    xlen=1000._dp ! dx
 
     ! Write output to monitor convegence
     IF(mod(counter,1000).eq.0) PRINT*, 'sus flux is =', tmp1, '; desired flux is', tmp2
@@ -160,7 +160,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     DO i=1,a
         !Explicit
         Cref = Cbar(i)*tmp2/tmp1
-        RHS(i) = RHS(i) - vel(i)*depth(i)*(Cbar(i) - Cref)/xlen
+        RHS(i) = RHS(i) - vel(i)*depth(i)*(Cbar(i) - Cref)/x_len_scale
     END DO 
              
     DO i = 1, a

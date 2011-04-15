@@ -25,7 +25,7 @@ REAL(dp):: wslope, ar, Q, t, &
             lincrem, wset, voidf, smax, rough_coef, man_nveg, veg_ht,rhos,&
             dsand, d50, g, kvis, lambdacon, alpha, &
             ysl,ysu,bedl, bedu, wdthx, TR, storer(9), tmp, tmp2, a_ref, &
-            failure_slope
+            failure_slope, x_len_scale
 INTEGER::  remesh_freq, no_discharges
 REAL(dp):: discharges(1000), susconcs(1000)
 LOGICAL::  flag, susdist, sus2d, readin, geo, remesh, norm, vertical, & 
@@ -45,7 +45,7 @@ NAMELIST /inputdata/ nos,writfreq,jmax, layers, hlim, mor, mu, tauinc,&
                 discharges, susconcs, high_order_shear, &
                 high_order_bedload, high_order_Cflux, grain_friction_type, &
                 resus_type, bedload_type, sus_vert_prof, edify_model, &
-                failure_slope
+                failure_slope, x_len_scale
 
 ALLOCATABLE ys(:), bed(:), dists(:), tau(:),ks(:),tbst(:),& 
             recrd(:), bedlast(:), hss(:), tss(:),  hss2(:), Qe(:),& 
@@ -475,7 +475,7 @@ DO Q_loop= 1, no_discharges!15
                 call dynamic_sus_dist(u-l+1, DT1, ys(l:u), bed(l:u), water, waterlast, Q, tau(l:u), vel(l:u), wset, & 
                                         Qe(l:u), lambdacon, rho,rhos, g, d50, bedl,bedu, ysl, ysu, C(l:u),&
                                         Cbar(l:u), Qbed(l:u), sconc, j, high_order_Cflux, a_ref(l:u), sus_vert_prof,&
-                                        edify_model)
+                                        edify_model, x_len_scale)
 
                 ! Set C in dry parts of the channel to zero
                 ! This is not done earlier, because we needed to store the old

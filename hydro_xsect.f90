@@ -874,6 +874,9 @@ SUBROUTINE calc_friction(friction_type, grain_friction_type, rough_coef, water,&
 
     END SELECT
 
+    ! The overall roughness should be >= the grain roughness.
+    f = max(f,f_g)
+
     ! Compute vanrijn's (2007) roughness height 'a'
     dgravel=0.002_dp !According to van Rijn -- yes this is 2mm, not a typo
     IF(d50< 0.25_dp*dgravel) THEN
