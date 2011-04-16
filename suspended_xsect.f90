@@ -156,7 +156,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     !!tmp2 = max(tmp2, 0._dp)
 
     ! Write output to monitor convegence
-    IF(mod(counter,1000).eq.0) PRINT*, 'sus flux is =', tmp1, '; desired flux is', tmp2
+    !IF(mod(counter,1000).eq.0) PRINT*, 'sus flux is =', tmp1, '; desired flux is', tmp2
     
     DO i=1,a
         !Explicit

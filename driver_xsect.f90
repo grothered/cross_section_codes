@@ -467,11 +467,13 @@ DO Q_loop= 1, no_discharges!15
             ! in dynamic_sus_dist and update_bed
             ! e.g. dQbed/dx = (Qbed - sed_lag_scale*Qbed)/x_len_scale
             ! e.g. dCbar/dx = (Cbar - sed_lag_scale*Cbar)/x_len_scale
-            IF(sus_flux > 0._dp) THEN
-                sed_lag_scale = (sconc*Q)/sus_flux                        
+            IF(sus_flux > 1.0e-12_dp) THEN
+                sed_lag_scale = (sconc*Q)/sus_flux
+                !print*, sed_lag_scale                        
             ELSE
                 sed_lag_scale = 1.0_dp
             END IF
+            IF(mod(j,1000).eq.1) print*, 'sus_flux is:', sus_flux, ' desired flux is:', sconc*Q
             !Calculate the cross-sectional suspended load distribution
             IF(susdist) THEN
                 !! Adjust the erosion factor if erosion is normal to the bed
