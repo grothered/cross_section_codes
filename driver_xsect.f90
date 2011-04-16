@@ -31,7 +31,7 @@ REAL(dp):: discharges(1000), susconcs(1000)
 LOGICAL::  flag, susdist, sus2d, readin, geo, remesh, norm, vertical, & 
             tbston, normmov, Qbedon, susQbal, talmon,&
              variable_timestep, high_order_shear, high_order_bedload, &
-            high_order_Cflux
+            high_order_Cflux, taucrit_slope_reduction
 CHARACTER(LEN=20):: friction_type, grain_friction_type, resus_type, &
                     bedload_type, sus_vert_prof, edify_model
 NAMELIST /inputdata/ nos,writfreq,jmax, layers, hlim, mor, mu, tauinc,&
@@ -45,7 +45,7 @@ NAMELIST /inputdata/ nos,writfreq,jmax, layers, hlim, mor, mu, tauinc,&
                 discharges, susconcs, high_order_shear, &
                 high_order_bedload, high_order_Cflux, grain_friction_type, &
                 resus_type, bedload_type, sus_vert_prof, edify_model, &
-                failure_slope, x_len_scale
+                failure_slope, x_len_scale, taucrit_slope_reduction
 
 ALLOCATABLE ys(:), bed(:), dists(:), tau(:),ks(:),tbst(:),& 
             recrd(:), bedlast(:), hss(:), tss(:),  hss2(:), Qe(:),& 
@@ -257,7 +257,7 @@ DO Q_loop= 1, no_discharges!15
             DO jj= 0, layers
 
                 multa=1._dp
-                IF(.TRUE.) THEN 
+                IF(taucrit_slope_reduction.eqv..TRUE.) THEN 
                     IF((j.eq.1).and.(i.eq.1)) print*, 'WARNING: Critical shear on a slope is reduced'
                     ! Compute slope-related reduction in critical shear stress
                     aa= mu**2*(mu*lifttodrag-1._dp)/(mu*lifttodrag+1._dp)
@@ -459,14 +459,14 @@ DO Q_loop= 1, no_discharges!15
 
 
             ! Calculate total sediment flux at time = t, 
-            sus_flux = sum( & 
-                    (Qbed(l:u)+Cbar(l:u)*abs(vel(l:u))*max(water-bed(l:u),0._dp) )*& ! Total load
-                    ( ( (/ ys(l+1:u), ysu /) - (/ ysl, ys(l:u-1) /) )*0.5_dp) &  ! dy
-                          )
             ! We will use this to compute the x derivative terms
             ! in dynamic_sus_dist and update_bed
             ! e.g. dQbed/dx = (Qbed - sed_lag_scale*Qbed)/x_len_scale
             ! e.g. dCbar/dx = (Cbar - sed_lag_scale*Cbar)/x_len_scale
+            sus_flux = sum( & 
+                    (Qbed(l:u)+(Cbar(l:u)/rhos)*abs(vel(l:u))*max(water-bed(l:u),0._dp) )*& ! Total load
+                    ( ( (/ ys(l+1:u), ysu /) - (/ ysl, ys(l:u-1) /) )*0.5_dp) &  ! dy
+                          )
             IF(sus_flux > 1.0e-12_dp) THEN
                 sed_lag_scale = (sconc*Q)/sus_flux
                 !print*, sed_lag_scale                        
@@ -474,6 +474,8 @@ DO Q_loop= 1, no_discharges!15
                 sed_lag_scale = 1.0_dp
             END IF
             IF(mod(j,1000).eq.1) print*, 'sus_flux is:', sus_flux, ' desired flux is:', sconc*Q
+
+
             !Calculate the cross-sectional suspended load distribution
             IF(susdist) THEN
                 !! Adjust the erosion factor if erosion is normal to the bed
@@ -483,12 +485,6 @@ DO Q_loop= 1, no_discharges!15
                     sllength=1._dp
                 END IF
             
-                !IF(.FALSE.) THEN
-                !    C=0._dp
-                !    call sus_dist_sect(u-l+1, ys(l:u), bed(l:u), water, tau(l:u), vel(l:u), sconc, wset,lambdacon, &
-                !            rho,rhos, g, d50, susQbal, Qbed(l:u),talmon, sllength, bedl, bedu, ysl, ysu, C(l:u),&
-                !            integrated_load_flux)
-                !ELSE
                 call dynamic_sus_dist(u-l+1, DT1, ys(l:u), bed(l:u), water, waterlast, Q, tau(l:u), vel(l:u), wset, & 
                                         Qe(l:u), lambdacon, rho,rhos, g, d50, bedl,bedu, ysl, ysu, C(l:u),&
                                         Cbar(l:u), Qbed(l:u), sed_lag_scale, j, high_order_Cflux, a_ref(l:u), sus_vert_prof,&
@@ -509,15 +505,15 @@ DO Q_loop= 1, no_discharges!15
         
 
             ELSE
-                ! Constnat suspended sediment concentration
+                ! Constant suspended sediment concentration
                 C(l:u) = sconc
                 Cbar(l:u) = sconc
             END IF
-          
+         
+            !! UPDATE THE BED
+ 
             ! Calculate dqbed/dx ~= (Qbed - sed_lag_scale*Qbed)/x_len_scale
             dqbeddx(l:u) = Qbed(l:u)*(1.0_dp-sed_lag_scale)/x_len_scale 
-        
-            
             bedlast= bed ! Record the bed prior to updating
            
             call update_bed(u-l+1,DT1,water,Q,bed(l:u),ys(l:u),Area,ys(u)-ys(l)+wdthx, &
@@ -577,7 +573,8 @@ DO Q_loop= 1, no_discharges!15
                 END IF
             END IF
             
-            ! Write outputs
+
+            !! WRITE OUTPUTS
             IF((mod(j-1,writfreq).EQ.0).AND.(j>0).AND.(iii.eq.1)) THEN!.or.(j>15250)) THEN 
                 write(1,*) tau 
                 write(2,*) bedlast !Same bed as when tau was calculated
@@ -601,7 +598,8 @@ DO Q_loop= 1, no_discharges!15
                 bedold=bed
             END IF
             
-            ! Determine the timestep -- implicit timestepping will only work
+
+            ! DETERMINE THE TIMESTEP -- implicit timestepping will only work
             ! if there are no bed layers, because otherwise DT
             ! has already been used this timestep.
             IF(variable_timestep) THEN
@@ -620,7 +618,7 @@ DO Q_loop= 1, no_discharges!15
                 DT1 = DT
             END IF 
 
-            ! Add random sedimentation to the channel
+            ! ADD RANDOM SEDIMENTATION TO THE CHANNEL
             ! This is a technique to prevent the channel from converging to a
             ! marginally stable state where tau_g < taucrit, which is dependent
             ! on the imposed initial condition. This way we force tau>=taucrit
@@ -657,7 +655,7 @@ DO Q_loop= 1, no_discharges!15
                 
         END DO
 
-        ! Basic limiting of the channel slope -- to circumvent the numerically
+        ! BASIC LIMITING OF THE CHANNEL SLOPE -- to circumvent the numerically
         ! difficult problem of allowing infinite banks otherwise
         hss = bed
         IF((remesh.eqv..FALSE.).AND.(.TRUE.).AND.(mod(j,100)==0)) THEN
@@ -700,60 +698,24 @@ DO Q_loop= 1, no_discharges!15
         bed = hss
         END IF
 
-        !DO i=1,floor(nos*0.50_dp)
-        !    IF(abs(bed(i)-bed(nos-i+1))>1.0e-12_dp) THEN
-        !        print*, 'bed symmetry loss post perturbation'
-        !        stop
-        !    END IF
-        !END DO        
-        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        !Delft bank erosion model
-        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        !!Erosion at edge wet points is assigned to neighbouring dry points.
-        !if((l>1).and.(u<nos)) THEN
-        !if(bed(l)<bedlast(l)) THEN
-        !bed(l-1)=bed(l)-(bedlast(l)-bed(l))
-        !bed(l)=bedlast(l)
-        !end if
-        !if(bed(u)<bedlast(u)) THEN
-        ! bed(u+1)=bed(u)-(bedlast(u)-bed(u))
-        !bed(u)=bedlast(u)
-        !end if
-        !end if
 
-
-
-        !Remeshing. If the points are becoming too spaced apart, we might have to do this
+        !! REMESHING. If the points are becoming too spaced apart, we might have to do this
         IF(remesh) THEN
             IF(mod(j, remesh_freq).EQ.0) THEN
-                !Get distance between consecutive points in the cross seciton. 
-                !dists(2:nos)=sqrt((ys(2:nos)-ys(1:nos-1))**2+(bed(2:nos)-bed(1:nos-1))**2) 
-                !dists(1)=dists(2)
-                !handy=minval(dists)
-                !DO i =2, nos-1
-                    !IF(abs(slopes(i))>.0_dp) THEN
-                        
-                    !    IF(dists(i)/handy > 0.0_dp) THEN
-                            ! Perform remeshing here
-                            ysold=ys !Predefine
-                            call refit(ys, bed, nos) !Remesh so things are more even.
-                            ! Also remesh old timestep records of the bed
-                            call interp3(ysold, bedlast,ys,nos)
-                            call interp3(ysold, bedold, ys, nos)
-                            ! Also remesh the suspended sediment concentration.
-                            call interp3(ysold, C, ys, nos)
-                            call interp3(ysold, Cbar, ys, nos)
-                            !Now fix up the layers
-                            DO jj=1, layers
-                                call interp(ysold,  taucrit_dep(:,jj),ys, nos) !Beware the risk that this could cause 'leakage'
-                                taucrit_dep(:, jj)= min(bed, taucrit_dep(:,jj)) !So if we interpolate the critical shear layer, it should of course not be above the bed level.
-                            END DO
-                            ! Break out of loop                        
-                            !EXIT
-
-                    !    END IF
-                    !END IF
-                !END DO
+                ysold=ys !Predefine
+                call refit(ys, bed, nos) !Remesh so things are more even.
+                ! Also remesh old timestep records of the bed
+                call interp3(ysold, bedlast,ys,nos)
+                call interp3(ysold, bedold, ys, nos)
+                ! Also remesh the suspended sediment concentration.
+                call interp3(ysold, C, ys, nos)
+                call interp3(ysold, Cbar, ys, nos)
+                !Now fix up the layers
+                DO jj=1, layers
+                    call interp(ysold,  taucrit_dep(:,jj),ys, nos) !Beware the risk that this could cause 'leakage'
+                    taucrit_dep(:, jj)= min(bed, taucrit_dep(:,jj)) 
+                    !So if we interpolate the critical shear layer, it should of course not be above the bed level.
+                END DO
 
             END IF 
         END IF !REMESH
