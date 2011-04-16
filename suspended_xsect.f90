@@ -11,7 +11,7 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wset, Qe,lambdacon, &
                                 rho,rhos, g, d50, bedl,bedu, ysl, ysu, cb, Cbar, Qbed, &
-                                sconc, counter, high_order_Cflux, a_ref, sus_vert_prof, edify_model, &
+                                sed_lag_scale, counter, high_order_Cflux, a_ref, sus_vert_prof, edify_model, &
                                 x_len_scale)
     ! Calculate the cross-sectional distribution of suspended sediment using
     ! some ideas from /home/gareth/Documents/H_drive_Gareth/Gareth_and_colab
@@ -31,7 +31,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     
     INTEGER, INTENT(IN)::a, counter
     REAL(dp), INTENT(IN):: delT, ys, bed, water, waterlast, tau, vel, wset, Qe, lambdacon, rho, rhos,g, & 
-                                d50, bedl, bedu,ysl,ysu, sconc, Q, Qbed, a_ref, x_len_scale
+                                d50, bedl, bedu,ysl,ysu, sed_lag_scale, Q, Qbed, a_ref, x_len_scale
     ! cb = Near bed suspended sediment concentration, 
     ! Cbar = Depth averaged suspended sediment concentration
     REAL(dp), INTENT(IN OUT):: cb, Cbar 
@@ -148,18 +148,20 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
         RHS(i)     = RHS(i)     + Cbar(i)*depth(i)/delT
     END DO
         
-    ! Advection term -- dC/dx is = (C - C/mean_C*desired_C)/x_length_scale
-    dy_all = (ys_temp(2:a+1)-ys_temp(0:a-1))*0.5_dp
-    tmp1 = sum(Cbar*vel*depth(1:a)*dy_all) !Cbar flux
-    tmp2 =sconc*abs(Q) - sum(Qbed(1:a)*dy_all) !Desired Cbar flux = 'Measure of total load less bedload'
-    tmp2 = max(tmp2, 0._dp)
+    ! Advection term -- dC/dx is = (C - C*sed_lag_scale)/x_length_scale
+
+    !!dy_all = (ys_temp(2:a+1)-ys_temp(0:a-1))*0.5_dp
+    !!tmp1 = sum(Cbar*vel*depth(1:a)*dy_all) !Cbar flux
+    !!tmp2 =sconc*abs(Q) - sum(Qbed(1:a)*dy_all) !Desired Cbar flux = 'Measure of total load less bedload'
+    !!tmp2 = max(tmp2, 0._dp)
 
     ! Write output to monitor convegence
     IF(mod(counter,1000).eq.0) PRINT*, 'sus flux is =', tmp1, '; desired flux is', tmp2
     
     DO i=1,a
         !Explicit
-        Cref = Cbar(i)*tmp2/tmp1
+        Cref = Cbar(i)*sed_lag_scale 
+        ! C_lag_scale is chosen so that at steady state, the total sediment flux equals the desired sediment flux
         RHS(i) = RHS(i) - vel(i)*depth(i)*(Cbar(i) - Cref)/x_len_scale
     END DO 
              

@@ -25,7 +25,7 @@ REAL(dp):: wslope, ar, Q, t, &
             lincrem, wset, voidf, smax, rough_coef, man_nveg, veg_ht,rhos,&
             dsand, d50, g, kvis, lambdacon, alpha, &
             ysl,ysu,bedl, bedu, wdthx, TR, storer(9), tmp, tmp2, a_ref, &
-            failure_slope, x_len_scale
+            failure_slope, x_len_scale, sus_flux, sed_lag_scale
 INTEGER::  remesh_freq, no_discharges
 REAL(dp):: discharges(1000), susconcs(1000)
 LOGICAL::  flag, susdist, sus2d, readin, geo, remesh, norm, vertical, & 
@@ -457,6 +457,21 @@ DO Q_loop= 1, no_discharges!15
                                     , Qbed(l:u), rhos, voidf, dsand, d50, g, kvis, norm, vertical,alpha, &
                                     tbston, Qbedon, ysl,ysu,bedl,bedu, resus_type, bedload_type, a_ref(l:u)) 
 
+
+            ! Calculate total sediment flux at time = t, 
+            sus_flux = sum( & 
+                    (Qbed(l:u)+Cbar(l:u)*abs(vel(l:u))*max(water-bed(l:u),0._dp) )*& ! Total load
+                    ( ( (/ ys(l+1:u), ysu /) - (/ ysl, ys(l:u-1) /) )*0.5_dp) &  ! dy
+                          )
+            ! We will use this to compute the x derivative terms
+            ! in dynamic_sus_dist and update_bed
+            ! e.g. dQbed/dx = (Qbed - sed_lag_scale*Qbed)/x_len_scale
+            ! e.g. dCbar/dx = (Cbar - sed_lag_scale*Cbar)/x_len_scale
+            IF(sus_flux > 0._dp) THEN
+                sed_lag_scale = (sconc*Q)/sus_flux                        
+            ELSE
+                sed_lag_scale = 1.0_dp
+            END IF
             !Calculate the cross-sectional suspended load distribution
             IF(susdist) THEN
                 !! Adjust the erosion factor if erosion is normal to the bed
@@ -474,7 +489,7 @@ DO Q_loop= 1, no_discharges!15
                 !ELSE
                 call dynamic_sus_dist(u-l+1, DT1, ys(l:u), bed(l:u), water, waterlast, Q, tau(l:u), vel(l:u), wset, & 
                                         Qe(l:u), lambdacon, rho,rhos, g, d50, bedl,bedu, ysl, ysu, C(l:u),&
-                                        Cbar(l:u), Qbed(l:u), sconc, j, high_order_Cflux, a_ref(l:u), sus_vert_prof,&
+                                        Cbar(l:u), Qbed(l:u), sed_lag_scale, j, high_order_Cflux, a_ref(l:u), sus_vert_prof,&
                                         edify_model, x_len_scale)
 
                 ! Set C in dry parts of the channel to zero
@@ -496,7 +511,9 @@ DO Q_loop= 1, no_discharges!15
                 C(l:u) = sconc
                 Cbar(l:u) = sconc
             END IF
-           
+          
+            ! Calculate dqbed/dx ~= (Qbed - sed_lag_scale*Qbed)/x_len_scale
+            dqbeddx(l:u) = Qbed(l:u)*(1.0_dp-sed_lag_scale)/x_len_scale 
         
             
             bedlast= bed ! Record the bed prior to updating
