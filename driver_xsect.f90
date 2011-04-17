@@ -469,7 +469,7 @@ DO Q_loop= 1, no_discharges!15
                     (Qbed(l:u)+(Cbar(l:u)/rhos)*abs(vel(l:u))*max(water-bed(l:u),0._dp) )*& ! Total load
                     ( ( (/ ys(l+1:u), ysu /) - (/ ysl, ys(l:u-1) /) )*0.5_dp) &  ! dy
                           )
-            ! Temporary discharge calculated exactly as above
+            ! Temporary discharge - calculated exactly as above
             !tmp = sum(abs(vel(l:u))*(water-bed(l:u))*& ! Discharge 
             !        ( ( (/ ys(l+1:u), ysu /) - (/ ysl, ys(l:u-1) /) )*0.5_dp) & ! dy
             !        )
