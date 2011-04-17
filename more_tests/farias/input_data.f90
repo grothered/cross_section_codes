@@ -21,11 +21,11 @@
 !!!!!!!!!!!!!!!!!!!!!
 
 nos = 2000 ! Number of spatial grid points
-writfreq = 2000 !24*5*5 ! The output is written every writfreq 'th timestep
-jmax= 1200000 !1382400 !24*5*2*45*4*4*4*4*5 ! The number of time steps
+writfreq = 1 !2000 !24*5*5 ! The output is written every writfreq 'th timestep
+jmax= 1 !1200000 !1382400 !24*5*2*45*4*4*4*4*5 ! The number of time steps
 t = 0.00 ! Starting time (s)
-dT = 1.0 !Time step (s)
-variable_timestep=.TRUE. !Do we change the timestepping for high sediment concentrations? -- this is presently inconsistent with bed layers
+dT = 1.0e-01 !Time step (s)
+variable_timestep=.FALSE. !Do we change the timestepping for high sediment concentrations? -- this is presently inconsistent with bed layers
 
 waterM = 0.0 !Initial water elevation (m) and mean water elevation
 TR=0.0 !Tidal range. If it is set to zero then the discharge is constant, otherwise the continuity based method is used.
@@ -46,10 +46,10 @@ tbston=.true. !When true (false) this term switches on (off) the sqrt(1+slopes^2
 layers=1 !The number of bed layers
 lincrem = 1000.031 ! The distance between bed layers (m). Set it to a very high number to avoid the multi bed layers having any influence.
 mu = 10.60 !Angle of repose - this can be used to influence the critical shear stress if the code is adjusted
-failure_slope = 0.6 ! Slope at which mass failure occurs
+failure_slope = 100. ! Slope at which mass failure occurs
 tauinc = 0.00 ! A DEFUNCT constant (Pa)
 erconst = 0.13  ! The constant determining the min critical shear and the critical shear increment
-taucrit_slope_reduction=.TRUE. ! Does taucrit reduce on a slope
+taucrit_slope_reduction=.FALSE. ! Does taucrit reduce on a slope
 wset = 0.014 ! Settling velocity of sediment in m/s
 voidf = 0.4 ! Void fraction (non sediment fraction) of bed = porosity
 lifttodrag = 0.0 ! Lift to drag coefficient ratio

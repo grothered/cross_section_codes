@@ -25,7 +25,7 @@ REAL(dp):: wslope, ar, Q, t, &
             lincrem, wset, voidf, smax, rough_coef, man_nveg, veg_ht,rhos,&
             dsand, d50, g, kvis, lambdacon, alpha, &
             ysl,ysu,bedl, bedu, wdthx, TR, storer(9), tmp, tmp2, a_ref, &
-            failure_slope, x_len_scale, sus_flux, sed_lag_scale
+            failure_slope, x_len_scale, sus_flux, sed_lag_scale, Clast
 INTEGER::  remesh_freq, no_discharges
 REAL(dp):: discharges(1000), susconcs(1000)
 LOGICAL::  flag, susdist, sus2d, readin, geo, remesh, norm, vertical, & 
@@ -53,7 +53,7 @@ ALLOCATABLE ys(:), bed(:), dists(:), tau(:),ks(:),tbst(:),&
             taucrit_dep(:,:), C(:),bedold(:), &
             taucrit_dep_ys(:) ,dst(:,:), taucrit(:,:), slpmx(:,:), &
             vegdrag(:), ysold(:), dqbeddx(:), sllength(:), vel(:), &
-            tau_g(:),f_g(:), Cbar(:), a_ref(:)
+            tau_g(:),f_g(:), Cbar(:), a_ref(:), Clast(:)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! READ IN DATA
@@ -105,6 +105,7 @@ OPEN(10,file="tss")
 OPEN(11,file="recrd")
 OPEN(12,file="another")
 OPEN(13,file="oo")
+OPEN(14,file="time")
 
 ALLOCATE(ys(nos),bed(nos),dists(nos),tau(nos),ks(nos),tbst(nos),& 
          recrd(0:nos), bedlast(nos),hss(nos),tss(nos),hss2(nos),Qe(nos),&
@@ -113,7 +114,8 @@ ALLOCATE(ys(nos),bed(nos),dists(nos),tau(nos),ks(nos),tbst(nos),&
          taucrit_dep_ys(nos),dst(nos,0:(layers+1)), &
          taucrit(nos, 0:layers), slpmx(nos,0:(layers+1)), vegdrag(nos),&
          ysold(nos) ,  Qbed(nos), dqbeddx(nos),sllength(nos), &
-         vel(nos), tau_g(nos), f_g(nos), Cbar(nos), bedold(nos), a_ref(nos)) 
+         vel(nos), tau_g(nos), f_g(nos), Cbar(nos), bedold(nos), a_ref(nos),&
+         Clast(nos) ) 
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !Loop over different values of discharge
@@ -249,8 +251,6 @@ DO Q_loop= 1, no_discharges!15
                     rmult*(Area)/(ys(u)-ys(l)+wdthx), f(nos/2)
               END IF
 
-        ! Update time
-        t=t+DT1
 
         ! Update the critical shear layers to account for any slope effects
         DO i = 1, nos
@@ -456,6 +456,9 @@ DO Q_loop= 1, no_discharges!15
                                     ,u-l+1, taucrit(l:u, 0:layers) , vegdrag(l:u), susdist, rho, Qe(l:u) & 
                                     , Qbed(l:u), rhos, voidf, dsand, d50, g, kvis, norm, vertical,alpha, &
                                     tbston, Qbedon, ysl,ysu,bedl,bedu, resus_type, bedload_type, a_ref(l:u)) 
+        
+            !! UPDATE TIME
+            IF(iii.eq.1) t=t+DT1
 
 
             ! Calculate total sediment flux at time = t, 
@@ -484,7 +487,8 @@ DO Q_loop= 1, no_discharges!15
                 ELSE
                     sllength=1._dp
                 END IF
-            
+                !Record old value of C for file output
+                Clast=C  
                 call dynamic_sus_dist(u-l+1, DT1, ys(l:u), bed(l:u), water, waterlast, Q, tau(l:u), vel(l:u), wset, & 
                                         Qe(l:u), lambdacon, rho,rhos, g, d50, bedl,bedu, ysl, ysu, C(l:u),&
                                         Cbar(l:u), Qbed(l:u), sed_lag_scale, j, high_order_Cflux, a_ref(l:u), sus_vert_prof,&
@@ -574,8 +578,10 @@ DO Q_loop= 1, no_discharges!15
             END IF
             
 
-            !! WRITE OUTPUTS
-            IF((mod(j-1,writfreq).EQ.0).AND.(j>0).AND.(iii.eq.1)) THEN!.or.(j>15250)) THEN 
+            !! WRITE OUTPUTS -- notice that these are all supposed to be at the
+            !same time level -- e.g. tau is calculated using bedlast, so is
+            !Clast, Qbed, Qe, etc. 
+            IF((mod(j-1,writfreq).EQ.0).AND.(iii.eq.1)) THEN!.or.(j>15250)) THEN 
                 write(1,*) tau 
                 write(2,*) bedlast !Same bed as when tau was calculated
                 write(3,*) ys !critical shear
@@ -583,21 +589,21 @@ DO Q_loop= 1, no_discharges!15
                 write(5,*) water
                 write(7,*) Qe
                 write(8,*) Qbed
-                write(9,*) C
+                write(9,*) Clast ! Same C as when bed = bedlast and when tau was calculated
                 write(10,*) vel
                 write(11,*) recrd
+                write(14,*) t -DT1 ! This is the time corresponding to the cross-sectional shape when 'tau' was calculated
                 !write(12,*) taucrit_dep_ys
 
                 ! Check for convergence.
                 tmp = maxval(abs(bedold-bed))
-                IF(tmp<1.0e-04_dp) THEN
+                IF(tmp/(writfreq*DT1)<1.0e-09_dp) THEN
                     goto 373 !Converged: Go to the end of this loop
                     !exit
                     !sconc = sconc*0.5_dp
                 END IF
                 bedold=bed
             END IF
-            
 
             ! DETERMINE THE TIMESTEP -- implicit timestepping will only work
             ! if there are no bed layers, because otherwise DT
@@ -612,7 +618,7 @@ DO Q_loop= 1, no_discharges!15
                 tmp = min(max(maxval(abs(wset*C/rhos- Qe)), maxval(abs(recrd(l-1:u)))), &
                           maxval(abs(bed(l+1:u-1) - bedlast(l+1:u-1))) )
                 tmp2 = minval(ys(2:nos) - ys(1:nos-1)) 
-                DT1 = min(max(1.0e-03_dp*tmp2/max(tmp,1.0e-020_dp), 0.10_dp), 100.0_dp*3600.0_dp)
+                DT1 = min(max(1.0e-03_dp*tmp2/max(tmp,1.0e-020_dp), 1.0e-01_dp), 100.0_dp*3600.0_dp)
 
             ELSE
                 DT1 = DT
@@ -722,7 +728,7 @@ DO Q_loop= 1, no_discharges!15
 
     END DO ! End of timestepping loop 
         
-        373 print*, "converged, Q_loop=", Q_loop
+        373 print*, "converged, Q_loop=", Q_loop, "j =", j
         !stop
 END DO ! End of loop for different Q_loops
 

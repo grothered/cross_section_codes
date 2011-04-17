@@ -450,7 +450,7 @@ SUBROUTINE update_bed(a, dT, water, Q, bed,ys,Area, Width,bottom, ff,recrd, E, D
         bed_tmp(0)=bedl
         bed_tmp(a+1)=bedu
         !print*, maxval(qb_G(1:a-1))
-        impcon = 0.5_dp !Constant determining 'implicitness' of the bed solver. 0.5= 'Crank Nicholson', except that we lag the non-linear terms
+        impcon = 0.500_dp !Constant determining 'implicitness' of the bed solver. 0.5= 'Crank Nicholson', except that we lag the non-linear terms
         dt_on_lambda = mor*dT*1._dp/(1._dp-voidf) ! Time evolution constants
         
         !Calculate coefficients for bed slope terms
@@ -486,6 +486,7 @@ SUBROUTINE update_bed(a, dT, water, Q, bed,ys,Area, Width,bottom, ff,recrd, E, D
                                                           dbeddyH(2,i)*bed_tmp(i)   + &
                                                           dbeddyH(1,i)*bed_tmp(i-1) )
 
+            !print*,'   ', recrd(i), qb_G(i)
         END DO
         ! Make right hand side -- note that the extra division by 'impcon'
         ! cancels the multiplication by impcon above, which is what we need
