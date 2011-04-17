@@ -470,11 +470,11 @@ DO Q_loop= 1, no_discharges!15
                     ( ( (/ ys(l+1:u), ysu /) - (/ ysl, ys(l:u-1) /) )*0.5_dp) &  ! dy
                           )
             ! Temporary discharge calculated exactly as above
-            tmp = sum(abs(vel(l:u))*max(water-bed(l:u),0._dp)*& ! Total load
-                    ( ( (/ ys(l+1:u), ysu /) - (/ ysl, ys(l:u-1) /) )*0.5_dp) & ! dy
-                    )
+            !tmp = sum(abs(vel(l:u))*(water-bed(l:u))*& ! Discharge 
+            !        ( ( (/ ys(l+1:u), ysu /) - (/ ysl, ys(l:u-1) /) )*0.5_dp) & ! dy
+            !        )
             IF(sus_flux > 1.0e-12_dp) THEN
-                sed_lag_scale = (sconc*tmp)/sus_flux
+                sed_lag_scale = (sconc*Q)/sus_flux
                 !print*, sed_lag_scale                        
             ELSE
                 sed_lag_scale = 1.0_dp

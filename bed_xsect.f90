@@ -359,7 +359,7 @@ SUBROUTINE update_bed(a, dT, water, Q, bed,ys,Area, Width,bottom, ff,recrd, E, D
 
     !Next we check if qb_G =0 everywhere. If so, then there is no point solving the
     !matrix equation.
-    IF(maxval(abs(qb_G)).EQ.0._dp) THEN 
+    IF(maxval(abs(qb_G)) == 0.0_dp) THEN 
         IF(normmov.eqv..false.) THEN
 
             IF(iii==1) bed = bed + (-dqbeddx + Qd - Qe)*mor*dT/(1._dp-voidf)
