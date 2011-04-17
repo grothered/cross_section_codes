@@ -474,7 +474,7 @@ DO Q_loop= 1, no_discharges!15
             !        ( ( (/ ys(l+1:u), ysu /) - (/ ysl, ys(l:u-1) /) )*0.5_dp) & ! dy
             !        )
             IF(sus_flux > 1.0e-12_dp) THEN
-                sed_lag_scale = (sconc*Q)/sus_flux !sqrt( (sconc*Q)/sus_flux*sed_lag_scale)
+                sed_lag_scale = 1.0*((sconc*Q)/sus_flux) !-0.0*sed_lag_scale !sqrt( (sconc*Q)/sus_flux*sed_lag_scale)
                 !print*, sed_lag_scale                        
             ELSE
                 sed_lag_scale = 1.0_dp
@@ -525,7 +525,7 @@ DO Q_loop= 1, no_discharges!15
            
             call update_bed(u-l+1,DT1,water,Q,bed(l:u),ys(l:u),Area,ys(u)-ys(l)+wdthx, &
                              water- Area/(ys(u)-ys(l)+wdthx),f(l:u),qby((l-1):u),E,D, &
-                            0.5_dp*(Clast(l:u)+C(l:u)),rmult,2,inuc, tau(l:u),tau_g(l:u),& 
+                            Clast(l:u),rmult,2,inuc, tau(l:u),tau_g(l:u),& 
                             NN(l:u),j,slopes(l:u), hlim, mor, taucrit_dep(l:u,1:layers), &
                             layers, taucrit_dep_ys(l:u) & 
                             ,u-l+1, taucrit(l:u, 0:layers) , vegdrag(l:u), susdist, rho, &
@@ -585,7 +585,7 @@ DO Q_loop= 1, no_discharges!15
             !same time level -- e.g. tau is calculated using bedlast, so is
             !Clast, Qbed, Qe, etc. 
             IF((mod(j-1,writfreq).EQ.0).AND.(iii.eq.1)) THEN!.or.(j>15250)) THEN 
-                Qd = 0.5_dp*(Clast +C)*wset/rhos
+                Qd = Clast*wset/rhos !0.5_dp*(Clast +C)*wset/rhos
                 print*, 'bed change:', maxval(abs(bed(l:u)-bedlast(l:u))), maxloc(abs(bed(l:u)-bedlast(l:u)))
                 print*, 'Resus - dep:', maxval(abs(Qe(l:u) - Qd(l:u)))*mor*DT1, &
                                         maxloc(abs(Qe(l:u) - Qd(l:u)))
