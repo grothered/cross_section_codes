@@ -225,7 +225,7 @@ SUBROUTINE update_bed(a, dT, water, Q, bed,ys,Area, Width,bottom, ff,recrd, E, D
         taucrit_dep_ys(nos),taucrit(nos,0:layers), vegdrag(a), Qbed(a), Qe(a), dqbeddx(a), bedlast(a) ! 
 
     INTEGER::i, j, bgwet, up, bfall, jj,dstspl, jjj, minX,maxX, storindex(a), info,ii, indd(a,layers), n(a), b(1)
-    REAL(dp):: val, tmp1,tmp2 
+    REAL(dp):: val, tmp1,dt_on_lambda 
     REAL(dp)::wslope, Qeold, tt, Qelocal, bed_tmp(0:a+1), ys_tmp(0:a+1)!, dqbeddx(a)
     REAL(dp):: kkkk(a), tbst(a), f(a), Qd(a), h_rhs(0:a+1), newxs(a), newys(a), lcslp(a)
     REAL(dp)::vinext,vi, vilast, epsl, epsu , mxslopes(a), erode, newslope(a), slim,p1, w1,w2,eqspc,dsts(a), dsts2(a), taud(a) &
@@ -273,7 +273,7 @@ SUBROUTINE update_bed(a, dT, water, Q, bed,ys,Area, Width,bottom, ff,recrd, E, D
             END WHERE
 
         CASE(.TRUE.)
-            ! Where we do use the 2D suspended load routine
+            ! Where we do use the 2D (multiple cross-sections) suspended load routine
             WHERE((abs(tau)>0._dp).and.(wset>0._dp))
                     Qd=(wset/rhos)*C*& 
                         min( &
@@ -350,7 +350,7 @@ SUBROUTINE update_bed(a, dT, water, Q, bed,ys,Area, Width,bottom, ff,recrd, E, D
         qb_G(a) = 0.0_dp
     END IF
     
-    IF(.TRUE.) THEN
+    IF(.FALSE.) THEN
         IF(counter.eq.1) print*, 'WARNING: qb_G(i+1/2) set to zero if taug(i) or taug(i+1) < taucrit'
         DO i=1,a-1
            IF((tau(i)<=taucrit(i,0)).AND.(tau(i+1)<=taucrit(i+1,0))) qb_G(i)=0._dp
@@ -450,8 +450,8 @@ SUBROUTINE update_bed(a, dT, water, Q, bed,ys,Area, Width,bottom, ff,recrd, E, D
         bed_tmp(0)=bedl
         bed_tmp(a+1)=bedu
         !print*, maxval(qb_G(1:a-1))
-        impcon = 0.5_dp
-        tmp2 = mor*dT*1._dp/(1._dp-voidf) ! Time evolution constants
+        impcon = 0.5_dp !Constant determining 'implicitness' of the bed solver. 0.5= 'Crank Nicholson', except that we lag the non-linear terms
+        dt_on_lambda = mor*dT*1._dp/(1._dp-voidf) ! Time evolution constants
         
         !Calculate coefficients for bed slope terms
         IF(high_order_bedload) THEN
@@ -463,7 +463,7 @@ SUBROUTINE update_bed(a, dT, water, Q, bed,ys,Area, Width,bottom, ff,recrd, E, D
         !! h stores the implicit terms for [1 / (1-voidf)] dbed/dt = -d/dy (qb_G*dbed/dy) + Ds - Es
     
         DO i=1,a
-            tmp1 = tmp2*impcon*(2._dp/(ys_tmp(i+1)-ys_tmp(i-1)))
+            tmp1 = dt_on_lambda*impcon*(2._dp/(ys_tmp(i+1)-ys_tmp(i-1)))
             IF(i>1) h_lower2(i)= tmp1*(              - qb_G(i-1)*dbeddyH(1,i-1))
             h_lower(i)=  tmp1*(qb_G(i)*dbeddyH(1,i) - qb_G(i-1)*dbeddyH(1+1,i-1))
             h_diag(i)=   tmp1*(qb_G(i)*dbeddyH(2,i) - qb_G(i-1)*dbeddyH(2+1,i-1))
@@ -497,17 +497,17 @@ SUBROUTINE update_bed(a, dT, water, Q, bed,ys,Area, Width,bottom, ff,recrd, E, D
         !!Boundary conditions. 
         h_lower2(0)=0._dp
         h_lower(0)=0._dp !This will be zero - though it is included in the in the above implicit terms,it will be zero there (dbeddyH(1,0)=0
-        !h_lower(0)=tmp2*impcon*(2._dp/(ys_tmp(2)-ys_tmp(0)))*(qb_G(0)*dbeddyH(1,0))
-        h_diag(0)=tmp2*impcon*(2._dp/(ys_tmp(2)-ys_tmp(0)))*(qb_G(0)*dbeddyH(2,0))
-        h_upper(0)=tmp2*impcon*(2._dp/(ys_tmp(2)-ys_tmp(0)))*(qb_G(0)*dbeddyH(3,0))
-        h_upper2(0)=tmp2*impcon*(2._dp/(ys_tmp(2)-ys_tmp(0)))*(qb_G(0)*dbeddyH(4,0))
+        !h_lower(0)=dt_on_lambda*impcon*(2._dp/(ys_tmp(2)-ys_tmp(0)))*(qb_G(0)*dbeddyH(1,0))
+        h_diag(0)=dt_on_lambda*impcon*(2._dp/(ys_tmp(2)-ys_tmp(0)))*(qb_G(0)*dbeddyH(2,0))
+        h_upper(0)=dt_on_lambda*impcon*(2._dp/(ys_tmp(2)-ys_tmp(0)))*(qb_G(0)*dbeddyH(3,0))
+        h_upper2(0)=dt_on_lambda*impcon*(2._dp/(ys_tmp(2)-ys_tmp(0)))*(qb_G(0)*dbeddyH(4,0))
         h_rhs2(0)= - (1._dp-impcon)/impcon*( h_diag(0)*bed_tmp(0)+h_upper(0)*bed_tmp(1) +h_upper2(0)*bed_tmp(2))
         !Correct h_diag
         h_diag(0)=1._dp+h_diag(0)
 
-        h_lower2(a+1)=tmp2*impcon*(2._dp/(ys_tmp(a+1)-ys_tmp(a-1)))*( - qb_G(a)*dbeddyH(1,a))
-        h_lower(a+1)=tmp2*impcon*(2._dp/(ys_tmp(a+1)-ys_tmp(a-1)))*( - qb_G(a)*dbeddyH(2,a))
-        h_diag(a+1)=tmp2*impcon*(2._dp/(ys_tmp(a+1)-ys_tmp(a-1)))*( - qb_G(a)*dbeddyH(3,a))
+        h_lower2(a+1)=dt_on_lambda*impcon*(2._dp/(ys_tmp(a+1)-ys_tmp(a-1)))*( - qb_G(a)*dbeddyH(1,a))
+        h_lower(a+1)=dt_on_lambda*impcon*(2._dp/(ys_tmp(a+1)-ys_tmp(a-1)))*( - qb_G(a)*dbeddyH(2,a))
+        h_diag(a+1)=dt_on_lambda*impcon*(2._dp/(ys_tmp(a+1)-ys_tmp(a-1)))*( - qb_G(a)*dbeddyH(3,a))
         h_upper(a+1)=0._dp !This will be zero, because dhdy(4,a) will be zero.
         h_upper2(a+1)=0._dp
         h_rhs2(a+1)=- (1._dp-impcon)/impcon*( h_diag(a+1)*bed_tmp(a+1)+h_lower(a+1)*bed_tmp(a) +h_lower2(a+1)*bed_tmp(a-1))
@@ -517,7 +517,7 @@ SUBROUTINE update_bed(a, dT, water, Q, bed,ys,Area, Width,bottom, ff,recrd, E, D
 
         IF(iii==1) THEN
             !Now define the right_hand side
-            h_rhs(1:a)= (bed_tmp(1:a) + (-dqbeddx + Qd - Qe)*tmp2) + h_rhs2(1:a)
+            h_rhs(1:a)= (bed_tmp(1:a) + (-dqbeddx + Qd - Qe)*dt_on_lambda) + h_rhs2(1:a)
             h_rhs(0)=bed_tmp(0) + h_rhs2(0)
             h_rhs(a+1)=bed_tmp(a+1)+h_rhs2(a+1)
 
@@ -584,8 +584,8 @@ SUBROUTINE update_bed(a, dT, water, Q, bed,ys,Area, Width,bottom, ff,recrd, E, D
             STOP
             h_rhs= bedlast + (-dqbeddx + Qd - Qe)*mor*dT/(1._dp-voidf) !+Qd*mor*dT/(1._dp-voidf) - dT*mor*Qe/(1._dp-voidf) 
         !!!ENFORCE BOUNDARY CONDITIONS
-            h_rhs(1)= bedlast(1) + 2._dp/(ys(2)-ysl)*qb_G(0)*(-bedl/(ys(1)-ysl))*tmp2
-            h_rhs(a) = bedlast(a) +2._dp/(ysu-ys(a-1))*qb_G(a)*(-bedu/(ysu-ys(a)))*tmp2
+            h_rhs(1)= bedlast(1) + 2._dp/(ys(2)-ysl)*qb_G(0)*(-bedl/(ys(1)-ysl))*dt_on_lambda
+            h_rhs(a) = bedlast(a) +2._dp/(ysu-ys(a-1))*qb_G(a)*(-bedu/(ysu-ys(a)))*dt_on_lambda
             !Call the matrix solver
             call DGTSV(a,1,h_lower(2:a), h_diag,h_upper(1:a-1),h_rhs,a, info)
             bed=h_rhs

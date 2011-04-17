@@ -418,12 +418,12 @@ DO Q_loop= 1, no_discharges!15
             !(bedu-bed(u))/(ysu-ys(u))*sqrt(1._dp+( (bedu-bed(u))/(ysu-ys(u)))**2) )/  &
             !(sqrt(1._dp+( (bedu-bed(u))/(ysu-ys(u)))**2) + sqrt(1._dp+slopes(u)**2) )
         
-            ! Calculate friction
+            ! CALCULATE FRICTION
             call calc_friction(friction_type, grain_friction_type, rough_coef, water, u-l+1,&
                                  bed(l:u), vel(l:u), man_nveg,d50,veg_ht, rhos, rho, g,&
                                  f(l:u), vegdrag(l:u),f_g(l:u), dsand, j, a_ref(l:u)) 
 
-            ! Calculate bed shear
+            ! CALCULATE BED SHEAR
             call calc_shear(u-l+1,DT1,water,Q,bed(l:u),ys(l:u),Area,ys(u)-ys(l)+wdthx, &
                             water-Area/(ys(u)-ys(l)+wdthx),f(l:u),recrd((l-1):u),E,D, C(l:u),&
                             rmult,inuc, tau(l:u),& 
@@ -447,7 +447,7 @@ DO Q_loop= 1, no_discharges!15
             !Following Abdel-Fattah et al 2004
             tau_g(l:u) = rho*vel(l:u)**2*(f_g(l:u)/8._dp)*sign(1._dp+0._dp*tau(l:u), tau(l:u))
             
-            ! Calculate rates of resuspension and bedload transport
+            ! CALCULATE RATES OF RESUSPENSION AND BEDLOAD TRANSPORT
             call calc_resus_bedload(u-l+1,DT1,water,Q,bed(l:u),ys(l:u),Area,ys(u)-ys(l)+wdthx,&
                                      water-Area/(ys(u)-ys(l)+wdthx),f(l:u),recrd((l-1):u),E,D, &
                                     C(l:u),wset, rmult,2,inuc, tau_g(l:u),& 
@@ -476,7 +476,7 @@ DO Q_loop= 1, no_discharges!15
             IF(mod(j,1000).eq.1) print*, 'sus_flux is:', sus_flux, ' desired flux is:', sconc*Q
 
 
-            !Calculate the cross-sectional suspended load distribution
+            !! CALCULATE THE CROSS-SECTIONAL SUSPENDED LOAD DISTRIBUTION
             IF(susdist) THEN
                 !! Adjust the erosion factor if erosion is normal to the bed
                 IF(norm) THEN
@@ -612,7 +612,7 @@ DO Q_loop= 1, no_discharges!15
                 tmp = min(max(maxval(abs(wset*C/rhos- Qe)), maxval(abs(recrd(l-1:u)))), &
                           maxval(abs(bed(l+1:u-1) - bedlast(l+1:u-1))) )
                 tmp2 = minval(ys(2:nos) - ys(1:nos-1)) 
-                DT1 = min(max(1.0e-03_dp*tmp2/max(tmp,1.0e-020_dp), 1.0_dp), 100.0_dp*3600.0_dp)
+                DT1 = min(max(1.0e-03_dp*tmp2/max(tmp,1.0e-020_dp), 0.10_dp), 100.0_dp*3600.0_dp)
 
             ELSE
                 DT1 = DT

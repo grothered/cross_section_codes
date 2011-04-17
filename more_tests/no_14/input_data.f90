@@ -49,6 +49,7 @@ mu = .60 !Angle of repose - this can be used to influence the critical shear str
 failure_slope = 1.5 ! Slope at which mass failure occurs
 tauinc = 0.00 ! A DEFUNCT constant (Pa)
 erconst = 0.13  ! The constant determining the min critical shear and the critical shear increment
+taucrit_slope_reduction=.FALSE. ! Does taucrit reduce on a lateral slope?
 wset = 0.014 ! Settling velocity of sediment in m/s
 voidf = 0.4 ! Void fraction (non sediment fraction) of bed = porosity
 lifttodrag = 0.0 ! Lift to drag coefficient ratio
