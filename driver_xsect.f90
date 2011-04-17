@@ -258,14 +258,13 @@ DO Q_loop= 1, no_discharges!15
 
                 multa=1._dp
                 IF(taucrit_slope_reduction.eqv..TRUE.) THEN 
-                    IF((j.eq.1).and.(i.eq.1)) print*, 'WARNING: Critical shear on a slope is reduced'
+                    IF((j.eq.1).and.(i.eq.1).and.(jj==0)) print*, 'WARNING: Critical shear on a slope is reduced'
                     ! Compute slope-related reduction in critical shear stress
                     aa= mu**2*(mu*lifttodrag-1._dp)/(mu*lifttodrag+1._dp)
                     bb= -2._dp*mu**2*lifttodrag*cos(atan(slopes(i)))*mu/(1._dp+mu*lifttodrag) 
                     cc= mu**2*cos(atan(slopes(i)))**2 - sin(atan(slopes(i)))**2
                     !multa*(critical shear on a flat bed) = critical shear on a slope.
                     multa= (-bb - sqrt(bb**2-4._dp*aa*cc))/ (2._dp*aa)  
-                    IF((j==1).and.(i==1).and.(jj==0)) PRINT*, 'WARNING: Slope dependent critical shear stress' 
                 END IF
 
                 taucrit(i,jj) = erconst*(1._dp+ jj*1._dp)*max(multa,1.0e-01_dp)
@@ -470,8 +469,12 @@ DO Q_loop= 1, no_discharges!15
                     (Qbed(l:u)+(Cbar(l:u)/rhos)*abs(vel(l:u))*max(water-bed(l:u),0._dp) )*& ! Total load
                     ( ( (/ ys(l+1:u), ysu /) - (/ ysl, ys(l:u-1) /) )*0.5_dp) &  ! dy
                           )
+            ! Temporary discharge calculated exactly as above
+            tmp = sum(abs(vel(l:u))*max(water-bed(l:u),0._dp)*& ! Total load
+                    ( ( (/ ys(l+1:u), ysu /) - (/ ysl, ys(l:u-1) /) )*0.5_dp) & ! dy
+                    )
             IF(sus_flux > 1.0e-12_dp) THEN
-                sed_lag_scale = (sconc*Q)/sus_flux
+                sed_lag_scale = (sconc*tmp)/sus_flux
                 !print*, sed_lag_scale                        
             ELSE
                 sed_lag_scale = 1.0_dp

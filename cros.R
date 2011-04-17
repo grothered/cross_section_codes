@@ -300,7 +300,7 @@ get_extra<-function(l){
         Qe   <<- genread(dir()[Qe_file],l)	
         Qbed <<- genread(dir()[Qbed_file],l)	
         Qby <<- genread(dir()[qb_G_file],l+1)	
-        time <<- scan(dir()[time_file])
+        time1 <<- scan(dir()[time_file])
 }
 
 

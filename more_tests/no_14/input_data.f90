@@ -67,9 +67,9 @@ talmon=.FALSE. !Do we use a talmon lateral bedload closure?
 resus_type = 'vanrijn'! ! 'cohesive', 'vanrijn', 'smithmac'
 
 susdist = .TRUE. !Do we have a laterally variable suspended load? This can ONLY treat the case of steady state. The total load flux (bedload + spsuended load) is assumed to be integrated_load_flux
-sus_vert_prof='Rouse' !'exp', 'Rouse'
+sus_vert_prof='exp' !'exp', 'Rouse'
 edify_model='Parabolic' ! 'Constant', 'Parabolic', 'Parabola_const'
-x_len_scale=1000.0 ! x length scale. In dynamic_sus_dist dC/dx ~=(C-k*C)/x_len_scale
+x_len_scale=10.0 ! x length scale. In dynamic_sus_dist dC/dx ~=(C-k*C)/x_len_scale
 susQbal= .FALSE. ! DEPRECIATED: Is there a balance between the lateral flux of suspended load and bedload? Only relevant if susdist=.true.
 integrated_load_flux=-1.0 !DEPRECIATED: The total flux (suspended load + bedload) through the cross-section, in kg/s =  (kg/m^3)*m^2*m/s. Only used if susdist=.true.
 sus2d = .false. !Do we use a fully 2d suspended sediment - this is only applicable to the case with many cross sections strung together - the quasi 2d model.

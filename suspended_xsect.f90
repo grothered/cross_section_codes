@@ -323,7 +323,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
             !
             ! int( eddif_y*d(cb*f)/dy ) dz = 
             ! int( eddif_y*cb*df/dy + eddif_y*f*dcb/dy) dz = 
-            ! cb* int( eddif_y * df/dy) dz + dcb/dy* int(eddif_y*f) dz = 
+            ! cb*[ int( eddif_y * df/dy) dz] + dcb/dy*[ int(eddif_y*f) dz] = 
             ! cb*(int_edif_dfdy) + dcb/dy*(int_edif_f)
 
             IF(i==1) THEN
@@ -739,19 +739,13 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
 
                     ! Step4: df_dy = df/dbedh*dbedh/dy + df/aref*daref/dy + df/dus*dus/dy
                     df_dy = df_dbedh*dbed_dy + df_darefh*daref_dy + df_dus*dus_dy
-                    !DO j=1,no_subints
-                    !    IF(isnan(df_dy(j))) THEN
-                    !        print*, 'df_dy is nan', j, dbed_dy, daref_dy, dus_dy
-                    !        stop
-                    !    END IF
-                    !END DO
-                    !print*, maxval(abs(df_dy)), maxval(abs(f)), dbed_dy, daref_dy, dus_dy
                 ELSE
                     !z_tmp = elevation above bed = at 0.5, 1.5, ... 99.5 * depth/no_subints.0,
                     ! adjusted so z>arefh 
                     z_tmp = bedh+arefh+ ((d-arefh)/no_subints*1.0_dp)*( (/ (j,j=1,no_subints) /)*1.0_dp-0.5_dp)
                     ! In these shallow waters, define things so there is no
-                    ! lateral flux of suspended load
+                    ! lateral flux of suspended load -- hmm, actually, not such
+                    ! a good idea?
                     f = 0.0_dp
                     df_dy= 0.0_dp
                 END IF
