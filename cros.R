@@ -290,7 +290,8 @@ get_extra<-function(l){
 		vel_file=which(dir()=="tss")
         Qe_file = which(dir()=='q')
         Qbed_file = which(dir()=='Area')
-        qb_G_file = which(dir()=='recrd')
+        qb_G_file = which(dir()=='qby')
+        time_file = which(dir()=='time')
 
 	
         taug <<- genread(dir()[taug_file],l)	
@@ -298,8 +299,8 @@ get_extra<-function(l){
         vel  <<- genread(dir()[vel_file],l)	
         Qe   <<- genread(dir()[Qe_file],l)	
         Qbed <<- genread(dir()[Qbed_file],l)	
-        Qb_g <<- genread(dir()[qb_G_file],l+1)	
-
+        Qby <<- genread(dir()[qb_G_file],l+1)	
+        time <<- scan(dir()[time_file])
 }
 
 

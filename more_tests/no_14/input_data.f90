@@ -25,17 +25,17 @@ writfreq = 2000 !24*5*5 ! The output is written every writfreq 'th timestep
 jmax= 1200000 !1382400 !24*5*2*45*4*4*4*4*5 ! The number of time steps
 t = 0.00 ! Starting time (s)
 dT = 100.00 !Time step (s)
-variable_timestep=.TRUE. !Do we change the timestepping for high sediment concentrations? -- this is presently inconsistent with bed layers
+variable_timestep=.TRUE. !Do we use a variable time-step? 
 
 waterM = 0.0 !Initial water elevation (m) and mean water elevation
 TR=0.0 !Tidal range. If it is set to zero then the discharge is constant, otherwise the continuity based method is used.
 Width = 100.0 !Width of computational domain (m)
 
-no_discharges=1
-Discharges = 29.4
-susconcs = 1.0e-04
+no_discharges=1 ! Number of different discharge simulations
+Discharges = 29.4 ! Discharge values
+susconcs = 1.0e-04 !suspended sediment concentration(m^3/m^3) for each discharge value
 friction_type = 'manning'!, 'darcy', 'vanrijn'
-rough_coef=0.027
+rough_coef=0.027 ! Friction coefficient corresponding to the friction_type model
 grain_friction_type='vanrijn' !'colebrook'!'vanrijn'
 man_nveg = 0.3 !Mannings n for vegetated regions
 veg_ht = 9.0e+20 !Height at which vegetation is assumed to occur.
@@ -43,10 +43,10 @@ lambdacon=0.24 !Dimensionless eddy viscosity constant
 rho = 1026.0 ! Density of water (kg/m^3)
 tbston=.true. !When true (false) this term switches on (off) the sqrt(1+slopes^2) in the bed shear equation: tau*sqrt(1+slopes^2) = rho g Sf h + d/dy ... If .false., then it is replaced with 1. This effects both the shear calculation, and the 'roughmult' friction factor estimation
 
-layers=1 !The number of bed layers
-lincrem = 1000.031 ! The distance between bed layers (m). Set it to a very high number to avoid the multi bed layers having any influence.
-mu = .60 !Angle of repose - this can be used to influence the critical shear stress if the code is adjusted
-failure_slope = 1.5 ! Slope at which mass failure occurs
+layers=1 !The number of bed layers -- layers>1 is not presently compatible with bedload transport
+lincrem = 1000.031 ! The distance between bed layers (m). Set it to a very high number to avoid the multi bed layers having any influence (which must be done with bedload transport)
+mu = .60 !Angle of repose - this can be used to influence the critical shear stress if taucrit_slope_reduction=.TRUE.
+failure_slope = 1.0 ! Slope at which mass failure occurs
 tauinc = 0.00 ! A DEFUNCT constant (Pa)
 erconst = 0.13  ! The constant determining the min critical shear and the critical shear increment
 taucrit_slope_reduction=.FALSE. ! Does taucrit reduce on a lateral slope?
@@ -61,14 +61,14 @@ d50 = 0.000149 !0.000062 ! median grain size for bedload formula (m)
 g = 9.8 !Gravity (m/s^2)
 kvis = 1.0E-06 !Kinematic viscosity of water. 
 alpha=0.000228 !The constant for the erosion formula E= alpha*(tau-taue)/sqrt(taue)
-Qbedon=.TRUE. !Is bedload active
+Qbedon=.FALSE. !Is bedload active
 bedload_type='vanrijn'
 talmon=.FALSE. !Do we use a talmon lateral bedload closure?
 resus_type = 'vanrijn'! ! 'cohesive', 'vanrijn', 'smithmac'
 
 susdist = .TRUE. !Do we have a laterally variable suspended load? This can ONLY treat the case of steady state. The total load flux (bedload + spsuended load) is assumed to be integrated_load_flux
 sus_vert_prof='Rouse' !'exp', 'Rouse'
-edify_model='Parabola_const' ! 'Constant', 'Parabolic', 'Parabola_const'
+edify_model='Parabolic' ! 'Constant', 'Parabolic', 'Parabola_const'
 x_len_scale=1000.0 ! x length scale. In dynamic_sus_dist dC/dx ~=(C-k*C)/x_len_scale
 susQbal= .FALSE. ! DEPRECIATED: Is there a balance between the lateral flux of suspended load and bedload? Only relevant if susdist=.true.
 integrated_load_flux=-1.0 !DEPRECIATED: The total flux (suspended load + bedload) through the cross-section, in kg/s =  (kg/m^3)*m^2*m/s. Only used if susdist=.true.

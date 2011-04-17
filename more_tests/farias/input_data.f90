@@ -21,10 +21,10 @@
 !!!!!!!!!!!!!!!!!!!!!
 
 nos = 2000 ! Number of spatial grid points
-writfreq = 1 !2000 !24*5*5 ! The output is written every writfreq 'th timestep
-jmax= 1 !1200000 !1382400 !24*5*2*45*4*4*4*4*5 ! The number of time steps
+writfreq = 2000 !24*5*5 ! The output is written every writfreq 'th timestep
+jmax= 1200000 !1382400 !24*5*2*45*4*4*4*4*5 ! The number of time steps
 t = 0.00 ! Starting time (s)
-dT = 1.0e-01 !Time step (s)
+dT = 1.0e-00 !Time step (s)
 variable_timestep=.FALSE. !Do we change the timestepping for high sediment concentrations? -- this is presently inconsistent with bed layers
 
 waterM = 0.0 !Initial water elevation (m) and mean water elevation
@@ -45,8 +45,8 @@ tbston=.true. !When true (false) this term switches on (off) the sqrt(1+slopes^2
 
 layers=1 !The number of bed layers
 lincrem = 1000.031 ! The distance between bed layers (m). Set it to a very high number to avoid the multi bed layers having any influence.
-mu = 10.60 !Angle of repose - this can be used to influence the critical shear stress if the code is adjusted
-failure_slope = 100. ! Slope at which mass failure occurs
+mu = 10.60 !Angle of repose - this can be used to influence the critical shear stress if taucrit_slope_reduction=.true.
+failure_slope = 1. ! Slope at which mass failure occurs
 tauinc = 0.00 ! A DEFUNCT constant (Pa)
 erconst = 0.13  ! The constant determining the min critical shear and the critical shear increment
 taucrit_slope_reduction=.FALSE. ! Does taucrit reduce on a slope
@@ -61,13 +61,13 @@ d50 = 0.000149 !0.000062 ! median grain size for bedload formula (m)
 g = 9.8 !Gravity (m/s^2)
 kvis = 1.0E-06 !Kinematic viscosity of water. 
 alpha=0.000228 !The constant for the erosion formula E= alpha*(tau-taue)/sqrt(taue)
-Qbedon=.TRUE. !Is bedload active
+Qbedon=.FALSE. !Is bedload active
 bedload_type='mpm' ! 'vanrijn', 'mpm'
 talmon=.FALSE. !Do we use a talmon lateral bedload closure?
 resus_type = 'vanrijn'! ! 'cohesive', 'vanrijn', 'smithmac'
 
-susdist = .TRUE. !Do we have a laterally variable suspended load? This can ONLY treat the case of steady state. The total load flux (bedload + spsuended load) is assumed to be integrated_load_flux
-sus_vert_prof='exp' !'exp', 'Rouse'
+susdist = .TRUE. !Do we have a laterally variable suspended load? 
+sus_vert_prof='Rouse' !'exp', 'Rouse'
 edify_model='Parabolic' ! 'Constant', 'Parabolic', 'Parabola_const'
 x_len_scale=1.0 ! x length scale. In dynamic_sus_dist dC/dx ~= (C -k*C)/x_len_scale
 susQbal= .FALSE. ! DEPRECIATED: Is there a balance between the lateral flux of suspended load and bedload? Only relevant if susdist=.true.

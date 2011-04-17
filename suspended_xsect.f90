@@ -750,7 +750,9 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
                     !z_tmp = elevation above bed = at 0.5, 1.5, ... 99.5 * depth/no_subints.0,
                     ! adjusted so z>arefh 
                     z_tmp = bedh+arefh+ ((d-arefh)/no_subints*1.0_dp)*( (/ (j,j=1,no_subints) /)*1.0_dp-0.5_dp)
-                    f = 1.0_dp
+                    ! In these shallow waters, define things so there is no
+                    ! lateral flux of suspended load
+                    f = 0.0_dp
                     df_dy= 0.0_dp
                 END IF
 

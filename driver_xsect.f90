@@ -15,7 +15,7 @@ INTEGER:: nos, i,j, l, u, n, layers, ii, ind(1), indlast, Q_loop, jj, &
 REAL(dp):: wslope, ar, Q, t, &
            ys,bed, water, waterM, dists, tau,ks,tbst, Qe, Qbed, Qd, &
             f, aa, bb, cc, multa, bedold, &
-            recrd,v, bedlast, hss, tss, ddd, hss2, handy, dqbeddx, &
+            qby,v, bedlast, hss, tss, ddd, hss2, handy, dqbeddx, &
             epsl,epsu, slopes, E, D, C, rmult,Area, inuc, NN,&
              Width,C0,waterlast, dt, slpmx,sllength, vel, &
             integrated_load_flux, DT1,DT1_old, tau_g, f_g, Cbar, &
@@ -48,7 +48,7 @@ NAMELIST /inputdata/ nos,writfreq,jmax, layers, hlim, mor, mu, tauinc,&
                 failure_slope, x_len_scale, taucrit_slope_reduction
 
 ALLOCATABLE ys(:), bed(:), dists(:), tau(:),ks(:),tbst(:),& 
-            recrd(:), bedlast(:), hss(:), tss(:),  hss2(:), Qe(:),& 
+            qby(:), bedlast(:), hss(:), tss(:),  hss2(:), Qe(:),& 
             Qbed(:), Qd(:),f(:),slopes(:), NN(:),C0(:),&
             taucrit_dep(:,:), C(:),bedold(:), &
             taucrit_dep_ys(:) ,dst(:,:), taucrit(:,:), slpmx(:,:), &
@@ -102,13 +102,13 @@ OPEN(7,file="q")
 OPEN(8,file="Area")
 OPEN(9,file="sed")
 OPEN(10,file="tss")
-OPEN(11,file="recrd")
+OPEN(11,file="qby")
 OPEN(12,file="another")
 OPEN(13,file="oo")
 OPEN(14,file="time")
 
 ALLOCATE(ys(nos),bed(nos),dists(nos),tau(nos),ks(nos),tbst(nos),& 
-         recrd(0:nos), bedlast(nos),hss(nos),tss(nos),hss2(nos),Qe(nos),&
+         qby(0:nos), bedlast(nos),hss(nos),tss(nos),hss2(nos),Qe(nos),&
          Qd(nos),f(nos),slopes(nos),& 
          NN(nos), C0(nos),taucrit_dep(nos, layers), C(nos), &
          taucrit_dep_ys(nos),dst(nos,0:(layers+1)), &
@@ -188,7 +188,7 @@ DO Q_loop= 1, no_discharges!15
     !!!!!!!!!!!!!!!!!!!!!!
 
     t=0._dp !Time
-    recrd=0._dp !A useful variable for storing stuff 
+    qby=0._dp !A useful variable for storing stuff 
     l=1 !variable for "lower" wet point of cross section
     u=nos !variable for "upper" wet point of cross section
     water=waterM
@@ -373,7 +373,7 @@ DO Q_loop= 1, no_discharges!15
         !!!!!!!!!!!!!!!
         !CALCULATE SHEAR AND UPDATE THE CROSS SECTION
         !!!!!!!!!!!!!!
-        recrd=0._dp
+        qby=0._dp
         tau=0._dp
         Qe=0._dp
         Qbed=0._dp
@@ -425,7 +425,7 @@ DO Q_loop= 1, no_discharges!15
 
             ! CALCULATE BED SHEAR
             call calc_shear(u-l+1,DT1,water,Q,bed(l:u),ys(l:u),Area,ys(u)-ys(l)+wdthx, &
-                            water-Area/(ys(u)-ys(l)+wdthx),f(l:u),recrd((l-1):u),E,D, C(l:u),&
+                            water-Area/(ys(u)-ys(l)+wdthx),f(l:u),qby((l-1):u),E,D, C(l:u),&
                             rmult,inuc, tau(l:u),& 
                             NN(l:u),j,slopes(l:u), hlim, mor, taucrit_dep(l:u,1:layers), layers,&
                             taucrit_dep_ys(l:u) & 
@@ -449,7 +449,7 @@ DO Q_loop= 1, no_discharges!15
             
             ! CALCULATE RATES OF RESUSPENSION AND BEDLOAD TRANSPORT
             call calc_resus_bedload(u-l+1,DT1,water,Q,bed(l:u),ys(l:u),Area,ys(u)-ys(l)+wdthx,&
-                                     water-Area/(ys(u)-ys(l)+wdthx),f(l:u),recrd((l-1):u),E,D, &
+                                     water-Area/(ys(u)-ys(l)+wdthx),f(l:u),qby((l-1):u),E,D, &
                                     C(l:u),wset, rmult,2,inuc, tau_g(l:u),& 
                                     vel(l:u), NN(l:u),j,slopes(l:u), hlim, mor, taucrit_dep(l:u,1:layers),&
                                      layers, taucrit_dep_ys(l:u) & 
@@ -521,7 +521,7 @@ DO Q_loop= 1, no_discharges!15
             bedlast= bed ! Record the bed prior to updating
            
             call update_bed(u-l+1,DT1,water,Q,bed(l:u),ys(l:u),Area,ys(u)-ys(l)+wdthx, &
-                             water- Area/(ys(u)-ys(l)+wdthx),f(l:u),recrd((l-1):u),E,D, &
+                             water- Area/(ys(u)-ys(l)+wdthx),f(l:u),qby((l-1):u),E,D, &
                             C(l:u),rmult,2,inuc, tau(l:u),tau_g(l:u),& 
                             NN(l:u),j,slopes(l:u), hlim, mor, taucrit_dep(l:u,1:layers), &
                             layers, taucrit_dep_ys(l:u) & 
@@ -591,7 +591,7 @@ DO Q_loop= 1, no_discharges!15
                 write(8,*) Qbed
                 write(9,*) Clast ! Same C as when bed = bedlast and when tau was calculated
                 write(10,*) vel
-                write(11,*) recrd
+                write(11,*) qby
                 write(14,*) t -DT1 ! This is the time corresponding to the cross-sectional shape when 'tau' was calculated
                 !write(12,*) taucrit_dep_ys
 
@@ -615,7 +615,7 @@ DO Q_loop= 1, no_discharges!15
                 IF(j.eq.1) print*, ' Warning: Variable timestep is ONLY valid for &
                         STEADY UNIFORM EQUILIBRIUM computations'
 
-                tmp = min(max(maxval(abs(wset*C/rhos- Qe)), maxval(abs(recrd(l-1:u)))), &
+                tmp = min(max(maxval(abs(wset*C/rhos- Qe)), maxval(abs(qby(l-1:u)))), &
                           maxval(abs(bed(l+1:u-1) - bedlast(l+1:u-1))) )
                 tmp2 = minval(ys(2:nos) - ys(1:nos-1)) 
                 DT1 = min(max(1.0e-03_dp*tmp2/max(tmp,1.0e-020_dp), 1.0e-01_dp), 100.0_dp*3600.0_dp)
