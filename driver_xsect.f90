@@ -525,7 +525,7 @@ DO Q_loop= 1, no_discharges!15
            
             call update_bed(u-l+1,DT1,water,Q,bed(l:u),ys(l:u),Area,ys(u)-ys(l)+wdthx, &
                              water- Area/(ys(u)-ys(l)+wdthx),f(l:u),qby((l-1):u),E,D, &
-                            C(l:u),rmult,2,inuc, tau(l:u),tau_g(l:u),& 
+                            0.5_dp*(Clast(l:u)+C(l:u)),rmult,2,inuc, tau(l:u),tau_g(l:u),& 
                             NN(l:u),j,slopes(l:u), hlim, mor, taucrit_dep(l:u,1:layers), &
                             layers, taucrit_dep_ys(l:u) & 
                             ,u-l+1, taucrit(l:u, 0:layers) , vegdrag(l:u), susdist, rho, &
@@ -585,24 +585,26 @@ DO Q_loop= 1, no_discharges!15
             !same time level -- e.g. tau is calculated using bedlast, so is
             !Clast, Qbed, Qe, etc. 
             IF((mod(j-1,writfreq).EQ.0).AND.(iii.eq.1)) THEN!.or.(j>15250)) THEN 
+                Qd = 0.5_dp*(Clast +C)*wset/rhos
                 print*, 'bed change:', maxval(abs(bed(l:u)-bedlast(l:u))), maxloc(abs(bed(l:u)-bedlast(l:u)))
-                print*, 'Resus - dep:', maxval(abs(Qe(l:u) - wset*C(l:u)/rhos))*mor*DT1, maxloc(abs(Qe(l:u) - wset*C(l:u)/rhos))
+                print*, 'Resus - dep:', maxval(abs(Qe(l:u) - Qd(l:u)))*mor*DT1, &
+                                        maxloc(abs(Qe(l:u) - Qd(l:u)))
                 write(1,*) tau 
                 write(2,*) bedlast !Same bed as when tau was calculated
                 write(3,*) ys !critical shear
                 write(4,*) tau_g !taucrit_dep!water, Q/ar
                 write(5,*) water
                 write(7,*) Qe
-                write(8,*) Qbed
+                write(8,*) Qbed !bed !Qbed
                 write(9,*) Clast ! Same C as when bed = bedlast and when tau was calculated
-                write(10,*) vel
+                write(10,*) vel !C
                 write(11,*) qby
                 write(14,*) t -DT1 ! This is the time corresponding to the cross-sectional shape when 'tau' was calculated
                 !write(12,*) taucrit_dep_ys
 
                 ! Check for convergence.
                 tmp = maxval(abs(bedold-bed))
-                IF(tmp/(writfreq*DT1)<1.0e-09_dp) THEN
+                IF(tmp/(writfreq*DT1)<1.0e-12_dp) THEN
                     goto 373 !Converged: Go to the end of this loop
                     !exit
                     !sconc = sconc*0.5_dp
