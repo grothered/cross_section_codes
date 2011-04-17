@@ -474,7 +474,7 @@ DO Q_loop= 1, no_discharges!15
             !        ( ( (/ ys(l+1:u), ysu /) - (/ ysl, ys(l:u-1) /) )*0.5_dp) & ! dy
             !        )
             IF(sus_flux > 1.0e-12_dp) THEN
-                sed_lag_scale = (sconc*Q)/sus_flux
+                sed_lag_scale = (sconc*Q)/sus_flux !sqrt( (sconc*Q)/sus_flux*sed_lag_scale)
                 !print*, sed_lag_scale                        
             ELSE
                 sed_lag_scale = 1.0_dp
@@ -595,16 +595,16 @@ DO Q_loop= 1, no_discharges!15
                 write(4,*) tau_g !taucrit_dep!water, Q/ar
                 write(5,*) water
                 write(7,*) Qe
-                write(8,*) Qbed !bed !Qbed
+                write(8,*) bed !Qbed
                 write(9,*) Clast ! Same C as when bed = bedlast and when tau was calculated
-                write(10,*) vel !C
+                write(10,*) C !vel
                 write(11,*) qby
                 write(14,*) t -DT1 ! This is the time corresponding to the cross-sectional shape when 'tau' was calculated
                 !write(12,*) taucrit_dep_ys
 
                 ! Check for convergence.
-                tmp = maxval(abs(bedold-bed))
-                IF(tmp/(writfreq*DT1)<1.0e-12_dp) THEN
+                tmp =max( maxval(abs(bedold-bed)), maxval(abs(bed-bedlast)))
+                IF(tmp/(DT1)<1.0e-12_dp) THEN
                     goto 373 !Converged: Go to the end of this loop
                     !exit
                     !sconc = sconc*0.5_dp
