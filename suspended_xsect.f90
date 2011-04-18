@@ -508,7 +508,8 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     END IF 
 
     ! Now we add the term U*d*dCbar/dx using an operator splitting technique
-    Cbar = Cbar +DT1*Cbar*(1._dp-sed_lag_scale)/x_len_scale
+    ! depth*dCbar/dT = -depth*vel*dCbar/dx
+    Cbar = Cbar -DT1*vel*Cbar*(1._dp-sed_lag_scale)/x_len_scale
 
 
     ! New near bed cb
