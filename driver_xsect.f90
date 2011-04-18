@@ -474,7 +474,10 @@ DO Q_loop= 1, no_discharges!15
             !        ( ( (/ ys(l+1:u), ysu /) - (/ ysl, ys(l:u-1) /) )*0.5_dp) & ! dy
             !        )
             IF(sus_flux > 1.0e-12_dp) THEN
-                sed_lag_scale = 1.0*((sconc*Q)/sus_flux) !-0.0*sed_lag_scale !sqrt( (sconc*Q)/sus_flux*sed_lag_scale)
+                sed_lag_scale = 1.0_dp*((sconc*Q)/sus_flux)
+                ! Prevent very high or low values
+                sed_lag_scale = min(max(sed_lag_scale,0.666_dp),1.5_dp) 
+                IF(mod(j,1000).eq.1) PRINT*, 'sed_lag_scale = ', sed_lag_scale
                 !print*, sed_lag_scale                        
             ELSE
                 sed_lag_scale = 1.0_dp

@@ -158,14 +158,14 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     ! Write output to monitor convegence
     !IF(mod(counter,1000).eq.0) PRINT*, 'sus flux is =', tmp1, '; desired flux is', tmp2
     
-    !DO i=1,a
-    !    !Explicit
-    !    Cref = Cbar(i)*sed_lag_scale 
-    !    ! C_lag_scale is chosen so that at steady state, the total sediment flux equals the desired sediment flux
-    !    RHS(i) = RHS(i) - vel(i)*depth(i)*(Cbar(i) - Cref)/x_len_scale
-    !    !RHS(i) = RHS(i) - vel(i)*depth(i)*Cbar(i)*(1.0_dp - sed_lag_scale)*0.5_dp/x_len_scale
-    !    !M1_diag(i) = M1_diag(i) + vel(i)*depth(i)*Cbar(i)*(1.0_dp-sed_lag_scale)*0.5_dp/x_len_scale
-    !END DO 
+    DO i=1,a
+        !Explicit
+        Cref = Cbar(i)*sed_lag_scale 
+        ! C_lag_scale is chosen so that at steady state, the total sediment flux equals the desired sediment flux
+        RHS(i) = RHS(i) - vel(i)*depth(i)*(Cbar(i) - Cref)/x_len_scale
+        !RHS(i) = RHS(i) - vel(i)*depth(i)*Cbar(i)*(1.0_dp - sed_lag_scale)*0.5_dp/x_len_scale
+        !M1_diag(i) = M1_diag(i) + vel(i)*depth(i)*Cbar(i)*(1.0_dp-sed_lag_scale)*0.5_dp/x_len_scale
+    END DO 
              
     DO i = 1, a
         !PRINT*, 'SANITY CHECK a'
@@ -508,9 +508,15 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     END IF 
 
     ! Now we add the term U*d*dCbar/dx using an operator splitting technique
-    ! depth*dCbar/dT = -depth*vel*dCbar/dx
-    Cbar = Cbar -DT1*vel*Cbar*(1._dp-sed_lag_scale)/x_len_scale
-
+    ! depth*dCbar/dT + depth*vel*dCbar/dx = 0.0
+    ! Explicit
+    !Cbar = Cbar -delT*vel*Cbar*(1._dp-sed_lag_scale)/x_len_scale
+    ! Implicit
+    !Cbar*(1.0/dT + vel*(1.0_dp-sed_lag_scale)/x_len_scale) = Cbar/DT 
+    !Cbar = Cbar/(1.0 + delT*vel*(1.0_dp-sed_lag_scale)/x_len_scale )
+    ! Time-centred implicit 
+    Cbar = Cbar*(1.0_dp - 0.0_dp*delT*vel*(1._dp-sed_lag_scale)/x_len_scale)/ &
+           (1.0 + 1.0_dp*delT*vel*(1.0_dp-sed_lag_scale)/x_len_scale )
 
     ! New near bed cb
     DO i = 1, a
