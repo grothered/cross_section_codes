@@ -67,7 +67,7 @@ talmon=.FALSE. !Do we use a talmon lateral bedload closure?
 resus_type = 'vanrijn'! ! 'cohesive', 'vanrijn', 'smithmac'
 
 susdist = .TRUE. !Do we have a laterally variable suspended load? This can ONLY treat the case of steady state. The total load flux (bedload + spsuended load) is assumed to be integrated_load_flux
-sus_vert_prof='exp' !'exp', 'Rouse'
+sus_vert_prof='Rouse' !'exp', 'Rouse'
 edify_model='Parabolic' ! 'Constant', 'Parabolic', 'Parabola_const'
 x_len_scale=1000.0 ! x length scale. In dynamic_sus_dist dC/dx ~= (C -k*C)/x_len_scale
 susQbal= .FALSE. !Is there a balance between the lateral flux of suspended load and bedload? Only relevant if susdist=.true.

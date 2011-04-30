@@ -107,6 +107,7 @@ OPEN(12,file="another")
 OPEN(13,file="oo")
 OPEN(14,file="time")
 
+! Allocate memory for arrays
 ALLOCATE(ys(nos),bed(nos),dists(nos),tau(nos),ks(nos),tbst(nos),& 
          qby(0:nos), bedlast(nos),hss(nos),tss(nos),hss2(nos),Qe(nos),&
          Qd(nos),f(nos),slopes(nos),& 
@@ -117,8 +118,10 @@ ALLOCATE(ys(nos),bed(nos),dists(nos),tau(nos),ks(nos),tbst(nos),&
          vel(nos), tau_g(nos), f_g(nos), Cbar(nos), bedold(nos), a_ref(nos),&
          Clast(nos) ) 
 
+
+
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!Loop over different values of discharge
+!LOOP OVER DIFFERENT VALUES OF DISCHARGE
 
 DO Q_loop= 1, no_discharges!15 
 
@@ -191,7 +194,7 @@ DO Q_loop= 1, no_discharges!15
     qby=0._dp !A useful variable for storing stuff 
     l=1 !variable for "lower" wet point of cross section
     u=nos !variable for "upper" wet point of cross section
-    water=waterM
+    water=waterM ! Water elevation
     ! Redefine l and u
     call wet(l,u,nos,water, bed)
     tau= 0._dp*tau !Set all the shears to zero prior to update
@@ -199,18 +202,23 @@ DO Q_loop= 1, no_discharges!15
     D=0._dp ! Cross-sectionally integrated deposition (from suspension)
     C=sconc ! Near bed sediment concentration
     Cbar = sconc ! Depth averaged suspended sediment concentration 
-    f= 0.02_dp !A starting value, which will be changed
-    f_g= 0.02_dp !A starting value, which will be changed
-    vel = 0.0_dp
-    rmult=sum(f)/(8._dp*9.8_dp*nos) !A starting value, which will be changed
-    inuc=0._dp  
-    NN=tau*0._dp
+    f= 0.02_dp !Friction factor
+    f_g= 0.02_dp ! Grain friction factor
+    vel = 0.0_dp ! Velocity
+    ! rmult = Cross-sectionally averaged friction factor: 
+    ! Note that in general, rmult ~= f/depth, because when
+    ! interfacing with the 1D St-Venant solver, this is more stable.
+    rmult=sum(f)/(8._dp*9.8_dp*nos) 
+    vegdrag=0._dp  ! Drag coefficient for vegetation
+    ! inuc = Multiplicative factor to account for cross-sectional non-uniformity
+    ! in the convective intertial terms in the St Venant equation solver 
+    inuc=0._dp
+    NN=tau*0._dp ! Defunct constant
     vlast=0._dp
     hss=0._dp
     hss2=0._dp
-    Area=0.0000_dp
-    vegdrag=0._dp
-    dst(:, layers) = 2000._dp
+    Area=0.0000_dp ! Cross-sectional area
+    dst(:, layers) = 2000._dp ! Distance from the bed surface to different bed layers
     slpmx(:, layers+1) = 99999999._dp
     dqbeddx=0._dp
     bedlast = bed - 0.001_dp !
@@ -258,6 +266,7 @@ DO Q_loop= 1, no_discharges!15
 
                 multa=1._dp
                 IF(taucrit_slope_reduction.eqv..TRUE.) THEN 
+
                     IF((j.eq.1).and.(i.eq.1).and.(jj==0)) print*, 'WARNING: Critical shear on a slope is reduced'
                     ! Compute slope-related reduction in critical shear stress
                     aa= mu**2*(mu*lifttodrag-1._dp)/(mu*lifttodrag+1._dp)
@@ -265,6 +274,7 @@ DO Q_loop= 1, no_discharges!15
                     cc= mu**2*cos(atan(slopes(i)))**2 - sin(atan(slopes(i)))**2
                     !multa*(critical shear on a flat bed) = critical shear on a slope.
                     multa= (-bb - sqrt(bb**2-4._dp*aa*cc))/ (2._dp*aa)  
+
                 END IF
 
                 taucrit(i,jj) = erconst*(1._dp+ jj*1._dp)*max(multa,1.0e-01_dp)
@@ -277,8 +287,8 @@ DO Q_loop= 1, no_discharges!15
             END DO 
         END DO
 
-        !!Update taucrit_dep
-        !$OMP PARALLEL DO
+        !!Update taucrit_dep -- the value of taucrit in sediment buried at a
+        !certain depth
         DO  i= 1, nos
             DO n= 1, layers
                 taucrit_dep(i,n)= max(min(taucrit_dep(i,n), bed(i)),bed(i)-lincrem*n) !So sediments buried at a certain depth will have their critical shear increase. 
@@ -294,7 +304,6 @@ DO Q_loop= 1, no_discharges!15
                 ! print*, hs(i), taucrit_dep(i, 1), dst(i, 1)
             END DO
         END DO
-        !$OMP END PARALLEL DO
 
 
         ! Here either the geotech routine is used, or just the slope is calculated
@@ -317,7 +326,8 @@ DO Q_loop= 1, no_discharges!15
         ! Find wetted part of section
         call wet(l,u,nos,water, bed) 
         
-        ! 'Extra' wetted width associated with the corners of the domain.
+        ! 'Extra' wetted width associated with the corners of the domain -- do
+        ! we really need/ want this?
         wdthx = 0.0
         IF (u<nos) wdthx = wdthx+ (water-bed(u))/(bed(u+1)-bed(u))*(ys(u+1)-ys(u))
         IF (l>1) wdthx = wdthx+ (water-bed(l))/(bed(l-1)-bed(l))*(ys(l)-ys(l-1))

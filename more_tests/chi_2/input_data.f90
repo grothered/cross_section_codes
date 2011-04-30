@@ -46,8 +46,10 @@ tbston=.true. !When true (false) this term switches on (off) the sqrt(1+slopes^2
 layers=1 !The number of bed layers
 lincrem = 1000.031 ! The distance between bed layers (m). Set it to a very high number to avoid the multi bed layers having any influence.
 mu = 10000.60 !Angle of repose - this can be used to influence the critical shear stress if the code is adjusted
+failure_slope = 1.0 ! Slope at which mass failure occurs.
 tauinc = 0.00 ! A DEFUNCT constant (Pa)
 erconst = 0.18  ! The constant determining the min critical shear and the critical shear increment
+taucrit_slope_reduction=.FALSE. ! Is taucrit reduced on lateral slopes?
 wset = 0.042 ! Settling velocity of sediment in m/s
 voidf = 0.4 ! Void fraction (non sediment fraction) of bed = porosity
 lifttodrag = 0.0 ! Lift to drag coefficient ratio
@@ -65,8 +67,9 @@ talmon=.FALSE. !Do we use a talmon lateral bedload closure?
 resus_type = 'vanrijn'! ! 'cohesive', 'vanrijn', 'smithmac'
 
 susdist = .TRUE. !Do we have a laterally variable suspended load? This can ONLY treat the case of steady state. The total load flux (bedload + spsuended load) is assumed to be integrated_load_flux
-sus_vert_prof='exp' !'exp', 'Rouse'
-epsy_model='Parabola_const' ! 'Constant', 'Parabolic', 'Parabola_const'
+sus_vert_prof='Rouse' !'exp', 'Rouse'
+edify_model='Parabolic' ! 'Constant', 'Parabolic', 'Parabola_const'
+x_len_scale=1000.0 ! x length scale. In dynamic_sus_dist dC/dx ~= (C -k*C)/x_len_scale
 susQbal= .FALSE. !Is there a balance between the lateral flux of suspended load and bedload? Only relevant if susdist=.true.
 integrated_load_flux= -1.0 !The total flux (suspended load + bedload) through the cross-section, in kg/s =  (kg/m^3)*m^2*m/s. Only used if susdist=.true., but NOT in dynamic_sus_dist, which is presently in favour. Hence I set it negative.
 sus2d = .false. !Do we use a fully 2d suspended sediment - this is only applicable to the case with many cross sections strung together - the quasi 2d model.
