@@ -515,8 +515,8 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     !Cbar*(1.0/dT + vel*(1.0_dp-sed_lag_scale)/x_len_scale) = Cbar/DT 
     !Cbar = Cbar/(1.0 + delT*vel*(1.0_dp-sed_lag_scale)/x_len_scale )
     ! Time-centred implicit 
-    Cbar = Cbar*(1.0_dp - 0.0_dp*delT*vel*(1._dp-sed_lag_scale)/x_len_scale)/ &
-           (1.0 + 1.0_dp*delT*vel*(1.0_dp-sed_lag_scale)/x_len_scale )
+    Cbar = Cbar*(1.0_dp - 0.5_dp*delT*vel*(1._dp-sed_lag_scale)/x_len_scale)/ &
+           (1.0 + 0.5_dp*delT*vel*(1.0_dp-sed_lag_scale)/x_len_scale )
 
     ! New near bed cb
     DO i = 1, a
