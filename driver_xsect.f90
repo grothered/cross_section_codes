@@ -617,9 +617,13 @@ DO Q_loop= 1, no_discharges!15
                 write(14,*) t -DT1 ! This is the time corresponding to the cross-sectional shape when 'tau' was calculated
                 !write(12,*) taucrit_dep_ys
 
-                ! Check for convergence.
+                ! Check for convergence by comparing 'bed' with 'bedold' (=
+                ! value of 'bed' at 'writfreq' time steps ago). Note that we
+                ! also check against bedlast, which can sometimes be more
+                ! different from bed, if oscillations are occurring -- which is
+                ! good to catch.    
                 tmp =max(maxval(abs(bedold-bed)), maxval(abs(bed-bedlast)))
-                IF(tmp/(DT1)<1.0e-12_dp) THEN
+                IF(tmp/(DT1*writfreq)<1.0e-10_dp) THEN
                     goto 373 !Converged: Go to the end of this loop
                     !exit
                     !sconc = sconc*0.5_dp
@@ -641,7 +645,7 @@ DO Q_loop= 1, no_discharges!15
                     tmp = min(max(maxval(abs(wset*C/rhos- Qe)), maxval(abs(qby(l-1:u)))), &
                               maxval(abs(bed(l+1:u-1) - bedlast(l+1:u-1))) )
                     tmp2 = minval(ys(2:nos) - ys(1:nos-1)) 
-                    DT1 = min(max(5.0e-03_dp*tmp2/max(tmp,1.0e-020_dp), 1.0e-01_dp), 100.0_dp*3600.0_dp)
+                    DT1 = min(max(5.0e-03_dp*tmp2/max(tmp,1.0e-020_dp), 1.0e-01_dp, 0.9_dp*DT1), 100.0_dp*3600.0_dp, 1.1_dp*DT1)
                 !END IF
             ELSE
                 DT1 = DT

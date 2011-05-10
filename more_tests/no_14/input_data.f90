@@ -25,7 +25,7 @@ writfreq = 2000 !24*5*5 ! The output is written every writfreq 'th timestep
 jmax= 1200000 !1382400 !24*5*2*45*4*4*4*4*5 ! The number of time steps
 t = 0.00 ! Starting time (s)
 dT = 300.00 !Time step (s)
-variable_timestep=.FALSE. !Do we use a variable time-step? Can cause problems
+variable_timestep=.TRUE. !Do we use a variable time-step? Can cause problems
 
 waterM = 0.0 !Initial water elevation (m) and mean water elevation
 TR=0.0 !Tidal range. If it is set to zero then the discharge is constant, otherwise the continuity based method is used.
