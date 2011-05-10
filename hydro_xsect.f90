@@ -378,7 +378,7 @@ END SUBROUTINE shear
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-SUBROUTINE calc_shear(a, dT, water, Q, bed,ys,Area, Width,bottom, ff,recrd, E, D,C,rmu,inuc,tau,NN,counter &
+SUBROUTINE calc_shear(a, dT, water, Q, bed,ys,Area, bottom, ff,recrd, E, D,C,rmu,inuc,tau,NN,counter &
             ,slopes, hlim,mor,taucrit_dep,layers, taucrit_dep_ys, nos, taucrit, vegdrag, susdist, rho, Qe, & 
             Qbed, rhos, voidf, d50, g, kvis, norm, vertical, lambdacon, tbston, ysl,ysu,bedl,bedu, & 
             high_order_shear) 
@@ -397,7 +397,6 @@ SUBROUTINE calc_shear(a, dT, water, Q, bed,ys,Area, Width,bottom, ff,recrd, E, D
     ! bed = the bed elevation
     ! ys = the y coordinates
     ! Area = the cross-sectional area
-    ! Width = the wetted cross-sectional width
     ! bottom = the average bed elevation
     ! ff = the darcy-weisbach friction factor
     ! recrd = a useful parameter to record things (might not be used here)
@@ -440,7 +439,7 @@ SUBROUTINE calc_shear(a, dT, water, Q, bed,ys,Area, Width,bottom, ff,recrd, E, D
 
 
     INTEGER, INTENT(IN)::a,counter,layers, nos
-    REAL(dp), INTENT(IN)::water,Q, Width, Area, bottom, ff, hlim,mor, vegdrag, dt, rho, rhos, voidf,&
+    REAL(dp), INTENT(IN)::water,Q, Area, bottom, ff, hlim,mor, vegdrag, dt, rho, rhos, voidf,&
          d50, g, kvis, lambdacon, ysl,ysu,bedl,bedu 
     REAL(dp), INTENT(IN OUT):: bed, recrd, E, D,rmu,inuc,tau, NN, ys,C,taucrit_dep, taucrit_dep_ys, slopes, & 
         taucrit, Qe, Qbed
@@ -621,15 +620,15 @@ SUBROUTINE calc_shear(a, dT, water, Q, bed,ys,Area, Width,bottom, ff,recrd, E, D
 
     ! Calculate new value of rmu = correction factor for shear
     IF(tbston) THEN !When integrating the friction factor, include the sqrt(1+slopes^2) term
-        call roughmult(a,rmu, vel, Q, Area, width,sqrt(1._dp+slopes**2),& 
+        call roughmult(a,rmu, vel, Q, Area, sqrt(1._dp+slopes**2),& 
             max(water-bed,0._dp), ys, ff, vegdrag, counter, ysl, ysu, bedl, bedu, bed, water,g)
     ELSE
-        call roughmult(a,rmu, vel, Q, Area, width,1._dp +0._dp*slopes ,& 
+        call roughmult(a,rmu, vel, Q, Area, 1._dp +0._dp*slopes ,& 
             max(water-bed,0._dp), ys, ff, vegdrag, counter,ysl, ysu, bedl, bedu, bed, water,g)
     END IF
 
     ! Calculate the integral of the nuc term.
-    call intnuc(inuc,water,ys,bed,vel, a, width/a, Q, Area)
+    call intnuc(inuc,water,ys,bed,vel, a, Q, Area)
 
 
     IF(isnan(rmu)) THEN
@@ -645,7 +644,7 @@ END SUBROUTINE calc_shear
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-SUBROUTINE roughmult(aa,rmu, vel, Q, A, width,tbst,depths, ys, f, vegdrag, &
+SUBROUTINE roughmult(aa,rmu, vel, Q, A, tbst,depths, ys, f, vegdrag, &
                      counter, ysl, ysu, bedl, bedu,bed,water,g)
     !This is for calculating the constant that we should multiply the friction
     !slope in the 1D model by, in order to account for the lateral distribution of
@@ -653,7 +652,7 @@ SUBROUTINE roughmult(aa,rmu, vel, Q, A, width,tbst,depths, ys, f, vegdrag, &
     !we get the (roughness coefficient/ depth) for numerical stability reasons
     INTEGER, INTENT(IN)::aa, counter
     REAL(dp), INTENT(IN OUT):: rmu
-    REAL(dp), INTENT(IN):: vel, Q, A, width,tbst, depths, ys, f, vegdrag, ysl, ysu,&
+    REAL(dp), INTENT(IN):: vel, Q, A, tbst, depths, ys, f, vegdrag, ysl, ysu,&
                            bedl, bedu, bed, water,g
     DIMENSION vel(aa),tbst(aa), depths(aa), ys(aa), f(aa), vegdrag(aa), bed(aa)
     
@@ -898,12 +897,12 @@ END SUBROUTINE calc_friction
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-SUBROUTINE intnuc(inuc,waters,ys,bottom, vels,b, wincrem, Q, A)
+SUBROUTINE intnuc(inuc,waters,ys,bottom, vels,b, Q, A)
     !! This is for getting the nuc term-- we get the portion inside the derivative,
     ! (called inuc) and then differentiate it within the mcCormack scheme
 
     INTEGER, INTENT(IN):: b
-    REAL(dp), INTENT(IN):: vels, waters,bottom,wincrem,Q,A, ys
+    REAL(dp), INTENT(IN):: vels, waters,bottom,Q,A, ys
     REAL(dp), INTENT(IN OUT):: inuc
     DIMENSION vels(b), bottom(b), ys(b)
 

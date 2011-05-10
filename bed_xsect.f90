@@ -9,14 +9,14 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!
-SUBROUTINE calc_resus_bedload(a, dT, water, Q, bed,ys,Area, Width,bottom, ff,recrd, E, D,C, wset, rmu,a2, inuc,tau,vel,NN & 
+SUBROUTINE calc_resus_bedload(a, dT, water, Q, bed,ys,Area, bottom, ff,recrd, E, D,C, wset, rmu,a2, inuc,tau,vel,NN & 
     ,counter,slopes, hlim,mor,taucrit_dep,layers, taucrit_dep_ys, nos, taucrit, vegdrag, susdist, rho, Qe, Qbed, rhos,& 
     voidf, dsand, d50, g, kvis, norm, vertical,alpha, tbston, Qbedon, ysl,ysu,bedl,bedu, resus_type, bedload_type, a_ref) 
     ! Calculate the rate of resuspension and bedload transport over a
     ! cross-section
 
     INTEGER, INTENT(IN)::a,a2,counter,layers, nos
-    REAL(dp), INTENT(IN)::water,Q, Width, Area, bottom, ff, hlim,mor, vegdrag,dt, rho, rhos, voidf, dsand, d50, g, & 
+    REAL(dp), INTENT(IN)::water,Q, Area, bottom, ff, hlim,mor, vegdrag,dt, rho, rhos, voidf, dsand, d50, g, & 
         kvis, alpha, wset, a_ref
     REAL(dp), INTENT(IN OUT):: bed, recrd, E, D,rmu,inuc,tau,vel, NN, ys,C,taucrit_dep, taucrit_dep_ys, slopes, taucrit,& 
          Qe, Qbed
@@ -210,13 +210,13 @@ END SUBROUTINE calc_resus_bedload
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-SUBROUTINE update_bed(a, dT, water, Q, bed,ys,Area, Width,bottom, ff,recrd, E, D,C,rmu,a2, inuc,tau,taug,NN, &
+SUBROUTINE update_bed(a, dT, water, Q, bed,ys,Area, bottom, ff,recrd, E, D,C,rmu,a2, inuc,tau,taug,NN, &
     counter,slopes, hlim,mor,taucrit_dep,layers, taucrit_dep_ys, nos, taucrit, vegdrag, susdist,rho, Qe, Qbed, & 
     wset,dqbeddx, rhos, voidf, d50, g, kvis, norm, vertical, lambdacon, tbston, Qbedon, normmov,sus2d,ysl, & 
     ysu,bedl,bedu,iii, bedlast, susQbal, talmon, high_order_bedload)
 
     INTEGER, INTENT(IN)::a,a2,counter,layers, nos, iii
-    REAL(dp), INTENT(IN)::water,Q, Width, Area, bottom, ff, hlim,mor, vegdrag, dt, rho, Qbed, Qe, dqbeddx, &
+    REAL(dp), INTENT(IN)::water,Q, Area, bottom, ff, hlim,mor, vegdrag, dt, rho, Qbed, Qe, dqbeddx, &
         rhos, voidf, d50, g, kvis,wset, lambdacon, ysl,ysu, bedlast, taug,C !QbedI, dQbedI
     REAL(dp), INTENT(IN OUT):: bed, recrd, E, D,rmu,inuc,tau, NN, ys,taucrit_dep, taucrit_dep_ys, slopes, & 
         taucrit, bedu, bedl

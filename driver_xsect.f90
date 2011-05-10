@@ -433,7 +433,7 @@ DO Q_loop= 1, no_discharges!15
                                  f(l:u), vegdrag(l:u),f_g(l:u), dsand, j, a_ref(l:u)) 
 
             ! CALCULATE BED SHEAR
-            call calc_shear(u-l+1,DT1,water,Q,bed(l:u),ys(l:u),Area,ys(u)-ys(l)+wdthx, &
+            call calc_shear(u-l+1,DT1,water,Q,bed(l:u),ys(l:u),Area, &
                             water-Area/(ys(u)-ys(l)+wdthx),f(l:u),qby((l-1):u),E,D, C(l:u),&
                             rmult,inuc, tau(l:u),& 
                             NN(l:u),j,slopes(l:u), hlim, mor, taucrit_dep(l:u,1:layers), layers,&
@@ -457,7 +457,7 @@ DO Q_loop= 1, no_discharges!15
             tau_g(l:u) = rho*vel(l:u)**2*(f_g(l:u)/8._dp)*sign(1._dp+0._dp*tau(l:u), tau(l:u))
             
             ! CALCULATE RATES OF RESUSPENSION AND BEDLOAD TRANSPORT
-            call calc_resus_bedload(u-l+1,DT1,water,Q,bed(l:u),ys(l:u),Area,ys(u)-ys(l)+wdthx,&
+            call calc_resus_bedload(u-l+1,DT1,water,Q,bed(l:u),ys(l:u),Area,&
                                      water-Area/(ys(u)-ys(l)+wdthx),f(l:u),qby((l-1):u),E,D, &
                                     C(l:u),wset, rmult,2,inuc, tau_g(l:u),& 
                                     vel(l:u), NN(l:u),j,slopes(l:u), hlim, mor, taucrit_dep(l:u,1:layers),&
@@ -487,7 +487,7 @@ DO Q_loop= 1, no_discharges!15
                 sed_lag_scale = 1.0_dp*((sconc*Q)/sus_flux)
                 ! Prevent very high or low values
                 sed_lag_scale = min(max(sed_lag_scale,0.666_dp),1.5_dp) 
-                IF(mod(j,1000).eq.1) PRINT*, 'sed_lag_scale = ', sed_lag_scale
+                !IF(mod(j,1000).eq.1) PRINT*, 'sed_lag_scale = ', sed_lag_scale
                 !print*, sed_lag_scale                        
             ELSE
                 sed_lag_scale = 1.0_dp
@@ -498,11 +498,11 @@ DO Q_loop= 1, no_discharges!15
             !! CALCULATE THE CROSS-SECTIONAL SUSPENDED LOAD DISTRIBUTION
             IF(susdist) THEN
                 !! Adjust the erosion factor if erosion is normal to the bed
-                IF(norm) THEN
-                    sllength = sqrt(1._dp+ slopes**2)
-                ELSE
-                    sllength=1._dp
-                END IF
+                !IF(norm) THEN
+                !    sllength = sqrt(1._dp+ slopes**2)
+                !ELSE
+                !    sllength=1._dp
+                !END IF
                 !Record old value of C for file output
                 Clast=C  
                 call dynamic_sus_dist(u-l+1, DT1, ys(l:u), bed(l:u), water, waterlast, Q, tau(l:u), vel(l:u), wset, & 
@@ -536,7 +536,7 @@ DO Q_loop= 1, no_discharges!15
             dqbeddx(l:u) = Qbed(l:u)*(1.0_dp-sed_lag_scale)/x_len_scale 
             bedlast= bed ! Record the bed prior to updating
            
-            call update_bed(u-l+1,DT1,water,Q,bed(l:u),ys(l:u),Area,ys(u)-ys(l)+wdthx, &
+            call update_bed(u-l+1,DT1,water,Q,bed(l:u),ys(l:u),Area, &
                              water- Area/(ys(u)-ys(l)+wdthx),f(l:u),qby((l-1):u),E,D, &
                             Clast(l:u),rmult,2,inuc, tau(l:u),tau_g(l:u),& 
                             NN(l:u),j,slopes(l:u), hlim, mor, taucrit_dep(l:u,1:layers), &
@@ -600,8 +600,8 @@ DO Q_loop= 1, no_discharges!15
             IF((mod(j-1,writfreq).EQ.0).AND.(iii.eq.1)) THEN!.or.(j>15250)) THEN 
                 Qd = Clast*wset/rhos !0.5_dp*(Clast +C)*wset/rhos
                 print*, 'bed change:', maxval(abs(bed(l:u)-bedlast(l:u))), maxloc(abs(bed(l:u)-bedlast(l:u)))
-                print*, 'Resus - dep:', maxval(abs(Qe(l:u) - Qd(l:u)))*mor*DT1, &
-                                        maxloc(abs(Qe(l:u) - Qd(l:u)))
+                !print*, 'Resus - dep:', maxval(abs(Qe(l:u) - Qd(l:u)))*mor*DT1, &
+                !                        maxloc(abs(Qe(l:u) - Qd(l:u)))
                 write(1,*) tau 
                 write(2,*) bedlast !Same bed as when tau was calculated
                 write(3,*) ys !critical shear
@@ -616,7 +616,7 @@ DO Q_loop= 1, no_discharges!15
                 !write(12,*) taucrit_dep_ys
 
                 ! Check for convergence.
-                tmp =max( maxval(abs(bedold-bed)), maxval(abs(bed-bedlast)))
+                tmp =max(maxval(abs(bedold-bed)), maxval(abs(bed-bedlast)))
                 IF(tmp/(DT1)<1.0e-12_dp) THEN
                     goto 373 !Converged: Go to the end of this loop
                     !exit
@@ -635,11 +635,12 @@ DO Q_loop= 1, no_discharges!15
                 IF(j.eq.1) print*, ' Warning: Variable timestep is ONLY valid for &
                         STEADY UNIFORM EQUILIBRIUM computations'
 
-                tmp = min(max(maxval(abs(wset*C/rhos- Qe)), maxval(abs(qby(l-1:u)))), &
-                          maxval(abs(bed(l+1:u-1) - bedlast(l+1:u-1))) )
-                tmp2 = minval(ys(2:nos) - ys(1:nos-1)) 
-                DT1 = min(max(1.0e-03_dp*tmp2/max(tmp,1.0e-020_dp), 1.0e-01_dp), 100.0_dp*3600.0_dp)
-
+                !IF(mod(j,10).eq.1) THEN
+                    tmp = min(max(maxval(abs(wset*C/rhos- Qe)), maxval(abs(qby(l-1:u)))), &
+                              maxval(abs(bed(l+1:u-1) - bedlast(l+1:u-1))) )
+                    tmp2 = minval(ys(2:nos) - ys(1:nos-1)) 
+                    DT1 = min(max(5.0e-03_dp*tmp2/max(tmp,1.0e-020_dp), 1.0e-01_dp), 100.0_dp*3600.0_dp)
+                !END IF
             ELSE
                 DT1 = DT
             END IF 
