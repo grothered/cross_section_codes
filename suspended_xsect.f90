@@ -12,7 +12,7 @@ contains
 SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wset, Qe,lambdacon, &
                                 rho,rhos, g, d50, bedl,bedu, ysl, ysu, cb, Cbar, Qbed, &
                                 sed_lag_scale, counter, high_order_Cflux, a_ref, sus_vert_prof, edify_model, &
-                                x_len_scale)
+                                x_len_scale, sconc)
     ! Calculate the cross-sectional distribution of suspended sediment using
     ! some ideas from /home/gareth/Documents/H_drive_Gareth/Gareth_and_colab
     ! s/Thesis/Hydraulic_morpho_model/channel_cross_section/paper/idea_for_
@@ -31,7 +31,8 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     
     INTEGER, INTENT(IN)::a, counter
     REAL(dp), INTENT(IN):: delT, ys, bed, water, waterlast, tau, vel, wset, Qe, lambdacon, rho, rhos,g, & 
-                                d50, bedl, bedu,ysl,ysu, sed_lag_scale, Q, Qbed, a_ref, x_len_scale
+                                d50, bedl, bedu,ysl,ysu, Q, Qbed, a_ref, x_len_scale, sconc
+    REAL(dp), INTENT(IN OUT):: sed_lag_scale  ! sed_lag_scale = used to estimate derivative terms, e.g. dCbar/dx
     ! cb = Near bed suspended sediment concentration, 
     ! Cbar = Depth averaged suspended sediment concentration
     REAL(dp), INTENT(IN OUT):: cb, Cbar 
@@ -46,7 +47,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     REAL(dp):: M1_lower(a), M1_diag(a), M1_upper(a), M1_upper2(a), M1_lower2(a)
     REAL(dp):: RHS(a), dy_all(a)
     REAL(dp):: tmp1, dy, dy_outer, tmp2, Cref, z
-    REAL(dp):: dQdx, dhdt, Cbar_old(a), dUd_dx(0:a+1)
+    REAL(dp):: dQdx, dhdt, Cbar_old(a), dUd_dx(0:a+1), sus_flux
     REAL(dp):: DLF(a), DF(a), DUF(a), DU2(a),rcond, ferr, berr, work(3*a), XXX(a, 1)
     REAL(dp):: bandmat(5,a), AFB(7,a), RRR(a), CCC(a), int_edif_f(a+1), int_edif_dfdy(a+1)
     INTEGER::  IPV(a), iwork(a)   
@@ -506,6 +507,29 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
         ! IDEA -- try approaching this with an approach along the lines of the
         ! one in that paper that Steve Roberts pointed you to.
     END IF 
+
+    
+    ! Calculate total sediment flux at time = t, 
+    ! We will use this to compute the x derivative terms
+    ! in dynamic_sus_dist and update_bed
+    ! e.g. dQbed/dx = (Qbed - sed_lag_scale*Qbed)/x_len_scale
+    ! e.g. dCbar/dx = (Cbar - sed_lag_scale*Cbar)/x_len_scale
+    sus_flux = sum( & 
+            (Qbed+Cbar/rhos*abs(vel)*max(water-bed,0._dp) )*& ! Total load
+            ( ( (/ ys(2:a), ysu /) - (/ ysl, ys(1:a-1) /) )*0.5_dp) &  ! dy
+                  )
+    !
+    IF(sus_flux > 1.0e-12_dp) THEN
+        sed_lag_scale = 1.0_dp*((sconc*Q)/sus_flux)
+    !    ! Prevent very high or low values
+        sed_lag_scale = min(max(sed_lag_scale,0.666_dp),1.5_dp) 
+        IF(mod(counter,1000).eq.1) PRINT*, 'sed_lag_scale = ', sed_lag_scale
+    !    !print*, sed_lag_scale                        
+    ELSE
+        sed_lag_scale = 1.0_dp
+    END IF
+    IF(mod(counter,1000).eq.1) print*, 'sus_flux is:', sus_flux, ' desired flux is:', sconc*Q
+
 
     ! Now we add the term U*d*dCbar/dx using an operator splitting technique
     ! depth*dCbar/dT + depth*vel*dCbar/dx = 0.0

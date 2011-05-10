@@ -475,24 +475,21 @@ DO Q_loop= 1, no_discharges!15
             ! in dynamic_sus_dist and update_bed
             ! e.g. dQbed/dx = (Qbed - sed_lag_scale*Qbed)/x_len_scale
             ! e.g. dCbar/dx = (Cbar - sed_lag_scale*Cbar)/x_len_scale
-            sus_flux = sum( & 
-                    (Qbed(l:u)+(Cbar(l:u)/rhos)*abs(vel(l:u))*max(water-bed(l:u),0._dp) )*& ! Total load
-                    ( ( (/ ys(l+1:u), ysu /) - (/ ysl, ys(l:u-1) /) )*0.5_dp) &  ! dy
-                          )
-            ! Temporary discharge - calculated exactly as above
-            !tmp = sum(abs(vel(l:u))*(water-bed(l:u))*& ! Discharge 
-            !        ( ( (/ ys(l+1:u), ysu /) - (/ ysl, ys(l:u-1) /) )*0.5_dp) & ! dy
-            !        )
-            IF(sus_flux > 1.0e-12_dp) THEN
-                sed_lag_scale = 1.0_dp*((sconc*Q)/sus_flux)
-                ! Prevent very high or low values
-                sed_lag_scale = min(max(sed_lag_scale,0.666_dp),1.5_dp) 
-                !IF(mod(j,1000).eq.1) PRINT*, 'sed_lag_scale = ', sed_lag_scale
-                !print*, sed_lag_scale                        
-            ELSE
-                sed_lag_scale = 1.0_dp
-            END IF
-            IF(mod(j,1000).eq.1) print*, 'sus_flux is:', sus_flux, ' desired flux is:', sconc*Q
+            !sus_flux = sum( & 
+            !        (Qbed(l:u)+(Cbar(l:u)/rhos)*abs(vel(l:u))*max(water-bed(l:u),0._dp) )*& ! Total load
+            !        ( ( (/ ys(l+1:u), ysu /) - (/ ysl, ys(l:u-1) /) )*0.5_dp) &  ! dy
+            !              )
+            !
+            !IF(sus_flux > 1.0e-12_dp) THEN
+            !    sed_lag_scale = 1.0_dp*((sconc*Q)/sus_flux)
+            !    ! Prevent very high or low values
+            !    sed_lag_scale = min(max(sed_lag_scale,0.666_dp),1.5_dp) 
+            !    !IF(mod(j,1000).eq.1) PRINT*, 'sed_lag_scale = ', sed_lag_scale
+            !    !print*, sed_lag_scale                        
+            !ELSE
+            !    sed_lag_scale = 1.0_dp
+            !END IF
+            !IF(mod(j,1000).eq.1) print*, 'sus_flux is:', sus_flux, ' desired flux is:', sconc*Q
 
 
             !! CALCULATE THE CROSS-SECTIONAL SUSPENDED LOAD DISTRIBUTION
@@ -508,7 +505,7 @@ DO Q_loop= 1, no_discharges!15
                 call dynamic_sus_dist(u-l+1, DT1, ys(l:u), bed(l:u), water, waterlast, Q, tau(l:u), vel(l:u), wset, & 
                                         Qe(l:u), lambdacon, rho,rhos, g, d50, bedl,bedu, ysl, ysu, C(l:u),&
                                         Cbar(l:u), Qbed(l:u), sed_lag_scale, j, high_order_Cflux, a_ref(l:u), sus_vert_prof,&
-                                        edify_model, x_len_scale)
+                                        edify_model, x_len_scale, sconc)
 
                 ! Set C in dry parts of the channel to zero
                 ! This is not done earlier, because we needed to store the old
@@ -593,13 +590,58 @@ DO Q_loop= 1, no_discharges!15
                 END IF
             END IF
             
+            ! BASIC LIMITING OF THE CHANNEL SLOPE -- to circumvent the numerically
+            ! difficult problem of allowing infinite banks otherwise
+            IF(mod(j,1)==1) call basic_slope_limit(nos,ys,bed,failure_slope, remesh)
+
+            !hss = bed
+            !IF((remesh.eqv..FALSE.).AND.(.TRUE.).AND.(mod(j,1)==0)) THEN
+            !    !FIXME: At present, this is only valid(mass conserving) with a uniform mesh
+            !    ! Move from centre of channel to left bank
+            !    DO i=nos/2,2,-1 !nos/2,2,-1
+            !        IF(abs(bed(i)-bed(i-1))>failure_slope*(ys(i)-ys(i-1))) THEN
+            !            !print*, '.'
+            !            IF(bed(i)>bed(i-1)) THEN
+            !                ! Note the 'explicit' nature of the computation:
+            !                ! bed(post_failure) = bed(pre_failure) +
+            !                !                     failure_amount(pre_failure)
+            !                tmp = bed(i)-(bed(i-1) + failure_slope*(ys(i)-ys(i-1)) )
+            !                hss(i) = hss(i)-tmp*0.5_dp
+            !                hss(i-1) = hss(i-1) + tmp*0.5_dp    
+            !            ELSE
+            !                tmp = bed(i-1)-(bed(i) + failure_slope*(ys(i)-ys(i-1)) )
+            !                hss(i) = hss(i)+tmp*0.5_dp
+            !                hss(i-1) = hss(i-1) - tmp*0.5_dp    
+
+            !            END IF
+            !            
+            !        END IF
+            !    END DO
+            !    ! Move from centre of channel to right bank
+            !    DO i=nos/2,nos-1,1 !nos/2,nos-1,1
+            !        IF(abs(bed(i)-bed(i+1))>failure_slope*(ys(i+1)-ys(i))) THEN
+            !            IF(bed(i)>bed(i+1)) THEN
+            !                tmp = bed(i)-(bed(i+1) + failure_slope*(ys(i+1)-ys(i)) )
+            !                hss(i) = hss(i)-tmp*0.5_dp
+            !                hss(i+1) = hss(i+1) + tmp*0.5_dp    
+            !            ELSE
+            !                tmp = bed(i+1)-(bed(i) + failure_slope*(ys(i+1)-ys(i)) )
+            !                hss(i) = hss(i)+tmp*0.5_dp
+            !                hss(i+1) = hss(i+1) - tmp*0.5_dp    
+            !            END IF
+            !        END IF
+            !    END DO
+
+            !!Reset the bed
+            !bed = hss
+            !END IF
 
             !! WRITE OUTPUTS -- notice that these are all supposed to be at the
             !same time level -- e.g. tau is calculated using bedlast, so is
             !Clast, Qbed, Qe, etc. 
             IF((mod(j-1,writfreq).EQ.0).AND.(iii.eq.1)) THEN!.or.(j>15250)) THEN 
                 Qd = Clast*wset/rhos !0.5_dp*(Clast +C)*wset/rhos
-                print*, 'bed change:', maxval(abs(bed(l:u)-bedlast(l:u))), maxloc(abs(bed(l:u)-bedlast(l:u)))
+                print*, 'bed change:', maxval(abs(bed-bedlast)), maxloc(abs(bed-bedlast))
                 !print*, 'Resus - dep:', maxval(abs(Qe(l:u) - Qd(l:u)))*mor*DT1, &
                 !                        maxloc(abs(Qe(l:u) - Qd(l:u)))
                 write(1,*) tau 
@@ -682,49 +724,6 @@ DO Q_loop= 1, no_discharges!15
                 
         END DO
 
-        ! BASIC LIMITING OF THE CHANNEL SLOPE -- to circumvent the numerically
-        ! difficult problem of allowing infinite banks otherwise
-        hss = bed
-        IF((remesh.eqv..FALSE.).AND.(.TRUE.).AND.(mod(j,1)==0)) THEN
-            !FIXME: At present, this is only valid(mass conserving) with a uniform mesh
-            ! Move from centre of channel to left bank
-            DO i=nos/2,2,-1 !nos/2,2,-1
-                IF(abs(bed(i)-bed(i-1))>failure_slope*(ys(i)-ys(i-1))) THEN
-                    !print*, '.'
-                    IF(bed(i)>bed(i-1)) THEN
-                        ! Note the 'explicit' nature of the computation:
-                        ! bed(post_failure) = bed(pre_failure) +
-                        !                     failure_amount(pre_failure)
-                        tmp = bed(i)-(bed(i-1) + failure_slope*(ys(i)-ys(i-1)) )
-                        hss(i) = hss(i)-tmp*0.5_dp
-                        hss(i-1) = hss(i-1) + tmp*0.5_dp    
-                    ELSE
-                        tmp = bed(i-1)-(bed(i) + failure_slope*(ys(i)-ys(i-1)) )
-                        hss(i) = hss(i)+tmp*0.5_dp
-                        hss(i-1) = hss(i-1) - tmp*0.5_dp    
-
-                    END IF
-                    
-                END IF
-            END DO
-            ! Move from centre of channel to right bank
-            DO i=nos/2,nos-1,1 !nos/2,nos-1,1
-                IF(abs(bed(i)-bed(i+1))>failure_slope*(ys(i+1)-ys(i))) THEN
-                    IF(bed(i)>bed(i+1)) THEN
-                        tmp = bed(i)-(bed(i+1) + failure_slope*(ys(i+1)-ys(i)) )
-                        hss(i) = hss(i)-tmp*0.5_dp
-                        hss(i+1) = hss(i+1) + tmp*0.5_dp    
-                    ELSE
-                        tmp = bed(i+1)-(bed(i) + failure_slope*(ys(i+1)-ys(i)) )
-                        hss(i) = hss(i)+tmp*0.5_dp
-                        hss(i+1) = hss(i+1) - tmp*0.5_dp    
-                    END IF
-                END IF
-            END DO
-
-        !Reset the bed
-        bed = hss
-        END IF
 
 
         !! REMESHING. If the points are becoming too spaced apart, we might have to do this

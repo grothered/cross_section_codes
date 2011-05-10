@@ -876,6 +876,59 @@ END SUBROUTINE dbeddyH_approx
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+SUBROUTINE basic_slope_limit(nos,ys,bed,failure_slope, remesh)
+    ! Basic routine to limit the absolute value of the lateral slope to be <= failure_slope
+    INTEGER, INTENT(IN):: nos
+    REAL(dp), INTENT(IN):: ys(nos), failure_slope
+    REAL(dp), INTENT(IN OUT):: bed(nos)
+    LOGICAL, INTENT(IN):: remesh
 
+    !Local variables
+    REAL(dp):: hss(nos), tmp
+    INTEGER:: i
 
+    hss = bed
+    IF((remesh.eqv..FALSE.)) THEN
+        !FIXME: At present, this is only valid(mass conserving) with a uniform mesh
+        ! Move from centre of channel to left bank
+        DO i=nos/2,2,-1 !nos/2,2,-1
+            IF(abs(bed(i)-bed(i-1))>failure_slope*(ys(i)-ys(i-1))) THEN
+                !print*, '.'
+                IF(bed(i)>bed(i-1)) THEN
+                    ! Note the 'explicit' nature of the computation:
+                    ! bed(post_failure) = bed(pre_failure) +
+                    !                     failure_amount(pre_failure)
+                    tmp = bed(i)-(bed(i-1) + failure_slope*(ys(i)-ys(i-1)) )
+                    hss(i) = hss(i)-tmp*0.5_dp
+                    hss(i-1) = hss(i-1) + tmp*0.5_dp    
+                ELSE
+                    tmp = bed(i-1)-(bed(i) + failure_slope*(ys(i)-ys(i-1)) )
+                    hss(i) = hss(i)+tmp*0.5_dp
+                    hss(i-1) = hss(i-1) - tmp*0.5_dp    
+
+                END IF
+                
+            END IF
+        END DO
+        ! Move from centre of channel to right bank
+        DO i=nos/2,nos-1,1 !nos/2,nos-1,1
+            IF(abs(bed(i)-bed(i+1))>failure_slope*(ys(i+1)-ys(i))) THEN
+                IF(bed(i)>bed(i+1)) THEN
+                    tmp = bed(i)-(bed(i+1) + failure_slope*(ys(i+1)-ys(i)) )
+                    hss(i) = hss(i)-tmp*0.5_dp
+                    hss(i+1) = hss(i+1) + tmp*0.5_dp    
+                ELSE
+                    tmp = bed(i+1)-(bed(i) + failure_slope*(ys(i+1)-ys(i)) )
+                    hss(i) = hss(i)+tmp*0.5_dp
+                    hss(i+1) = hss(i+1) - tmp*0.5_dp    
+                END IF
+            END IF
+        END DO
+
+    !Reset the bed
+    bed = hss
+    END IF
+END SUBROUTINE basic_slope_limit
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 END MODULE bed_xsect
