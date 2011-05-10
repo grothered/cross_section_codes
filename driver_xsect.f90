@@ -370,6 +370,7 @@ DO Q_loop= 1, no_discharges!15
 
         IF(isnan(Q)) THEN
             print*, "Q is nan", Q, Area, Arealast
+            stop
         END IF
 
         IF((Q/Area)>5.) THEN
@@ -548,99 +549,58 @@ DO Q_loop= 1, no_discharges!15
             ! u+1/2, this is very important to ensure mass conservation, because
             ! if there is a downslope bedload flux from l-1/2, or from u+1/2,
             ! then it must come from the dry part of the channel 
-            IF(.FALSE.) THEN
-                ! Use this case when bedload occurs and l-1/2, u+1/2
-                IF(l>1) THEN
-                    IF(bed(l-1)>bedl) bed(l-1)=bedl
-                END IF
-                IF(u<nos) THEN
-                    IF(bed(u+1)>bedu) bed(u+1)=bedu
-                END IF
-            END IF
+            !IF(.FALSE.) THEN
+            !    ! Use this case when bedload occurs and l-1/2, u+1/2
+            !    IF(l>1) THEN
+            !        IF(bed(l-1)>bedl) bed(l-1)=bedl
+            !    END IF
+            !    IF(u<nos) THEN
+            !        IF(bed(u+1)>bedu) bed(u+1)=bedu
+            !    END IF
+            !END IF
 
-            IF(.FALSE.) THEN
-                ! A version of the Delft bank erosion model. 
-                ! First check that there is no leakage of bedl, bedu in the
-                ! bed solver (possibly could happen due to matrix round off or
-                ! coding error).
-                IF((l>1).and.(u<nos)) THEN
-                    IF((abs(bedl - bedlast(l-1))>0.0e-8_dp).OR.& 
-                       (abs(bedu-bedlast(u+1))>0.0e-08_dp)) THEN
-                        print*, 'ERROR -- there is still erosion of dry points in &
-                            the matrix solution of the bed solver'
-                        print*, abs(bedl - bedlast(l-1)), abs(bedu-bedlast(u-1)), l, u
-                        stop
-                    END IF
-                END IF
-                ! If erosion is occuring at the channel margins,
-                ! then assign it to the neighbouring dry bed point
-                IF((bed(l)<bedlast(l)).AND.(l>1)) THEN
-                    !IF( abs(bed(l) - bed(l-1))/(ys(l)-ys(l-1))>1.0_dp) THEN
-                    !IF( abs(tau_g(l))>taucrit(l,0)) THEN
-                        bed(l-1) = bed(l-1) - (bedlast(l) - bed(l))
-                        bed(l) = bedlast(l)
-                    !END IF
-                END IF
-                IF((bed(u)<bedlast(u)).AND.(u<nos)) THEN
-                    !IF( abs(bed(u+1) - bed(u))/(ys(u+1)-ys(u))>1.0_dp) THEN
-                    !IF( abs(tau_g(u))>taucrit(u,0)) THEN
-                        bed(u+1) = bed(u+1) - (bedlast(u) - bed(u))
-                        bed(u) = bedlast(u)
-                    !END IF
-                END IF
-            END IF
+            !IF(.FALSE.) THEN
+            !    ! A version of the Delft bank erosion model. 
+            !    ! First check that there is no leakage of bedl, bedu in the
+            !    ! bed solver (possibly could happen due to matrix round off or
+            !    ! coding error).
+            !    IF((l>1).and.(u<nos)) THEN
+            !        IF((abs(bedl - bedlast(l-1))>0.0e-8_dp).OR.& 
+            !           (abs(bedu-bedlast(u+1))>0.0e-08_dp)) THEN
+            !            print*, 'ERROR -- there is still erosion of dry points in &
+            !                the matrix solution of the bed solver'
+            !            print*, abs(bedl - bedlast(l-1)), abs(bedu-bedlast(u-1)), l, u
+            !            stop
+            !        END IF
+            !    END IF
+            !    ! If erosion is occuring at the channel margins,
+            !    ! then assign it to the neighbouring dry bed point
+            !    IF((bed(l)<bedlast(l)).AND.(l>1)) THEN
+            !        !IF( abs(bed(l) - bed(l-1))/(ys(l)-ys(l-1))>1.0_dp) THEN
+            !        !IF( abs(tau_g(l))>taucrit(l,0)) THEN
+            !            bed(l-1) = bed(l-1) - (bedlast(l) - bed(l))
+            !            bed(l) = bedlast(l)
+            !        !END IF
+            !    END IF
+            !    IF((bed(u)<bedlast(u)).AND.(u<nos)) THEN
+            !        !IF( abs(bed(u+1) - bed(u))/(ys(u+1)-ys(u))>1.0_dp) THEN
+            !        !IF( abs(tau_g(u))>taucrit(u,0)) THEN
+            !            bed(u+1) = bed(u+1) - (bedlast(u) - bed(u))
+            !            bed(u) = bedlast(u)
+            !        !END IF
+            !    END IF
+            !END IF
             
             ! BASIC LIMITING OF THE CHANNEL SLOPE -- to circumvent the numerically
             ! difficult problem of allowing infinite banks otherwise
-            IF(mod(j,1)==1) call basic_slope_limit(nos,ys,bed,failure_slope, remesh)
+            IF(mod(j,1)==0) call basic_slope_limit(nos,ys,bed,failure_slope, remesh)
 
-            !hss = bed
-            !IF((remesh.eqv..FALSE.).AND.(.TRUE.).AND.(mod(j,1)==0)) THEN
-            !    !FIXME: At present, this is only valid(mass conserving) with a uniform mesh
-            !    ! Move from centre of channel to left bank
-            !    DO i=nos/2,2,-1 !nos/2,2,-1
-            !        IF(abs(bed(i)-bed(i-1))>failure_slope*(ys(i)-ys(i-1))) THEN
-            !            !print*, '.'
-            !            IF(bed(i)>bed(i-1)) THEN
-            !                ! Note the 'explicit' nature of the computation:
-            !                ! bed(post_failure) = bed(pre_failure) +
-            !                !                     failure_amount(pre_failure)
-            !                tmp = bed(i)-(bed(i-1) + failure_slope*(ys(i)-ys(i-1)) )
-            !                hss(i) = hss(i)-tmp*0.5_dp
-            !                hss(i-1) = hss(i-1) + tmp*0.5_dp    
-            !            ELSE
-            !                tmp = bed(i-1)-(bed(i) + failure_slope*(ys(i)-ys(i-1)) )
-            !                hss(i) = hss(i)+tmp*0.5_dp
-            !                hss(i-1) = hss(i-1) - tmp*0.5_dp    
-
-            !            END IF
-            !            
-            !        END IF
-            !    END DO
-            !    ! Move from centre of channel to right bank
-            !    DO i=nos/2,nos-1,1 !nos/2,nos-1,1
-            !        IF(abs(bed(i)-bed(i+1))>failure_slope*(ys(i+1)-ys(i))) THEN
-            !            IF(bed(i)>bed(i+1)) THEN
-            !                tmp = bed(i)-(bed(i+1) + failure_slope*(ys(i+1)-ys(i)) )
-            !                hss(i) = hss(i)-tmp*0.5_dp
-            !                hss(i+1) = hss(i+1) + tmp*0.5_dp    
-            !            ELSE
-            !                tmp = bed(i+1)-(bed(i) + failure_slope*(ys(i+1)-ys(i)) )
-            !                hss(i) = hss(i)+tmp*0.5_dp
-            !                hss(i+1) = hss(i+1) - tmp*0.5_dp    
-            !            END IF
-            !        END IF
-            !    END DO
-
-            !!Reset the bed
-            !bed = hss
-            !END IF
 
             !! WRITE OUTPUTS -- notice that these are all supposed to be at the
             !same time level -- e.g. tau is calculated using bedlast, so is
             !Clast, Qbed, Qe, etc. 
             IF((mod(j-1,writfreq).EQ.0).AND.(iii.eq.1)) THEN!.or.(j>15250)) THEN 
-                Qd = Clast*wset/rhos !0.5_dp*(Clast +C)*wset/rhos
+                !Qd = Clast*wset/rhos !0.5_dp*(Clast +C)*wset/rhos
                 print*, 'bed change:', maxval(abs(bed-bedlast)), maxloc(abs(bed-bedlast))
                 !print*, 'Resus - dep:', maxval(abs(Qe(l:u) - Qd(l:u)))*mor*DT1, &
                 !                        maxloc(abs(Qe(l:u) - Qd(l:u)))
@@ -693,28 +653,28 @@ DO Q_loop= 1, no_discharges!15
             ! on the imposed initial condition. This way we force tau>=taucrit
             ! in a stable channel, which seems to allow the same solution
             ! irrespective of the initial geometry (RIGOROUSLY CHECK THIS)
-            IF((.FALSE.).AND.(mod(j,5000).eq.0).AND.(1.0_dp*j<jmax*1.0_dp)) THEN
-                
-                call random_seed(size = iii2)
-                call random_number(tss)
-                tss(3:nos-2) = 0.1_dp*(tss(1:nos-4) + tss(2:nos-3)+tss(3:nos-2)+tss(4:nos-1)+tss(5:nos))/5._dp
-                tss(2) = tss(3)
-                tss(1) = 0.0_dp
-                tss(nos-1) = tss(nos-2)
-                tss(nos) = 0.0_dp
+            !IF((.FALSE.).AND.(mod(j,5000).eq.0).AND.(1.0_dp*j<jmax*1.0_dp)) THEN
+            !    
+            !    call random_seed(size = iii2)
+            !    call random_number(tss)
+            !    tss(3:nos-2) = 0.1_dp*(tss(1:nos-4) + tss(2:nos-3)+tss(3:nos-2)+tss(4:nos-1)+tss(5:nos))/5._dp
+            !    tss(2) = tss(3)
+            !    tss(1) = 0.0_dp
+            !    tss(nos-1) = tss(nos-2)
+            !    tss(nos) = 0.0_dp
    
-                ! Zero the perturbation where taug > taucrit
-                DO i=2,nos-1
-                    IF(max(tau_g(i), tau_g(i+1), tau_g(i-1))>taucrit(i,0)) tss(i) = 0._dp
-                    IF(bed(i)>=water) tss(i) = 0._dp
-                END DO
+            !    ! Zero the perturbation where taug > taucrit
+            !    DO i=2,nos-1
+            !        IF(max(tau_g(i), tau_g(i+1), tau_g(i-1))>taucrit(i,0)) tss(i) = 0._dp
+            !        IF(bed(i)>=water) tss(i) = 0._dp
+            !    END DO
 
-                PRINT*, 'Smooth random deposition of max ', maxval(tss), ' metres'
-                
-                DO i=1,nos
-                    bed(i) = min(bed(i)+tss(i), water)
-                END DO
-            END IF
+            !    PRINT*, 'Smooth random deposition of max ', maxval(tss), ' metres'
+            !    
+            !    DO i=1,nos
+            !        bed(i) = min(bed(i)+tss(i), water)
+            !    END DO
+            !END IF
 
             ! Alternative method to 'wipe out' points which can't erode.
             !DO i=2,nos-1

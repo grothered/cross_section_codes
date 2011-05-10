@@ -887,9 +887,10 @@ SUBROUTINE basic_slope_limit(nos,ys,bed,failure_slope, remesh)
     REAL(dp):: hss(nos), tmp
     INTEGER:: i
 
-    hss = bed
     IF((remesh.eqv..FALSE.)) THEN
         !FIXME: At present, this is only valid(mass conserving) with a uniform mesh
+        hss = bed
+        
         ! Move from centre of channel to left bank
         DO i=nos/2,2,-1 !nos/2,2,-1
             IF(abs(bed(i)-bed(i-1))>failure_slope*(ys(i)-ys(i-1))) THEN
