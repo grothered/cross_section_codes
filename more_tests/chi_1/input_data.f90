@@ -24,8 +24,8 @@ nos = 2000 ! Number of spatial grid points
 writfreq = 2000 !24*5*5 ! The output is written every writfreq 'th timestep
 jmax= 2400000 !1382400 !24*5*2*45*4*4*4*4*5 ! The number of time steps
 t = 0.00 ! Starting time (s)
-dT = 100.00 !Time step (s)
-variable_timestep=.TRUE. !Do we change the timestepping for high sediment concentrations? -- this is presently inconsistent with bed layers
+dT = 300.00 !Time step (s)
+variable_timestep=.FALSE. !Do we change the timestepping for high sediment concentrations? -- this is presently inconsistent with bed layers
 
 waterM = 0.0 !Initial water elevation (m) and mean water elevation
 TR=0.0 !Tidal range. If it is set to zero then the discharge is constant, otherwise the continuity based method is used.
@@ -33,7 +33,7 @@ Width = 800.0 !Width of computational domain (m)
 
 no_discharges = 7
 Discharges = 2100.0  2100.0  2100.0  2100.0  2100.0  2100.0  2100.0 
-susconcs =   3.0e-03 2.0e-03 1.0e-03 8.0e-04 4.0e-04 1.0e-05 6.0e-05  
+susconcs =   3.0e-04 2.0e-04 1.0e-04 8.0e-04 4.0e-04 1.0e-05 6.0e-05  
 friction_type = 'manning' !'manning' !, 'darcy', 'vanrijn'
 rough_coef = 0.039 !0.039 !Mannings n for the basic bed
 grain_friction_type  = 'vanrijn' ! 'vanrijn', 'colebrook', 'onethird' -- model for bed shear acting on grains 

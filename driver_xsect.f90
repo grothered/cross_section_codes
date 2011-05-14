@@ -615,6 +615,9 @@ DO Q_loop= 1, no_discharges!15
                 write(10,*) C !vel
                 write(11,*) qby
                 write(14,*) t -DT1 ! This is the time corresponding to the cross-sectional shape when 'tau' was calculated
+                write(13,*) j, l,u, Q/Area, t, ((Q/Area)*abs(Q/Area)*rmult),&
+                            DT1, ys(u)-ys(l)+wdthx, maxval(C), &
+                            rmult*(Area)/(ys(u)-ys(l)+wdthx), f(nos/2)
                 !write(12,*) taucrit_dep_ys
 
                 ! Check for convergence by comparing 'bed' with 'bedold' (=
