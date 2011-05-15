@@ -21,8 +21,8 @@
 !!!!!!!!!!!!!!!!!!!!!
 
 nos = 2000 ! Number of spatial grid points
-writfreq = 20 !2000 !24*5*5 ! The output is written every writfreq 'th timestep
-jmax= 2000 !2400000 !1382400 !24*5*2*45*4*4*4*4*5 ! The number of time steps
+writfreq = 2000 !24*5*5 ! The output is written every writfreq 'th timestep
+jmax= 2400000 !1382400 !24*5*2*45*4*4*4*4*5 ! The number of time steps
 t = 0.00 ! Starting time (s)
 dT = 300.00 !Time step (s)
 variable_timestep=.FALSE. !Do we change the timestepping for high sediment concentrations? -- this is presently inconsistent with bed layers

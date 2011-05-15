@@ -453,15 +453,17 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     ! depth point. In my experience, this often happens at points with a tiny
     ! depth right next to the dry bank. (e.g. depth(i-1)=0.0)
     ! A simple fix is to make Cbed = 0.0 if negative, and remove the required
-    ! amount of suspended sediment from the neighbouring point. 
+    ! amount of suspended sediment from the neighbouring point -- equivalent to
+    ! assuming that the flux 'stopped' when the sediment ran out during the last
+    ! time step.
     DO i = 1,a
         IF((Cbar(i)<0._dp).and.(.TRUE.)) THEN
             ! Clip negligably small Cbar values
-            IF(abs(Cbar(i))<1.0e-10) THEN
-                Cbar(i) = 0._dp
-                !goto 21121            
-                CYCLE
-            END IF
+            !IF(abs(Cbar(i))<1.0e-10) THEN
+            !    Cbar(i) = 0._dp
+            !    !goto 21121            
+            !    CYCLE
+            !END IF
             ! Look at neighbouring points
             IF((i>1).and.(i<a)) THEN
                 IF(depth(i-1)>depth(i+1)) THEN
@@ -700,8 +702,8 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
     ustar_tmp(a+1) = 0.0_dp
     
     aref_tmp(1:a) = a_ref(1:a)
-    aref_tmp(0)   = a_ref(1)
-    aref_tmp(a+1) = a_ref(a)
+    aref_tmp(0)   = 0._dp !a_ref(1)
+    aref_tmp(a+1) = 0._dp !a_ref(a)
 
     ! Loop through (0.5, 1.5, ... a+0.5) to compute integrals
     DO i=1,a+1
@@ -771,7 +773,7 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
                     df_dbedh = &
                             (wset/0.4_dp)*(d/arefh-1.0_dp)*f* &
                             ((z2ratio-1.0_dp)/(arefh*(d/arefh-1.0_dp)**2)+&
-                            (d/z2bed**2-1.0_dp/z2bed)/(d/arefh-1))/(us*(z2ratio-1.0_dp))
+                            (d/z2bed**2-1.0_dp/z2bed)/(d/arefh-1.0_dp))/(us*(z2ratio-1.0_dp))
 
                     ! Step2: df/darefh, evaluated using maxima (symbolic algebra) 
                     ! -- see code in the file lat_flux.max
@@ -788,6 +790,8 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
                     ! Step4: df_dy = df/dbedh*dbedh/dy + df/aref*daref/dy + df/dus*dus/dy
                     df_dy = df_dbedh*dbed_dy + df_darefh*daref_dy + df_dus*dus_dy
                 ELSE
+                    !PRINT*, 'ERROR - d< aref in suspended_xsect (int_edify_f)', d, arefh, aref_tmp(i), aref_tmp(i-1), bed_tmp(i), bed_tmp(i-1)
+                    !stop
                     !z_tmp = elevation above bed = at 0.5, 1.5, ... 99.5 * depth/no_subints.0,
                     
                     ! adjusted so z>arefh 
