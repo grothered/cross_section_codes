@@ -33,7 +33,7 @@ Width = 800.0 !Width of computational domain (m)
 
 no_discharges = 1
 Discharges = 2100.0  !2100.0  2100.0  2100.0  2100.0  2100.0  2100.0 
-susconcs =   3.0e-04 !2.0e-04 1.0e-04 8.0e-04 4.0e-04 1.0e-05 6.0e-05  
+susconcs =   1.0e-04 !2.0e-04 1.0e-04 8.0e-04 4.0e-04 1.0e-05 6.0e-05  
 friction_type = 'manning' !'manning' !, 'darcy', 'vanrijn'
 rough_coef = 0.039 !0.039 !Mannings n for the basic bed
 grain_friction_type  = 'vanrijn' ! 'vanrijn', 'colebrook', 'onethird' -- model for bed shear acting on grains 
@@ -60,7 +60,7 @@ d50 = 0.00015 !0.000062 ! median grain size for bedload formula (m)
 g = 9.8 !Gravity (m/s^2)
 kvis = 1.0E-06 !Kinematic viscosity of water. 
 alpha=0.000228 !The constant for the erosion formula E= alpha*(tau-taue)/sqrt(taue)
-Qbedon=.TRUE. !Is bedload active
+Qbedon=.FALSE. !Is bedload active
 bedload_type='vanrijn' ! 'mpm', 'vanrijn'
 talmon=.FALSE. !Do we use a talmon lateral bedload closure?
 resus_type = 'vanrijn' ! 'cohesive', 'vanrijn'
