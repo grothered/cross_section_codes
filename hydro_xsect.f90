@@ -888,7 +888,7 @@ SUBROUTINE calc_friction(friction_type, grain_friction_type, rough_coef, water,&
         si = (vel(i)**2)/((rhos-rho)/rho*g*d50)
         k_scr = f_cs*d50*(85.0_dp-65.0_dp*tanh(0.015_dp*(si - 150.0_dp)))
         !a_ref = 0.5_dp*k_scr !, 0.01_dp*(water-bed(i))) !Reference level (m) 
-        a_ref = max(0.01_dp, 0.5_dp*k_scr)!, 0.99_dp*(water-bed(i))) !, 0.01_dp*(water-bed(i))) !Reference level (m) 
+        a_ref =  max(0.01_dp, 0.5_dp*k_scr)!, 0.99_dp*(water-bed(i))) !, 0.01_dp*(water-bed(i))) !Reference level (m) 
         !a_ref = min(max(0.01_dp, 0.5_dp*k_scr), 0.99_dp*(water-bed(i))) !, 0.01_dp*(water-bed(i))) !Reference level (m) 
         !a_ref(i) = min(max(0.5_dp*k_scr, 0.01_dp*(water-bed(i))),0.5_dp*(water-bed(i))) !Reference level (m) 
     END DO
