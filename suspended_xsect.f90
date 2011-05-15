@@ -110,7 +110,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
 
                 ! Compute rouse integral factor using a function
                 zetamult(i) = rouse_int(z,a_ref(i)/depth(i))
-
+                !if(i==a/2) print*, 'ri, ', zetamult(i)/depth(i), z
             END DO
 
         ! Catch errors
