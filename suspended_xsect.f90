@@ -591,7 +591,7 @@ REAL(dp) FUNCTION rouse_int(z,d_aref)
     REAL(dp), INTENT(IN):: z, d_aref
 
     INTEGER:: i
-    REAL(dp):: db_const, F1, J1, j, E2, z2, rouse_int, perturb = 1.0e-05
+    REAL(dp):: db_const, F1, J1, j, E2, z2, perturb = 1.0e-05
    
     IF(z>10.0_dp) THEN
         ! If z>10.0, there is no suspended load, make a quick exit
