@@ -591,7 +591,7 @@ REAL(dp) FUNCTION rouse_int(z,d_aref)
     REAL(dp), INTENT(IN):: z, d_aref
 
     INTEGER:: i
-    REAL(dp):: db_const, F1, J1, j, E2, z2, rouse_int
+    REAL(dp):: db_const, F1, J1, j, E2, z2, rouse_int, perturb = 1.0e-05
    
     ! If z>10.0, there is no suspended load, make a quick exit, otherwise proceed with algorithm 
     IF((z>10.0_dp).or.(d_aref>0.3_dp)) THEN
@@ -600,9 +600,10 @@ REAL(dp) FUNCTION rouse_int(z,d_aref)
         
     ELSE
 
-        ! Prevent integer values of z 
-        IF(abs(z-anint(z))<0.0005_dp) THEN
-            z2 = anint(z)+0.0005_dp
+        ! Prevent integer values of z, by 'perturbing' the z value away from an
+        ! integer if needed. 
+        IF(abs(z-anint(z))<perturb) THEN
+            z2 = anint(z)+perturb
         ELSE
             z2=z
         END IF
@@ -729,7 +730,7 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
 
             CASE('Rouse')
                  
-                IF((d*0.3_dp>arefh)) THEN !.and.(us>wset)) THEN
+                IF(d>arefh)THEN  !((d*0.3_dp>arefh)) THEN !.and.(us>wset)) THEN
                     !FIXME: d*0.3_dp > arefh --- this is to be consistent with
                     !the 'rouse_int' function, which only converges for
                     !d>2arefh (I apparently built in some safety after a bad
@@ -783,8 +784,8 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
                     ! In these shallow waters, define things so there is no
                     ! lateral flux of suspended load -- hmm, actually, not such
                     ! a good idea?
-                    f = 0.0_dp
-                    df_dy= 0.0_dp
+                    f = 0.0_dp ! No suspended load?
+                    df_dy= 0.0_dp ! FIXME: Is this appropriate?
                 END IF
 
             CASE DEFAULT
