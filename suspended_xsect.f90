@@ -596,7 +596,8 @@ REAL(dp) FUNCTION rouse_int(z,d_aref)
     ! If z>10.0, there is no suspended load, make a quick exit, otherwise proceed with algorithm 
     IF((z>10.0_dp).or.(d_aref>0.3_dp)) THEN
         !FIXME: Check that the 0.3 above is okay
-        rouse_int = 0.0_dp 
+        !rouse_int = 0.0_dp 
+        rouse_int = 0.999_dp ! Value for nearly uniform material? 
         
     ELSE
 
@@ -780,11 +781,12 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
                 ELSE
                     !z_tmp = elevation above bed = at 0.5, 1.5, ... 99.5 * depth/no_subints.0,
                     ! adjusted so z>arefh 
-                    z_tmp = bedh+arefh+ ((d-arefh)/no_subints*1.0_dp)*( (/ (j,j=1,no_subints) /)*1.0_dp-0.5_dp)
+                    !z_tmp = bedh+arefh+ ((d-arefh)/no_subints*1.0_dp)*( (/ (j,j=1,no_subints) /)*1.0_dp-0.5_dp)
+                    z_tmp = bedh+ ((d-bedh)/no_subints*1.0_dp)*( (/ (j,j=1,no_subints) /)*1.0_dp-0.5_dp)
                     ! In these shallow waters, define things so there is no
                     ! lateral flux of suspended load -- hmm, actually, not such
                     ! a good idea?
-                    f = 0.0_dp ! No suspended load?
+                    f = 1.0_dp ! No suspended load?
                     df_dy= 0.0_dp ! FIXME: Is this appropriate?
                 END IF
 
