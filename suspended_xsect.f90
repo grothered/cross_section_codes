@@ -603,7 +603,9 @@ REAL(dp) FUNCTION rouse_int(z,d_aref)
         ! experiences which made me want to use a lower threshold than this.
  
         ! Very shallow = nearly uniform suspension?
-        rouse_int = 0.999_dp  
+        ! FIXME: Perhaps this should be evaluated with a trapezoidal type
+        ! algorithm?
+        rouse_int = 0.9999_dp  
 
     ELSE
         !Proceed with the Guo and Julien algorithm        
@@ -787,6 +789,7 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
                     df_dy = df_dbedh*dbed_dy + df_darefh*daref_dy + df_dus*dus_dy
                 ELSE
                     !z_tmp = elevation above bed = at 0.5, 1.5, ... 99.5 * depth/no_subints.0,
+                    
                     ! adjusted so z>arefh 
                     !z_tmp = bedh+arefh+ ((d-arefh)/no_subints*1.0_dp)*( (/ (j,j=1,no_subints) /)*1.0_dp-0.5_dp)
 
