@@ -759,7 +759,11 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
 
                     ! Calculate vertical profile of suspended sediment
                     f = ( (z2ratio-1.0_dp)/(d/arefh -1.0_dp))**(wset/(0.4_dp*us))
-                    
+                    !IF(minval(f)<0._dp) THEN
+                    !    print*, ' MINVAL f < 0._dp'
+                    !    stop
+                    !END IF
+
                     ! Calculate derivative of f. Use this approach:
                     ! df_dy = df/dbedh*dbedh/dy + df/aref*daref/dy + df/dus*dus/dy
                     ! because all the d/dy terms have only a single value at
@@ -785,7 +789,7 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
                     ! -- see code in the file lat_flux.max
                     ! [-2.5E+0*wset*(((Y-h)/(z-h)-1)/((Y-h)/aref-1))**(2.5E+0*wset/ustar
                     !     1   )*log(((Y-h)/(z-h)-1)/((Y-h)/aref-1))/ustar**2]
-                    df_dus = (wset/0.4_dp)*f*log((z2ratio-1.0_dp)/(d/arefh-1.0_dp))/us**2
+                    df_dus = -(wset/0.4_dp)*f*log((z2ratio-1.0_dp)/(d/arefh-1.0_dp))/us**2
 
                     ! Step4: df_dy = df/dbedh*dbedh/dy + df/aref*daref/dy + df/dus*dus/dy
                     df_dy = df_dbedh*dbed_dy + df_darefh*daref_dy + df_dus*dus_dy
