@@ -5,7 +5,7 @@ get<-function(l, gz=F, ...){
 	if(!gz){
 		a=which(dir()=="taus")
 		b=which(dir()=="bed")
-		c=which(dir()=="misc")
+		c=which(dir()=="ys")
 
 	
 	
@@ -21,7 +21,7 @@ get<-function(l, gz=F, ...){
 		}else{
 		a=which(dir()=="taus.gz")
 		b=which(dir()=="bed.gz")
-		c=which(dir()=="misc.gz")
+		c=which(dir()=="ys.gz")
 
 	
 	#x2=scan(gzfile('bed.gz', open="rb"))
@@ -37,18 +37,18 @@ get<-function(l, gz=F, ...){
 
 	h<<-matrix(as.numeric(hs)[1:(floor(length(hs)/l)*l)],ncol=l,byrow=TRUE)
 	tau<<-matrix(as.numeric(ts)[1:(floor(length(ts)/l)*l)],ncol=l,byrow=TRUE)
-	msc<<- matrix(as.numeric(misc)[1:(floor(length(misc)/l)*l)], ncol=l, byrow=TRUE)
+	ys<<- matrix(as.numeric(misc)[1:(floor(length(misc)/l)*l)], ncol=l, byrow=TRUE)
 
 
 		}
 
 
-getsed<-function(l, ...){
-	s=which(dir()=="sed")
-	s2=scan(dir()[s],what="numeric", ...)
-	sed<<-matrix(as.numeric(s2)[1:(floor(length(s2)/l)*l)], ncol=l, byrow=T)
-
-}
+#getsed<-function(l, ...){
+#	s=which(dir()=="sed")
+#	s2=scan(dir()[s],what="numeric", ...)
+#	sed<<-matrix(as.numeric(s2)[1:(floor(length(s2)/l)*l)], ncol=l, byrow=T)
+#
+#}
 
 
 genread<-function(name, l){
@@ -131,10 +131,10 @@ tendep<<-tendep1
 
 
 ##A function to calculate the top width at a tide level of 0. 
-wdth<-function(msc,h, level){
+wdth<-function(ys,h, level){
 
     a=dim(h)[1]
-    a=min(a,dim(msc)[1])
+    a=min(a,dim(ys)[1])
     l=dim(h)[2]
 
     mwidths=c()
@@ -155,9 +155,9 @@ wdth<-function(msc,h, level){
         #print(c(low, high))
 
 
-        mwidths=c(mwidths,msc[i,high]-msc[i,low])
+        mwidths=c(mwidths,ys[i,high]-ys[i,low])
 
-        mdepths=c(mdepths,sum((level-h[i,low:high])*.5*( c(0,diff(msc[i,(low):high])) +c(diff(msc[i,low:high]), 0) ))/(msc[i,high]-msc[i,low]) ) 
+        mdepths=c(mdepths,sum((level-h[i,low:high])*.5*(c(0,diff(ys[i,(low):high])) +c(diff(ys[i,low:high]), 0) ))/(ys[i,high]-ys[i,low]) ) 
 
 
     }
@@ -285,13 +285,13 @@ list(curvat=curvat,nwidths= nwidths, usdist=Iusdist)
 
 get_extra<-function(l){
         # Function to get a range of output variables
-		taug_file=which(dir()=="misc2")
-		Cbed_file=which(dir()=="sed")
-		vel_file=which(dir()=="tss")
-        Qe_file = which(dir()=='q')
-        Qbed_file = which(dir()=='Area')
+		taug_file=which(dir()=="taug")
+		Cbed_file=which(dir()=="Cbed")
+		vel_file=which(dir()=="vel")
+        Qe_file = which(dir()=='qe')
+        Qbed_file = which(dir()=='Qbed')
         qb_G_file = which(dir()=='qby')
-        time_file = which(dir()=='time')
+        #time_file = which(dir()=='time')
 
 	
         taug <<- genread(dir()[taug_file],l)	
@@ -300,7 +300,7 @@ get_extra<-function(l){
         Qe   <<- genread(dir()[Qe_file],l)	
         Qbed <<- genread(dir()[Qbed_file],l)	
         Qby <<- genread(dir()[qb_G_file],l+1)	
-        time1 <<- scan(dir()[time_file])
+        #time1 <<- scan(dir()[time_file])
 }
 
 

@@ -1,30 +1,32 @@
-#R function to estimate settling velocity with 2 methods
+# This contains various utility functions for testing / checking / starting the single
+# cross-section code.
+
+
+
 wset<-function(d){
+    # Function to estimate settling velocity with 3 methods
+
+    # d=grain size
+
     ######## Input parameters
     Rs= 1.65 #Submerged specific gravity of sediment = specific grav -1
     g = 9.8 # Gravity
     kvis = 1.0e-06  # Kinematic water viscosity
-    #d=0.0002#grain size
 
-    #vs=0.43*(Rs*9.8*d)^.5 # The constant out the front could be something else!
 
-    #####The end result is highly highly sensitive to the settling velocity.
-
-    #########A better settling velocity formula
-    ##############
-    ##In Ikeda and Izumi, it is not always clear how to calculate the settling velocity. Here I implement Jimenez and Madsen (2003). They quote Rubey (1933).
+    ######## Jimenez and Madsen (2003) settling velocity
     Sstar= d/(4*10^-6)*((Rs)*g*d)^.5
     AA= .954 #Table 1 P=3.5 (natural sediment)
     BB= 5.121 #
     Wstar= 1/(AA+BB/Sstar)
     vs1= Wstar*(Rs*9.8*d)^.5
 
-    ##Settling velocity, using Rubey (1933)
-    eta=0.001 #Viscosity of water (not kinematic). I tested this by comparing my plot to theirs
+    ####### Settling velocity, using Rubey (1933)
+    eta=0.001 # Viscosity of water (not kinematic). I tested this by comparing my plot to theirs
     vs2= ( sqrt( 4/3*g*1000*(2600-1000)*(d/2)^3 +9*eta^2  ) -3*eta )/(1000*(d/2))
 
-    # Settling velocity, using van Rijn (1984) Sediment Transport, Part II: Suspended Load Transport, Journal Hydraulic Eng 110. 
-    # NOTE THAT VAN RIJN'S FORMULAE ARE DISCONTINUOUS AT THE BREAK POINTS
+    ###### van Rijn (1984) Sediment Transport, Part II: Suspended Load Transport, Journal Hydraulic Eng 110. 
+    # FIXME: NOTE THAT VAN RIJN'S FORMULAE ARE DISCONTINUOUS AT THE BREAK POINTS
     if(d<0.0001) vs3 = 1/18*(Rs*g*d^2)/kvis
 
     if((d>= 0.0001)&(d<0.001)) vs3 = 10*kvis/d*( (1+ (0.01/kvis^2)*Rs*g*d^3)^(0.5) -1)
@@ -39,8 +41,10 @@ wset<-function(d){
 }
 
 
-#R function to estimate the critical shear stress for non-cohesive sediments, following van Rijn (2007a), Equation 2 
 tauc<-function(d){
+    #R function to estimate the critical shear stress for non-cohesive sediments, following van Rijn (2007a), Equation 2 
+    # d = grain size
+
     if(d<0.00007){
     print('d is small, think about using another method')
     }
@@ -84,7 +88,7 @@ f_to_ks<-function(f, depth){
 
 
 f_colebrook<-function(f_g,depth, vel, d50){
-    # Study the convergence of direct iteration for the colebrook equation
+    # Function to study the convergence of direct iteration for the colebrook equation
 
     k_sg = 10.0*d50
     #Re = max((sqrt(f_g/8.0_dp)*abs(vel))*k_sg/1.0e-06_dp, 10.0_dp)
@@ -100,6 +104,8 @@ f_colebrook<-function(f_g,depth, vel, d50){
 
 
 vrijn_bed<-function(vel, h, d50, d90){
+    # Function to implement van rijn's (2007) bedload equation
+
     #f_g =4.0*(8.*9.8/(18.*log10(12.*pmax(h, 20*d90)/(1*d90)+0.0)+0.0e+00)^2)
     f_g =(8.*9.8/(18.*log10(12.*pmax(h, 20*d90)/d90))^2)
     tau = 1000*f_g/8*vel^2
@@ -142,7 +148,7 @@ test_vrijn_bed<-function(){
 
 
 einstein_j1<-function(z,E, n=10){
-    #Approximate the einstein integral J1 (Guo and Julien, 2004)
+    # Approximate the einstein integral J1 (Guo and Julien, 2004)
     # This arises because the average suspended sediment concentration
     # Cbar = C_nearbed*J1*1/( (1-deltab)/deltab)^z
     
@@ -158,4 +164,86 @@ einstein_j1<-function(z,E, n=10){
     F1 = ((1-E)^z)/E^(z-1) - z*sum( ((-1)^k)/(k-z)*(E2)^(k-z))
     J1 = z*pi/sin(z*pi) -F1
     J1*db_const
+}
+
+
+test_susdist<-function(ys, bed, water, Cbed, Es, wset, qby, aref, num_z = 1000){
+    # Function to check the numerical solution of the suspended sediment
+    # distribution equation when the channel is at equilibrium:
+    #
+    # d(F_l)/dy = Es - Ds
+    #
+    # and equivalently:
+    #
+    # F_l + qb_l = 0
+    #
+    # We do this by taking the model output, using it to estimate the
+    # appropriate terms, and then seeing if they balance.  An important aspect
+    # is that this routine is coded independently of the original model (so we
+    # do not copy-and-paste previous errors), and uses slightly different
+    # calculation procedures.
+
+    # ys = y value
+    # bed = bed elevation
+    # water = water surface elevation
+    # Cbed = near bed suspended sediment concentration
+    # Es = resuspension rate
+    # wset = sediment settling velocity
+    # qby = lateral bedload transport rate
+    # aref = van_rijun reference height for sediment
+    # num_z = number of discrete z points used to discretize the vertical
+    #         coordinate.
+
+    # Deposition rate    
+    Ds = wset*Cbed
+
+    # Compute:
+    # F_l = int_{z = bed}^{z = water surface} (epsy*dc/dy) dz
+    # where:
+    # c = Cbed*f(z)
+    # where f(z) defines the vertical distribution of suspended load
+
+
+    # In the original model, we compute dc/dy for every z using the chain rule.
+    # This allows us to to write it in terms of derivatives of variables which
+    # vary with y only -- thus, we do not need to 'numerically' differentiate
+    # for every z. Good to do things differently in this function, to add
+    # diversity and robustness to the check.
+
+    # Represent c(z,y) as a matrix of the form c[zind,yind]. Note that zind,
+    # yind correspond to particular z and y values, and z =0 at some arbitrary
+    # datum (which is the same for every y)
+    c = matrix(NA,nrow=length(bed), ncol = num_z)
+    zs = seq(min(bed), water, len=num_z) # z coordinate
+
+    for i in 1:length(ys){
+
+        f= Rouse(zs, bed[i], water, aref[i], wset, ustar[i])
+        c[:, i] = Cbed[i]*f
+
+    }
+}
+
+
+
+Rouse<-function(z,bed, water,aref,wset,ustar){
+    # Compute the Rouse profile for suspended sediment
+
+    f = NA
+    if(z>= bed+aref){
+    # Rouse number
+    zstar = wset/(ustar*0.4) 
+
+    # f  
+    f =( ( ( (water - bed) - (z - bed) )/ (z-bed) )/
+         ( ( (water - bed) - aref      )/ (aref)  ) )^(zstar)
+
+    }
+
+    f
+    
+    }
+        
+
+
 }

@@ -95,17 +95,16 @@ END IF
 
 OPEN(1,file="taus")
 OPEN(2,file="bed")
-OPEN(3,file="misc")
-OPEN(4,file="misc2")
-OPEN(5,file="usef")
-OPEN(7,file="q")
-OPEN(8,file="Area")
-OPEN(9,file="sed")
-OPEN(10,file="tss")
+OPEN(3,file="ys")
+OPEN(4,file="taug")
+OPEN(5,file="water")
+OPEN(7,file="qe")
+OPEN(8,file="Qbed")
+OPEN(9,file="Cbed")
+OPEN(10,file="vel")
 OPEN(11,file="qby")
-OPEN(12,file="another")
-OPEN(13,file="oo")
-OPEN(14,file="time")
+OPEN(12,file="a_ref")
+OPEN(13,file="timestepping_stats")
 
 ! Allocate memory for arrays
 ALLOCATE(ys(nos),bed(nos),dists(nos),tau(nos),ks(nos),tbst(nos),& 
@@ -610,12 +609,12 @@ DO Q_loop= 1, no_discharges!15
                 write(4,*) tau_g !taucrit_dep!water, Q/ar
                 write(5,*) water
                 write(7,*) Qe
-                write(8,*) bed !Qbed
+                write(8,*) Qbed
                 write(9,*) Clast ! Same C as when bed = bedlast and when tau was calculated
-                write(10,*) C !vel
+                write(10,*) vel
                 write(11,*) qby
-                write(14,*) t -DT1 ! This is the time corresponding to the cross-sectional shape when 'tau' was calculated
-                write(13,*) j, l,u, Q/Area, t, ((Q/Area)*abs(Q/Area)*rmult),&
+                write(12,*) a_ref
+                write(13,*) j, l,u, Q/Area, t-DT1, ((Q/Area)*abs(Q/Area)*rmult),&
                             DT1, ys(u)-ys(l)+wdthx, maxval(C), &
                             rmult*(Area)/(ys(u)-ys(l)+wdthx), f(nos/2)
                 !write(12,*) taucrit_dep_ys
