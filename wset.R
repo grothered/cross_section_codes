@@ -167,7 +167,7 @@ einstein_j1<-function(z,E, n=10){
 }
 
 
-test_susdist<-function(ys, bed, water, Cbed, Es, wset, qby, aref, num_z = 1000){
+test_susdist<-function(ys, bed, water, Cbed, Es, wset, qby, aref, ustar, num_z = 1000){
     # Function to check the numerical solution of the suspended sediment
     # distribution equation when the channel is at equilibrium:
     #
@@ -194,6 +194,9 @@ test_susdist<-function(ys, bed, water, Cbed, Es, wset, qby, aref, num_z = 1000){
     # num_z = number of discrete z points used to discretize the vertical
     #         coordinate.
 
+
+    # tmp = test_susdist( ys[10,],h[10,],0.0, Cbed[10,],Qe[10,], 0.014,Qby[10,],a_ref[10,], sqrt(tau[10,]/1026) )
+
     # Deposition rate    
     Ds = wset*Cbed
 
@@ -213,33 +216,56 @@ test_susdist<-function(ys, bed, water, Cbed, Es, wset, qby, aref, num_z = 1000){
     # Represent c(z,y) as a matrix of the form c[zind,yind]. Note that zind,
     # yind correspond to particular z and y values, and z =0 at some arbitrary
     # datum (which is the same for every y)
-    c = matrix(NA,nrow=length(bed), ncol = num_z)
+    c = matrix(NA,ncol=length(bed), nrow = num_z)
     zs = seq(min(bed), water, len=num_z) # z coordinate
-
+    f = zs*NA
     for (i in 1:length(ys)){
-
-        f= Rouse(zs, bed[i], water, aref[i], wset, ustar[i])
+        print(i)     
+        #for(j in 1:num_z){
+            #print(c(i,j))
+        f = Rouse(zs, bed[i], water, aref[i], wset, ustar[i])
+        #}
         c[, i] = Cbed[i]*f
 
     }
 
-    c
+    # Calculate the lateral eddy viscosity
+    epsy = c*NA
+    
+    for (i in 1:length(ys)){
+        dpth_nonneg = pmax(zs-bed[i],0.0)
+        parabola = pmin(dpth_nonneg)*
+                   pmin(water-zs,(water-bed[i]))
+        epsy[,i] = 0.4*ustar[i]*(water-bed[i])*parabola/(0.5*(water-bed[i]))^2
+
+    }
+    epsy
 }
 
 
 
 Rouse<-function(z,bed, water,aref,wset,ustar){
     # Compute the Rouse profile for suspended sediment
+    
+    f = z*NA # Predefine the profile
 
-    f = NA
-    if(z>= bed+aref){
-    # Rouse number
-    zstar = wset/(ustar*0.4) 
+    # Find indexes where f has real values (i.e. above the bed)
+    inds = which(z > bed + aref)
+    if((length(inds)>0)&(ustar>0)){
 
-    # f  
-    f =( ( ( (water - bed) - (z - bed) )/ (z-bed) )/
-         ( ( (water - bed) - aref      )/ (aref)  ) )^(zstar)
+        zstar = wset/(ustar*0.4) 
 
+        # f  
+        f[inds] =( ( ( (water - bed) - (z[inds] - bed) )/(z[inds]-bed) )/
+                 ( ( (water - bed) - aref )/ (aref)  ) )^(zstar)
+
+        if(any(is.na(f[inds]))){
+
+            print(cbind(inds,z[inds], f[inds]))
+            print(c(bed, ustar, water, zstar, aref))
+            stop('f is nan when it should not be')
+            
+        }
     }
 
     f
