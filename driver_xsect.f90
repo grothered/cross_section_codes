@@ -625,7 +625,7 @@ DO Q_loop= 1, no_discharges!15
                 ! different from bed, if oscillations are occurring -- which is
                 ! good to catch.    
                 tmp =max(maxval(abs(bedold-bed)), maxval(abs(bed-bedlast)))
-                IF(tmp/(DT1*writfreq)<1.0e-10_dp) THEN
+                IF(tmp/(DT1*writfreq)<1.0e-12_dp) THEN
                     goto 373 !Converged: Go to the end of this loop
                     !exit
                     !sconc = sconc*0.5_dp

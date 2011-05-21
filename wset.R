@@ -167,7 +167,7 @@ einstein_j1<-function(z,E, n=10){
 }
 
 
-test_susdist<-function(ys, bed, water, Cbed, Es, wset, qby, aref, ustar, num_z = 1000){
+test_susdist<-function(ys, bed, water, Cbed, Es, wset, qby, aref, ustar, num_z = 10000){
     # Function to check the numerical solution of the suspended sediment
     # distribution equation when the channel is at equilibrium:
     #
@@ -229,17 +229,36 @@ test_susdist<-function(ys, bed, water, Cbed, Es, wset, qby, aref, ustar, num_z =
 
     }
 
-    # Calculate the lateral eddy viscosity
+    # Calculate the lateral eddy viscosity, with a Parabolic model
     epsy = c*NA
-    
     for (i in 1:length(ys)){
         dpth_nonneg = pmax(zs-bed[i],0.0)
         parabola = pmin(dpth_nonneg)*
                    pmin(water-zs,(water-bed[i]))
         epsy[,i] = 0.4*ustar[i]*(water-bed[i])*parabola/(0.5*(water-bed[i]))^2
-
     }
-    epsy
+    
+
+    # Calculate dc/dy_(i+1/2)
+    dcdy_h = matrix(NA,ncol=length(bed)-1,nrow=num_z)
+    epsy_h= dcdy_h
+    for(i in 1:(length(bed)-1)){
+        dcdy_h[,i] = (c[,i+1] -c[,i])/(ys[i+1]-ys[i]) 
+        epsy_h[,i] = 0.5*(epsy[,i+1]+epsy[,i])
+        
+    }
+
+    # Finally, calculate integrated lateral flux
+    integrand = dcdy_h*epsy_h
+    dz = diff(zs)
+    Fl_h = dcdy_h[1,]*NA
+    for(i in 1:(length(bed)-1)){
+        Fl_h[i] =
+            0.5*sum((integrand[1:(num_z-1),i]*dz)+(integrand[2:(num_z),i]*dz), na.rm=T)
+    }
+
+    Fl_h
+     
 }
 
 

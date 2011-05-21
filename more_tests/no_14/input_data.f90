@@ -24,7 +24,7 @@ nos = 2000 ! Number of spatial grid points
 writfreq = 2000 !24*5*5 ! The output is written every writfreq 'th timestep
 jmax= 1200000 !1382400 !24*5*2*45*4*4*4*4*5 ! The number of time steps
 t = 0.00 ! Starting time (s)
-dT = 2400.00 !Time step (s)
+dT = 300.00 !Time step (s)
 variable_timestep=.FALSE. !Do we use a variable time-step? Can cause problems
 
 waterM = 0.0 !Initial water elevation (m) and mean water elevation
@@ -61,15 +61,15 @@ d50 = 0.000149 !0.000062 ! median grain size for bedload formula (m)
 g = 9.8 !Gravity (m/s^2)
 kvis = 1.0E-06 !Kinematic viscosity of water. 
 alpha=0.000228 !The constant for the erosion formula E= alpha*(tau-taue)/sqrt(taue)
-Qbedon=.FALSE. !Is bedload active
+Qbedon=.TRUE. !Is bedload active
 bedload_type='vanrijn'
 talmon=.FALSE. !Do we use a talmon lateral bedload closure?
 resus_type = 'vanrijn'! ! 'cohesive', 'vanrijn', 'smithmac'
 
 susdist = .TRUE. !Do we have a laterally variable suspended load? This can ONLY treat the case of steady state. The total load flux (bedload + spsuended load) is assumed to be integrated_load_flux
-sus_vert_prof='exp' !'exp', 'Rouse'
+sus_vert_prof='Rouse' !'exp', 'Rouse'
 edify_model='Parabolic' ! 'Constant', 'Parabolic', 'Parabola_const'
-x_len_scale=1000.0 ! x length scale. In dynamic_sus_dist dC/dx ~=(C-k*C)/x_len_scale
+x_len_scale=10000.0 ! x length scale. In dynamic_sus_dist dC/dx ~=(C-k*C)/x_len_scale
 susQbal= .FALSE. ! DEPRECIATED: Is there a balance between the lateral flux of suspended load and bedload? Only relevant if susdist=.true.
 integrated_load_flux=-1.0 !DEPRECIATED: The total flux (suspended load + bedload) through the cross-section, in kg/s =  (kg/m^3)*m^2*m/s. Only used if susdist=.true.
 sus2d = .false. !Do we use a fully 2d suspended sediment - this is only applicable to the case with many cross sections strung together - the quasi 2d model.
