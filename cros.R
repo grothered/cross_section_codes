@@ -291,6 +291,7 @@ get_extra<-function(l){
         Qe_file = which(dir()=='qe')
         Qbed_file = which(dir()=='Qbed')
         qb_G_file = which(dir()=='qby')
+        aref_file = which(dir()=='a_ref')
         #time_file = which(dir()=='time')
 
 	
@@ -300,6 +301,7 @@ get_extra<-function(l){
         Qe   <<- genread(dir()[Qe_file],l)	
         Qbed <<- genread(dir()[Qbed_file],l)	
         Qby <<- genread(dir()[qb_G_file],l+1)	
+        a_ref<<- genread(dir()[aref_file],l)
         #time1 <<- scan(dir()[time_file])
 }
 

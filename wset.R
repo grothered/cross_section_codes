@@ -216,12 +216,14 @@ test_susdist<-function(ys, bed, water, Cbed, Es, wset, qby, aref, num_z = 1000){
     c = matrix(NA,nrow=length(bed), ncol = num_z)
     zs = seq(min(bed), water, len=num_z) # z coordinate
 
-    for i in 1:length(ys){
+    for (i in 1:length(ys)){
 
         f= Rouse(zs, bed[i], water, aref[i], wset, ustar[i])
-        c[:, i] = Cbed[i]*f
+        c[, i] = Cbed[i]*f
 
     }
+
+    c
 }
 
 
@@ -245,5 +247,3 @@ Rouse<-function(z,bed, water,aref,wset,ustar){
     }
         
 
-
-}
