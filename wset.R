@@ -167,7 +167,7 @@ einstein_j1<-function(z,E, n=10){
 }
 
 
-test_susdist<-function(ys, bed, water, Cbed, Es, wset, qby, aref, ustar, num_z = 10000){
+test_susdist<-function(ys, bed, water, Cbed, Es, wset, qby, aref, ustar, num_z = 1000){
     # Function to check the numerical solution of the suspended sediment
     # distribution equation when the channel is at equilibrium:
     #
@@ -195,7 +195,8 @@ test_susdist<-function(ys, bed, water, Cbed, Es, wset, qby, aref, ustar, num_z =
     #         coordinate.
 
 
-    # tmp = test_susdist( ys[10,],h[10,],0.0, Cbed[10,],Qe[10,], 0.014,Qby[10,],a_ref[10,], sqrt(tau[10,]/1026) )
+    # a = 10
+    # tmp = test_susdist( ys[a,],h[a,],0.0, Cbed[a,],Qe[a,], 0.014,Qby[a,],a_ref[a,], sqrt(tau[a,]/1026) )
 
     # Deposition rate    
     Ds = wset*Cbed
@@ -253,8 +254,8 @@ test_susdist<-function(ys, bed, water, Cbed, Es, wset, qby, aref, ustar, num_z =
     dz = diff(zs)
     Fl_h = dcdy_h[1,]*NA
     for(i in 1:(length(bed)-1)){
-        Fl_h[i] =
-            0.5*sum((integrand[1:(num_z-1),i]*dz)+(integrand[2:(num_z),i]*dz), na.rm=T)
+        Fl_h[i] =  # Trapezoidal integration
+            -0.5*sum((integrand[1:(num_z-1),i]*dz)+(integrand[2:(num_z),i]*dz), na.rm=T)
     }
 
     Fl_h

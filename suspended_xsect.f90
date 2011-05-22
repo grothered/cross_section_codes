@@ -12,7 +12,7 @@ contains
 SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wset, Qe,lambdacon, &
                                 rho,rhos, g, d50, bedl,bedu, ysl, ysu, cb, Cbar, Qbed, &
                                 sed_lag_scale, counter, high_order_Cflux, a_ref, sus_vert_prof, edify_model, &
-                                x_len_scale, sconc)
+                                x_len_scale, sconc, lat_sus_flux)
     ! Calculate the cross-sectional distribution of suspended sediment using
     ! some ideas from /home/gareth/Documents/H_drive_Gareth/Gareth_and_colab
     ! s/Thesis/Hydraulic_morpho_model/channel_cross_section/paper/idea_for_
@@ -32,13 +32,13 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     INTEGER, INTENT(IN)::a, counter
     REAL(dp), INTENT(IN):: delT, ys, bed, water, waterlast, tau, vel, wset, Qe, lambdacon, rho, rhos,g, & 
                                 d50, bedl, bedu,ysl,ysu, Q, Qbed, a_ref, x_len_scale, sconc
-    REAL(dp), INTENT(IN OUT):: sed_lag_scale  ! sed_lag_scale = used to estimate derivative terms, e.g. dCbar/dx
+    REAL(dp), INTENT(OUT):: sed_lag_scale, lat_sus_flux  ! sed_lag_scale = used to estimate derivative terms, e.g. dCbar/dx
     ! cb = Near bed suspended sediment concentration, 
     ! Cbar = Depth averaged suspended sediment concentration
-    REAL(dp), INTENT(IN OUT):: cb, Cbar 
+    REAL(dp), INTENT(IN OUT):: cb, Cbar
     CHARACTER(20), INTENT(IN):: sus_vert_prof, edify_model
     LOGICAL, INTENT(IN):: high_order_Cflux
-    DIMENSION ys(a), bed(a), tau(a),vel(a), Qe(a), cb(a), Cbar(a),Qbed(a), a_ref(a) 
+    DIMENSION ys(a), bed(a), tau(a),vel(a), Qe(a), cb(a), Cbar(a),Qbed(a), a_ref(a), lat_sus_flux(a+1)
 
     ! LOCAL VARIABLES
     INTEGER:: i, info, j
@@ -46,7 +46,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     REAL(dp):: depth(0:a+1), eddif_y(0:a+1), eddif_z(a), zetamult(0:a+1), vd(0:a+1), ys_temp(0:a+1)
     REAL(dp):: M1_lower(a), M1_diag(a), M1_upper(a), M1_upper2(a), M1_lower2(a)
     REAL(dp):: RHS(a), dy_all(a)
-    REAL(dp):: tmp1, dy, dy_outer, tmp2, Cref, z
+    REAL(dp):: tmp1, dy, dy_outer, tmp2, Cref, z, cbed_tmp1, cbed_tmp2
     REAL(dp):: dQdx, dhdt, Cbar_old(a), dUd_dx(0:a+1), sus_flux
     REAL(dp):: DLF(a), DF(a), DUF(a), DU2(a),rcond, ferr, berr, work(3*a), XXX(a, 1)
     REAL(dp):: bandmat(5,a), AFB(7,a), RRR(a), CCC(a), int_edif_f(a+1), int_edif_dfdy(a+1)
@@ -338,7 +338,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
                 !int_edif_f=0._dp
                 !int_edif_dfdy=0._dp
             END IF
-
+            
             ! d/dy [ dcb/dy*(int(eddif_y*f) dz) ]
             tmp1 = 1.0_dp/dy_outer
             tmp2 = 1.0_dp/(ys_temp(i+1)-ys_temp(i))
@@ -444,7 +444,30 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
             print*, 'ERROR: info = ', info, ' in DGTSV, dynamic_sus_dist'
         stop
     END IF
-    
+   
+
+    ! Store the lateral flux of suspended load = -cb*int_edif_dfdy -
+    ! dcb/dy*int_edif_f
+        lat_sus_flux = 0.0_dp
+    DO i=0,a
+        ! Near bed suspended sediment concentration at i+1
+        IF(i<a) THEN
+            cbed_tmp1 = Cbar(i+1)*depth(i+1)/zetamult(i+1) ! cbed(i)
+        ELSE
+            cbed_tmp1 = 0.0_dp
+        END IF
+        ! Near bed suspended sediment concentration at i
+        IF(i>0) THEN
+             cbed_tmp2 = Cbar(i)*depth(i)/zetamult(i) ! cbed(i)
+        ELSE
+            cbed_tmp2 = 0.0_dp
+        END IF
+        ! Lat sus flux at i+1/2
+        ! e.g. lat_sus_flux(1) = flux at 1/2
+        !      lat_sus_flux(a+1) = flux at a+1/2
+        lat_sus_flux(i+1) =-int_edif_f(i+1)*(cbed_tmp1-cbed_tmp2)/(ys_temp(i+1)-ys_temp(i))
+        lat_sus_flux(i+1) = lat_sus_flux(i) -0.5_dp*(cbed_tmp1 + cbed_tmp2)*int_edif_dfdy(i+1) 
+    END DO 
     ! Sometimes, the near bed diffusive flux can lead to small negative values
     ! of Cbed being predicted right near the channel edge. This is because when
     ! the depth is changing by order of magnitude (e.g. from 1.0e-05 to 1.0e-02)
@@ -535,12 +558,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
 
     ! Now we add the term U*d*dCbar/dx using an operator splitting technique
     ! depth*dCbar/dT + depth*vel*dCbar/dx = 0.0
-    ! Explicit
-    !Cbar = Cbar -delT*vel*Cbar*(1._dp-sed_lag_scale)/x_len_scale
-    ! Implicit
-    !Cbar*(1.0/dT + vel*(1.0_dp-sed_lag_scale)/x_len_scale) = Cbar/DT 
-    !Cbar = Cbar/(1.0 + delT*vel*(1.0_dp-sed_lag_scale)/x_len_scale )
-    ! Time-centred implicit 
+    ! Implicit 
     Cbar = Cbar*(1.0_dp - 0.0_dp*delT*vel*(1._dp-sed_lag_scale)/x_len_scale)/ &
            (1.0 + 1.0_dp*delT*vel*(1.0_dp-sed_lag_scale)/x_len_scale )
 

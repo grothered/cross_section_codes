@@ -63,7 +63,7 @@ kvis = 1.0E-06 !Kinematic viscosity of water.
 alpha=0.000228 !The constant for the erosion formula E= alpha*(tau-taue)/sqrt(taue)
 Qbedon=.TRUE. !Is bedload active
 bedload_type='vanrijn'
-talmon=.FALSE. !Do we use a talmon lateral bedload closure?
+talmon=.TRUE. !Do we use a talmon lateral bedload closure?
 resus_type = 'vanrijn'! ! 'cohesive', 'vanrijn', 'smithmac'
 
 susdist = .TRUE. !Do we have a laterally variable suspended load? This can ONLY treat the case of steady state. The total load flux (bedload + spsuended load) is assumed to be integrated_load_flux

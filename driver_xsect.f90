@@ -25,7 +25,8 @@ REAL(dp):: wslope, ar, Q, t, &
             lincrem, wset, voidf, smax, rough_coef, man_nveg, veg_ht,rhos,&
             dsand, d50, g, kvis, lambdacon, alpha, &
             ysl,ysu,bedl, bedu, wdthx, TR, storer(9), tmp, tmp2, a_ref, &
-            failure_slope, x_len_scale, sus_flux, sed_lag_scale, Clast
+            failure_slope, x_len_scale, sus_flux, sed_lag_scale, Clast, &
+            lat_sus_flux
 INTEGER::  remesh_freq, no_discharges
 REAL(dp):: discharges(1000), susconcs(1000)
 LOGICAL::  flag, susdist, sus2d, readin, geo, remesh, norm, vertical, & 
@@ -53,7 +54,8 @@ ALLOCATABLE ys(:), bed(:), dists(:), tau(:),ks(:),tbst(:),&
             taucrit_dep(:,:), C(:),bedold(:), &
             taucrit_dep_ys(:) ,dst(:,:), taucrit(:,:), slpmx(:,:), &
             vegdrag(:), ysold(:), dqbeddx(:), sllength(:), vel(:), &
-            tau_g(:),f_g(:), Cbar(:), a_ref(:), Clast(:)
+            tau_g(:),f_g(:), Cbar(:), a_ref(:), Clast(:), &
+            lat_sus_flux(:)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! READ IN DATA
@@ -105,7 +107,7 @@ OPEN(10,file="vel")
 OPEN(11,file="qby")
 OPEN(12,file="a_ref")
 OPEN(13,file="timestepping_stats")
-
+OPEN(14,file='Fl')
 ! Allocate memory for arrays
 ALLOCATE(ys(nos),bed(nos),dists(nos),tau(nos),ks(nos),tbst(nos),& 
          qby(0:nos), bedlast(nos),hss(nos),tss(nos),hss2(nos),Qe(nos),&
@@ -115,7 +117,7 @@ ALLOCATE(ys(nos),bed(nos),dists(nos),tau(nos),ks(nos),tbst(nos),&
          taucrit(nos, 0:layers), slpmx(nos,0:(layers+1)), vegdrag(nos),&
          ysold(nos) ,  Qbed(nos), dqbeddx(nos),sllength(nos), &
          vel(nos), tau_g(nos), f_g(nos), Cbar(nos), bedold(nos), a_ref(nos),&
-         Clast(nos) ) 
+         Clast(nos), lat_sus_flux(nos+1) ) 
 
 
 
@@ -502,10 +504,11 @@ DO Q_loop= 1, no_discharges!15
                 !END IF
                 !Record old value of C for file output
                 Clast=C  
+                lat_sus_flux = 0.0_dp ! Preset to zero
                 call dynamic_sus_dist(u-l+1, DT1, ys(l:u), bed(l:u), water, waterlast, Q, tau(l:u), vel(l:u), wset, & 
                                         Qe(l:u), lambdacon, rho,rhos, g, d50, bedl,bedu, ysl, ysu, C(l:u),&
                                         Cbar(l:u), Qbed(l:u), sed_lag_scale, j, high_order_Cflux, a_ref(l:u), sus_vert_prof,&
-                                        edify_model, x_len_scale, sconc)
+                                        edify_model, x_len_scale, sconc, lat_sus_flux(l:u+1))
 
                 ! Set C in dry parts of the channel to zero
                 ! This is not done earlier, because we needed to store the old
@@ -617,6 +620,7 @@ DO Q_loop= 1, no_discharges!15
                 write(13,*) j, l,u, Q/Area, t-DT1, ((Q/Area)*abs(Q/Area)*rmult),&
                             DT1, ys(u)-ys(l)+wdthx, maxval(C), &
                             rmult*(Area)/(ys(u)-ys(l)+wdthx), f(nos/2)
+                write(14,*) lat_sus_flux
                 !write(12,*) taucrit_dep_ys
 
                 ! Check for convergence by comparing 'bed' with 'bedold' (=
@@ -724,11 +728,14 @@ close(2)
 close(3)
 close(4)
 close(5)
-close(6)
 close(7)
 close(8)
 close(9)
 close(10)
+close(11)
+close(12)
+close(13)
+close(14)
 
 END PROGRAM      
 

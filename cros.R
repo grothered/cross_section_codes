@@ -130,8 +130,8 @@ tendep<<-tendep1
 }
 
 
-##A function to calculate the top width at a tide level of 0. 
 wdth<-function(ys,h, level){
+    ##A function to calculate the top width at a given water level. 
 
     a=dim(h)[1]
     a=min(a,dim(ys)[1])
@@ -195,90 +195,90 @@ cbind(wdths,dpths)
 #################
 ############
 ########
-#Function to identify channel points using the approach of D'Alpos et al.
 
 
 chan_pts<-function(ys, hs, wdth){
+    #Function to identify channel points using the approach of D'Alpos et al.
 
-cords<- cbind(ys,hs) 
+    cords<- cbind(ys,hs) 
 
-cu<-curv(cords, wdth+cords[,1]*0, 1+cords[,1]*0, 0+cords[,1]*0)  #note the trick to get things to be the right dimension.
+    cu<-curv(cords, wdth+cords[,1]*0, 1+cords[,1]*0, 0+cords[,1]*0)  #note the trick to get things to be the right dimension.
 
-b=union(which((abs(cu$curvat))>.1), which(hs< mean(hs[1:10])-0.2))
+    b=union(which((abs(cu$curvat))>.1), which(hs< mean(hs[1:10])-0.2))
 
-b
+    b
 }
 
 ##########################
 ###################
 ########
-#Function to calculate curvature!!
 
 curv<-function(coords,widths,windowmult,windowconst){
+    #Function to calculate curvature!!
 
 
-##Need to define coords and widths first
+    ##Need to define coords and widths first
 
-cntrline=coords  ##Note that this variable name is redefined later-- it is a useful way to represent the channel. 
+    cntrline=coords  ##Note that this variable name is redefined later-- it is a useful way to represent the channel. 
 
-#calculate distance between points in coords, then resample evenly
+    #calculate distance between points in coords, then resample evenly
 
-d=((cntrline[1:(length(cntrline[,1])-1),1]-cntrline[2:length(cntrline[,1]),1])^2)
-d2=((cntrline[1:(length(cntrline[,1])-1),2]-cntrline[2:length(cntrline[,1]),2])^2)
-dist= (d+d2)^0.5
-usdist=c(0,cumsum(dist))   #upstream distance.
+    d=((cntrline[1:(length(cntrline[,1])-1),1]-cntrline[2:length(cntrline[,1]),1])^2)
+    d2=((cntrline[1:(length(cntrline[,1])-1),2]-cntrline[2:length(cntrline[,1]),2])^2)
+    dist= (d+d2)^0.5
+    usdist=c(0,cumsum(dist))   #upstream distance.
 
-#Still need to evenly space them. This is done by fitting a spline through the x and y separately, as a function of usdist. 
+    #Still need to evenly space them. This is done by fitting a spline through the x and y separately, as a function of usdist. 
 
-spacingcoeff=1
-spacing= spacingcoeff*mean(dist)  #the proposed distance between new coordinates. 
+    spacingcoeff=1
+    spacing= spacingcoeff*mean(dist)  #the proposed distance between new coordinates. 
 
-newx= (spline(usdist, cntrline[,1],n= round(usdist[length(usdist)]/spacing+1)))
+    newx= (spline(usdist, cntrline[,1],n= round(usdist[length(usdist)]/spacing+1)))
 
-newy= (spline(usdist, cntrline[,2],n= round(usdist[length(usdist)]/spacing+1)))
+    newy= (spline(usdist, cntrline[,2],n= round(usdist[length(usdist)]/spacing+1)))
 
-newwidths= (spline(usdist, widths,n= round(usdist[length(usdist)]/spacing+1)))
-
-
-x=newx[[2]]
-y=newy[[2]]
-
-nwidths= newwidths[[2]]
-
-#evenly spaced coordinates....and upstream distance Iusdist. 
-
-Iusdist=newx[[1]]
-
-cntrline=matrix(data=c(x,y),ncol=2) #This doesn't appear to be being used below. 
-
-##So now we are evenly spaced
+    newwidths= (spline(usdist, widths,n= round(usdist[length(usdist)]/spacing+1)))
 
 
+    x=newx[[2]]
+    y=newy[[2]]
 
-###Step 2 and 3 
-error= 4*spacing  ##This is a little thing that we add to the spacing between the points used to evaluate the derivatives. 
+    nwidths= newwidths[[2]]
 
-lowerb= pmax(0,Iusdist-windowmult*nwidths-0*error-windowconst*spacing)  #The term 'spacing/2' is just useful for finding the appropriate index. 
-upperb=pmin(max(Iusdist),Iusdist+windowmult*nwidths+0*error+windowconst*spacing)
+    #evenly spaced coordinates....and upstream distance Iusdist. 
 
-lowerb.ind= findInterval(lowerb, Iusdist) #This is the index of the lower bound on the region that is used in the extimation of the curvature
-upperb.ind=findInterval(upperb, Iusdist) #As above, but the upper bound. 
+    Iusdist=newx[[1]]
+
+    cntrline=matrix(data=c(x,y),ncol=2) #This doesn't appear to be being used below. 
+
+    ##So now we are evenly spaced
 
 
-###Step 4. ----
-diff1= coords-coords[lowerb.ind,] #The 'backward' difference. By the mean value theorem, for a continuous function, there exists a point with derivative equal to that approximated as (this difference)/(distance between point and lowerb.ind), and this point is located somewhere between the point where the curvature is  being calculated and lowerb.ind
-diff2= coords[upperb.ind,]-coords #The 'forward' difference. 
-diff3= coords[upperb.ind,]- coords[lowerb.ind,] #The 'central' difference. This can be used to calculate a derivative that occurs somewhere between lowerb,ind and upperb.ind...maybe is is better to have this located more closely to the point where curvature is being calculated??
 
-dxdyds= diff3/(Iusdist[upperb.ind]-Iusdist[lowerb.ind])  #derivatives of x and y, approximated as the change in x and y at the upper and lower points, divided by the along channel distance between them
+    ###Step 2 and 3 
+    error= 4*spacing  ##This is a little thing that we add to the spacing between the points used to evaluate the derivatives. 
 
-d2xnyds= ( (diff2/(Iusdist[upperb.ind]-Iusdist)) - (diff1/(Iusdist-Iusdist[lowerb.ind]))  )/( 0.5*(Iusdist[upperb.ind]-Iusdist[lowerb.ind]))  #Notice how the second distance is the 1/2 the distance between the 2 endpoints- as our derivatives in this one are sort of being calculated at the mid points of the point and lower, and the point and upper. 
+    lowerb= pmax(0,Iusdist-windowmult*nwidths-0*error-windowconst*spacing)  #The term 'spacing/2' is just useful for finding the appropriate index. 
+    upperb=pmin(max(Iusdist),Iusdist+windowmult*nwidths+0*error+windowconst*spacing)
 
-curvat= (dxdyds[,1]*d2xnyds[,2]- dxdyds[,2]*d2xnyds[,1])/( (dxdyds[,1]^2 +dxdyds[,2]^2)^1.5)
+    lowerb.ind= findInterval(lowerb, Iusdist) #This is the index of the lower bound on the region that is used in the extimation of the curvature
+    upperb.ind=findInterval(upperb, Iusdist) #As above, but the upper bound. 
 
-curvat= c(curvat[2],curvat[2:(length(curvat)-1)],curvat[length(curvat)-1])
 
-list(curvat=curvat,nwidths= nwidths, usdist=Iusdist)
+    ###Step 4. ----
+    diff1= coords-coords[lowerb.ind,] #The 'backward' difference. By the mean value theorem, for a continuous function, there exists a point with derivative equal to that approximated as (this difference)/(distance between point and lowerb.ind), and this point is located somewhere between the point where the curvature is  being calculated and lowerb.ind
+    diff2= coords[upperb.ind,]-coords #The 'forward' difference. 
+    diff3= coords[upperb.ind,]- coords[lowerb.ind,] #The 'central' difference. This can be used to calculate a derivative that occurs somewhere between lowerb,ind and upperb.ind...maybe is is better to have this located more closely to the point where curvature is being calculated??
+
+    dxdyds= diff3/(Iusdist[upperb.ind]-Iusdist[lowerb.ind])  #derivatives of x and y, approximated as the change in x and y at the upper and lower points, divided by the along channel distance between them
+
+    d2xnyds= ( (diff2/(Iusdist[upperb.ind]-Iusdist)) - (diff1/(Iusdist-Iusdist[lowerb.ind]))  )/( 0.5*(Iusdist[upperb.ind]-Iusdist[lowerb.ind]))  #Notice how the second distance is the 1/2 the distance between the 2 endpoints- as our derivatives in this one are sort of being calculated at the mid points of the point and lower, and the point and upper. 
+
+    curvat= (dxdyds[,1]*d2xnyds[,2]- dxdyds[,2]*d2xnyds[,1])/( (dxdyds[,1]^2 +dxdyds[,2]^2)^1.5)
+
+    curvat= c(curvat[2],curvat[2:(length(curvat)-1)],curvat[length(curvat)-1])
+
+    list(curvat=curvat,nwidths= nwidths, usdist=Iusdist)
 		}
 
 
