@@ -466,7 +466,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
         ! e.g. lat_sus_flux(1) = flux at 1/2
         !      lat_sus_flux(a+1) = flux at a+1/2
         lat_sus_flux(i+1) =-int_edif_f(i+1)*(cbed_tmp1-cbed_tmp2)/(ys_temp(i+1)-ys_temp(i))
-        lat_sus_flux(i+1) = lat_sus_flux(i) -0.5_dp*(cbed_tmp1 + cbed_tmp2)*int_edif_dfdy(i+1) 
+        lat_sus_flux(i+1) = lat_sus_flux(i+1) -0.5_dp*(cbed_tmp1 + cbed_tmp2)*int_edif_dfdy(i+1) 
     END DO 
     ! Sometimes, the near bed diffusive flux can lead to small negative values
     ! of Cbed being predicted right near the channel edge. This is because when
