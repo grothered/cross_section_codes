@@ -449,16 +449,12 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     ! dcb/dy*int_edif_f
         lat_sus_flux = 0.0_dp
     DO i=0,a
-        ! Near bed suspended sediment concentration at i+1
-        IF(i<a) THEN
+        ! Near bed suspended sediment concentration at i+1, i
+        IF((i<a).and.(i>0)) THEN
             cbed_tmp1 = Cbar(i+1)/zetamult(i+1) ! cbed(i)
+            cbed_tmp2 = Cbar(i)/zetamult(i) ! cbed(i)
         ELSE
             cbed_tmp1 = 0.0_dp
-        END IF
-        ! Near bed suspended sediment concentration at i
-        IF(i>0) THEN
-             cbed_tmp2 = Cbar(i)/zetamult(i) ! cbed(i)
-        ELSE
             cbed_tmp2 = 0.0_dp
         END IF
         ! Lat sus flux at i+1/2

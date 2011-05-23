@@ -236,8 +236,8 @@ test_susdist<-function(ys, bed, water, Cbed, Es, wset, qby, aref, ustar, num_z =
     epsy = c*NA
     for (i in 1:length(ys)){
         parabola = pmax(zs-bed[i],0.0)*
-                   pmin(water-zs,(water-bed[i]))
-        epsy[,i] = 0.4*ustar[i]*(water-bed[i])*parabola/(.25*(water-bed[i])^2)
+                   pmin(water-zs,(water-bed[i]))/(0.25*(water-bed[i])^2)
+        epsy[,i] = 0.4*ustar[i]*(water-bed[i])*parabola
     }
     
 
@@ -272,6 +272,12 @@ test_susdist<-function(ys, bed, water, Cbed, Es, wset, qby, aref, ustar, num_z =
 
 Rouse<-function(z,bed, water,aref,wset,ustar){
     # Compute the Rouse profile for suspended sediment
+    # z = vertical coordinate
+    # bed = bed elevation
+    # water = water surface elevation
+    # aref = roughness height
+    # wset = settling velocity
+    # ustar = shear velocity
     
     f = z*NA # Predefine the profile
 
