@@ -71,7 +71,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
 
 
     ! Calculate the value of 'zetamult', where:
-    ! zetamult*cbed = Cbar*d = depth integrated sediment concentration
+    ! zetamult*cbed = Cbar = depth integrated sediment concentration
     SELECT CASE(sus_vert_prof) 
 
         CASE('exp')
@@ -90,7 +90,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
             DO i=1, a
                 IF((eddif_z(i)>0._dp).and.(depth(i)>0.0e-00_dp)) THEN 
                     ! Ikeda and Izumi (1991)
-                    zetamult(i)= eddif_z(i)/wset*(1._dp-exp(-(wset/eddif_z(i))*max(depth(i),0._dp)) )
+                    zetamult(i)= eddif_z(i)/depth(i)*wset*(1._dp-exp(-(wset/eddif_z(i))*max(depth(i),0._dp)) )
                 ELSE 
                     zetamult(i)=1.0e-08_dp !1.0e-04_dp
                 END IF
@@ -110,8 +110,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
 
                 ! Compute rouse integral factor using a function
                 zetamult(i) = rouse_int(z,a_ref(i)/depth(i))
-                zetamult(i) = zetamult(i)*depth(i) ! Cludge to get make zetamult satisfy Cbar*d = cbed*zetamult
-                !if(i==a/2) print*, 'ri, ', zetamult(i)/depth(i), z
+                zetamult(i) = zetamult(i)  
             END DO
 
         ! Catch errors
@@ -299,8 +298,8 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
 
             IF(i<a) THEN
                 !Estimate of 1/dy_outer*(eddify* dbed/dy *cb) at i+1/2
-                M1_upper(i) = M1_upper(i) - 0.5_dp*tmp1*(depth(i+1)/zetamult(i+1))  ! Note that depth(i)/zetamult(i)*Cbar = cb
-                M1_diag(i)  = M1_diag(i)  - 0.5_dp*tmp1*(depth(i)/zetamult(i))
+                M1_upper(i) = M1_upper(i) - 0.5_dp*tmp1/zetamult(i+1)  ! Note that 1.0/zetamult(i)*Cbar = cb
+                M1_diag(i)  = M1_diag(i)  - 0.5_dp*tmp1/zetamult(i)
             END IF
 
             ! Compute eddify*dbed/dy at i-1/2
@@ -310,8 +309,8 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
 
             IF(i>1) THEN
                 !Estimate of 1/dy_outer*(eddify*dbed/dy*cb) at i-1/2
-                M1_diag(i)   = M1_diag(i)   + 0.5_dp*tmp1*(depth(i)/zetamult(i))  ! Note that depth(i)/zetamult(i)*Cbar = cb
-                M1_lower(i)  = M1_lower(i)  + 0.5_dp*tmp1*(depth(i-1)/zetamult(i-1))
+                M1_diag(i)   = M1_diag(i)   + 0.5_dp*tmp1/zetamult(i)  ! Note that depth(i)/zetamult(i)*Cbar = cb
+                M1_lower(i)  = M1_lower(i)  + 0.5_dp*tmp1/zetamult(i-1)
             END IF
  
         ELSE
@@ -344,29 +343,29 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
             tmp1 = 1.0_dp/dy_outer
             tmp2 = 1.0_dp/(ys_temp(i+1)-ys_temp(i))
             IF(i<a) THEN
-                ! 2 point derivative approx -- not cb = Cbar*depth/zetamult
-                M1_upper(i) = M1_upper(i) - tmp1*tmp2*int_edif_f(i+1)*depth(i+1)/zetamult(i+1)
-                M1_diag(i)  = M1_diag(i)  + tmp1*tmp2*int_edif_f(i+1)*depth(i)/zetamult(i)
+                ! 2 point derivative approx -- not cb = Cbar/zetamult
+                M1_upper(i) = M1_upper(i) - tmp1*tmp2*int_edif_f(i+1)/zetamult(i+1)
+                M1_diag(i)  = M1_diag(i)  + tmp1*tmp2*int_edif_f(i+1)/zetamult(i)
             END IF
 
             tmp2 = 1.0_dp/(ys_temp(i)-ys_temp(i-1))
             IF(i>1) THEN
                 ! 2 point derivative approx
-                M1_diag(i)  = M1_diag(i)  + tmp1*tmp2*int_edif_f(i)*depth(i)/zetamult(i)
-                M1_lower(i) = M1_lower(i) - tmp1*tmp2*int_edif_f(i)*depth(i-1)/zetamult(i-1)
+                M1_diag(i)  = M1_diag(i)  + tmp1*tmp2*int_edif_f(i)/zetamult(i)
+                M1_lower(i) = M1_lower(i) - tmp1*tmp2*int_edif_f(i)/zetamult(i-1)
             END IF
             
 
             
             !! d/dy ( cb*INT(edify*df/dy )dz  )
             IF(i<a) THEN
-                M1_upper(i) = M1_upper(i) - 0.5_dp*tmp1*int_edif_dfdy(i+1)*(depth(i+1)/zetamult(i+1))  ! Note that depth(i)/zetamult(i)*Cbar = cb
-                M1_diag(i)  = M1_diag(i)  - 0.5_dp*tmp1*int_edif_dfdy(i+1)*(depth(i)/zetamult(i))
+                M1_upper(i) = M1_upper(i) - 0.5_dp*tmp1*int_edif_dfdy(i+1)/zetamult(i+1)  ! Note that 1/zetamult(i)*Cbar = cb
+                M1_diag(i)  = M1_diag(i)  - 0.5_dp*tmp1*int_edif_dfdy(i+1)/zetamult(i)
             END IF
             
             IF(i>1) THEN
-                M1_diag(i)   = M1_diag(i)   + 0.5_dp*tmp1*int_edif_dfdy(i)*(depth(i)/zetamult(i))  ! Note that depth(i)/zetamult(i)*Cbar = cb
-                M1_lower(i)  = M1_lower(i)  + 0.5_dp*tmp1*int_edif_dfdy(i)*(depth(i-1)/zetamult(i-1))
+                M1_diag(i)   = M1_diag(i)   + 0.5_dp*tmp1*int_edif_dfdy(i)/zetamult(i)  ! Note that 1/zetamult(i)*Cbar = cb
+                M1_lower(i)  = M1_lower(i)  + 0.5_dp*tmp1*int_edif_dfdy(i)/zetamult(i-1)
             END IF 
         END IF
     END DO
@@ -386,7 +385,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
         DO i = 1, a
 
             RHS(i) = RHS(i) +Qe(i)
-            M1_diag(i) = M1_diag(i) + wset*(depth(i)/zetamult(i))  ! Note that depth(i)/zetamult(i)*Cbar = cb
+            M1_diag(i) = M1_diag(i) + wset/zetamult(i)  ! Note that 1/zetamult(i)*Cbar = cb
 
 
         END DO
@@ -453,13 +452,13 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     DO i=0,a
         ! Near bed suspended sediment concentration at i+1
         IF(i<a) THEN
-            cbed_tmp1 = Cbar(i+1)*depth(i+1)/zetamult(i+1) ! cbed(i)
+            cbed_tmp1 = Cbar(i+1)/zetamult(i+1) ! cbed(i)
         ELSE
             cbed_tmp1 = 0.0_dp
         END IF
         ! Near bed suspended sediment concentration at i
         IF(i>0) THEN
-             cbed_tmp2 = Cbar(i)*depth(i)/zetamult(i) ! cbed(i)
+             cbed_tmp2 = Cbar(i)/zetamult(i) ! cbed(i)
         ELSE
             cbed_tmp2 = 0.0_dp
         END IF
@@ -566,7 +565,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     ! New near bed cb
     DO i = 1, a
         IF(zetamult(i) > 0._dp) THEN
-            cb(i) = Cbar(i)*depth(i)/zetamult(i)
+            cb(i) = Cbar(i)/zetamult(i)
         ELSE
             cb(i) = 0._dp
         END IF

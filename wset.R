@@ -167,7 +167,7 @@ einstein_j1<-function(z,E, n=10){
 }
 
 
-test_susdist<-function(ys, bed, water, Cbed, Es, wset, qby, aref, ustar, num_z =5000){
+test_susdist<-function(ys, bed, water, Cbed, Es, wset, qby, aref, ustar, num_z = 5000){
     # Function to check the numerical solution of the suspended sediment
     # distribution equation when the channel is at equilibrium:
     #
