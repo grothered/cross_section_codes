@@ -167,7 +167,8 @@ einstein_j1<-function(z,E, n=10){
 }
 
 
-test_susdist<-function(ys, bed, water, Cbed, Es, wset, qby, aref, ustar, num_z = 5000){
+test_susdist<-function(ys, bed, water, Cbed, Es, wset, qby, aref, ustar, num_z =
+        5000, c_return=FALSE ){
     # Function to check the numerical solution of the suspended sediment
     # distribution equation when the channel is at equilibrium:
     #
@@ -230,6 +231,7 @@ test_susdist<-function(ys, bed, water, Cbed, Es, wset, qby, aref, ustar, num_z =
 
     }
 
+
     # Calculate the lateral eddy viscosity, with a Parabolic model
     epsy = c*NA
     for (i in 1:length(ys)){
@@ -257,8 +259,13 @@ test_susdist<-function(ys, bed, water, Cbed, Es, wset, qby, aref, ustar, num_z =
             -0.5*sum((integrand[1:(num_z-1),i]*dz)+(integrand[2:(num_z),i]*dz), na.rm=T)
     }
 
-    Fl_h
-     
+    # Output depends on c_return
+    if(c_return){
+        c
+    }else{
+        Fl_h
+    }     
+
 }
 
 

@@ -110,7 +110,6 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
 
                 ! Compute rouse integral factor using a function
                 zetamult(i) = rouse_int(z,a_ref(i)/depth(i))
-                zetamult(i) = zetamult(i)  
             END DO
 
         ! Catch errors
@@ -309,7 +308,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
 
             IF(i>1) THEN
                 !Estimate of 1/dy_outer*(eddify*dbed/dy*cb) at i-1/2
-                M1_diag(i)   = M1_diag(i)   + 0.5_dp*tmp1/zetamult(i)  ! Note that depth(i)/zetamult(i)*Cbar = cb
+                M1_diag(i)   = M1_diag(i)   + 0.5_dp*tmp1/zetamult(i)  ! Note that 1.0/zetamult(i)*Cbar = cb
                 M1_lower(i)  = M1_lower(i)  + 0.5_dp*tmp1/zetamult(i-1)
             END IF
  
@@ -343,7 +342,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
             tmp1 = 1.0_dp/dy_outer
             tmp2 = 1.0_dp/(ys_temp(i+1)-ys_temp(i))
             IF(i<a) THEN
-                ! 2 point derivative approx -- not cb = Cbar/zetamult
+                ! 2 point derivative approx -- note cb = Cbar/zetamult
                 M1_upper(i) = M1_upper(i) - tmp1*tmp2*int_edif_f(i+1)/zetamult(i+1)
                 M1_diag(i)  = M1_diag(i)  + tmp1*tmp2*int_edif_f(i+1)/zetamult(i)
             END IF

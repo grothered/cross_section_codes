@@ -630,6 +630,7 @@ DO Q_loop= 1, no_discharges!15
                 ! good to catch.    
                 tmp =max(maxval(abs(bedold-bed)), maxval(abs(bed-bedlast)))
                 IF(tmp/(DT1*writfreq)<1.0e-12_dp) THEN
+                    print*, 'Converged due to small bed changes'
                     goto 373 !Converged: Go to the end of this loop
                     !exit
                     !sconc = sconc*0.5_dp
@@ -719,7 +720,7 @@ DO Q_loop= 1, no_discharges!15
 
     END DO ! End of timestepping loop 
         
-        373 print*, "converged, Q_loop=", Q_loop, "j =", j
+        373 print*, "run finished, Q_loop=", Q_loop, "j =", j
         !stop
 END DO ! End of loop for different Q_loops
 
