@@ -167,7 +167,7 @@ einstein_j1<-function(z,E, n=10){
 }
 
 
-test_susdist<-function(ys, bed, water, Cbed, Es, wset, qby, aref, ustar, num_z = 1000){
+test_susdist<-function(ys, bed, water, Cbed, Es, wset, qby, aref, ustar, num_z =5000){
     # Function to check the numerical solution of the suspended sediment
     # distribution equation when the channel is at equilibrium:
     #
@@ -195,7 +195,7 @@ test_susdist<-function(ys, bed, water, Cbed, Es, wset, qby, aref, ustar, num_z =
     #         coordinate.
 
 
-    # a = 10
+    # a = 2
     # tmp = test_susdist( ys[a,],h[a,],0.0, Cbed[a,],Qe[a,], 0.014,Qby[a,],a_ref[a,], sqrt(tau[a,]/1026) )
 
     # Deposition rate    
@@ -233,10 +233,9 @@ test_susdist<-function(ys, bed, water, Cbed, Es, wset, qby, aref, ustar, num_z =
     # Calculate the lateral eddy viscosity, with a Parabolic model
     epsy = c*NA
     for (i in 1:length(ys)){
-        dpth_nonneg = pmax(zs-bed[i],0.0)
-        parabola = pmin(dpth_nonneg)*
+        parabola = pmax(zs-bed[i],0.0)*
                    pmin(water-zs,(water-bed[i]))
-        epsy[,i] = 0.4*ustar[i]*(water-bed[i])*parabola/(0.5*(water-bed[i]))^2
+        epsy[,i] = 0.4*ustar[i]*(water-bed[i])*parabola/(.25*(water-bed[i])^2)
     }
     
 
@@ -251,7 +250,7 @@ test_susdist<-function(ys, bed, water, Cbed, Es, wset, qby, aref, ustar, num_z =
 
     # Finally, calculate integrated lateral flux
     integrand = dcdy_h*epsy_h
-    dz = diff(zs)
+    dz = zs[2]-zs[1]#diff(zs)
     Fl_h = dcdy_h[1,]*NA
     for(i in 1:(length(bed)-1)){
         Fl_h[i] =  # Trapezoidal integration
@@ -270,7 +269,7 @@ Rouse<-function(z,bed, water,aref,wset,ustar){
     f = z*NA # Predefine the profile
 
     # Find indexes where f has real values (i.e. above the bed)
-    inds = which(z > bed + aref)
+    inds = which(z >= bed + aref)
     if((length(inds)>0)&(ustar>0)){
 
         zstar = wset/(ustar*0.4) 

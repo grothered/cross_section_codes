@@ -110,6 +110,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
 
                 ! Compute rouse integral factor using a function
                 zetamult(i) = rouse_int(z,a_ref(i)/depth(i))
+                zetamult(i) = zetamult(i)*depth(i) ! Cludge to get make zetamult satisfy Cbar*d = cbed*zetamult
                 !if(i==a/2) print*, 'ri, ', zetamult(i)/depth(i), z
             END DO
 
@@ -465,7 +466,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
         ! Lat sus flux at i+1/2
         ! e.g. lat_sus_flux(1) = flux at 1/2
         !      lat_sus_flux(a+1) = flux at a+1/2
-        lat_sus_flux(i+1) =-int_edif_f(i+1)*(cbed_tmp1-cbed_tmp2)/(ys_temp(i+1)-ys_temp(i))
+        lat_sus_flux(i+1) = -int_edif_f(i+1)*(cbed_tmp1-cbed_tmp2)/(ys_temp(i+1)-ys_temp(i))
         lat_sus_flux(i+1) = lat_sus_flux(i+1) -0.5_dp*(cbed_tmp1 + cbed_tmp2)*int_edif_dfdy(i+1) 
     END DO 
     ! Sometimes, the near bed diffusive flux can lead to small negative values
@@ -732,14 +733,7 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
         bedh = 0.5_dp*(bed_tmp(i)+bed_tmp(i-1))
         arefh = 0.5_dp*(aref_tmp(i)+aref_tmp(i-1))
 
-        eps_z =0.5_dp*( 0.1_dp*ustar_tmp(i)*max(water-bed_tmp(i),0.0_dp) + &
-                        0.1_dp*ustar_tmp(i-1)*max(water-bed_tmp(i-1),0.0_dp)) 
-        eps_z = max(eps_z,1.0e-08_dp) 
-
-        ! Define depsz/dy, daref/dy and dbed/dy, dustar/dy at i-1/2
-        depsz_dy = ( 0.1_dp*ustar_tmp(i)*max(water-bed_tmp(i),0.0_dp) - &
-                     0.1_dp*ustar_tmp(i-1)*max(water-bed_tmp(i-1),0.0_dp) &
-                     )/(ys_tmp(i)-ys_tmp(i-1))
+        ! Define daref/dy and dbed/dy, dustar/dy at i-1/2
         daref_dy = (aref_tmp(i) - aref_tmp(i-1))/(ys_tmp(i)-ys_tmp(i-1)) 
         dbed_dy = (bed_tmp(i) - bed_tmp(i-1))/(ys_tmp(i)-ys_tmp(i-1)) 
         dus_dy = (ustar_tmp(i) - ustar_tmp(i-1))/(ys_tmp(i)-ys_tmp(i-1)) 
@@ -748,6 +742,15 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
         ! Create vertical suspended sediment profile
         SELECT CASE(sus_vert_prof) 
             CASE('exp') 
+                ! Vertical eddy diffusivity
+                eps_z =0.5_dp*( 0.1_dp*ustar_tmp(i)*max(water-bed_tmp(i),0.0_dp) + &
+                                0.1_dp*ustar_tmp(i-1)*max(water-bed_tmp(i-1),0.0_dp)) 
+                eps_z = max(eps_z,1.0e-08_dp) 
+
+                depsz_dy = ( 0.1_dp*ustar_tmp(i)*max(water-bed_tmp(i),0.0_dp) - &
+                             0.1_dp*ustar_tmp(i-1)*max(water-bed_tmp(i-1),0.0_dp) &
+                             )/(ys_tmp(i)-ys_tmp(i-1))
+
                 !z_tmp = elevation above bed = at 0.5, 1.5, ... 99.5 * depth/no_subints.0 
                 z_tmp = bedh + (d/no_subints*1.0_dp)*( (/ (j,j=1,no_subints) /)*1.0_dp-0.5_dp)
 
