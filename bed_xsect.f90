@@ -602,7 +602,7 @@ SUBROUTINE update_bed(a, dT, water, Q, bed,ys,Area, bottom, ff,recrd, E, D,C,rmu
         END IF
 
         IF(abs(bedlast_tmp(i)-bed(i))>0.1_dp) THEN
-            print*, "bedjump", i, bedlast_tmp(i)-bed(i), bedlast_tmp(i), bed(i), Qe(i), C(i),&
+            print*, "bedjump in update_bed", i, bedlast_tmp(i)-bed(i), bedlast_tmp(i), bed(i), Qe(i), C(i),&
             Qd(i), dqbeddx(i)
         END IF
     END DO

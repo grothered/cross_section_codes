@@ -90,7 +90,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
             DO i=1, a
                 IF((eddif_z(i)>0._dp).and.(depth(i)>0.0e-00_dp)) THEN 
                     ! Ikeda and Izumi (1991)
-                    zetamult(i)= eddif_z(i)/depth(i)*wset*(1._dp-exp(-(wset/eddif_z(i))*max(depth(i),0._dp)) )
+                    zetamult(i)= eddif_z(i)/depth(i)*wset*(1._dp-exp(-(wset/eddif_z(i))*depth(i)) )
                 ELSE 
                     zetamult(i)=1.0e-08_dp !1.0e-04_dp
                 END IF
@@ -103,13 +103,12 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
                 IF(abs(tau(i))>0.0_dp) THEN
                     ! Rouse number
                     z = wset/(0.4_dp*sqrt(tau(i)/rho)) 
+                    ! Compute rouse integral factor using a function
+                    zetamult(i) = rouse_int(z,a_ref(i)/depth(i))
                 ELSE
                     zetamult(i) = 0.0_dp
-                    CYCLE
                 END IF
 
-                ! Compute rouse integral factor using a function
-                zetamult(i) = rouse_int(z,a_ref(i)/depth(i))
             END DO
 
         ! Catch errors
@@ -617,7 +616,7 @@ REAL(dp) FUNCTION rouse_int(z,d_aref)
         !FIXME: Check that the 0.3 above is okay -- the Guo and Julien algorithm
         ! should theoretically converge for d_aref<0.5_dp, although I had some
         ! experiences which made me want to use a lower threshold than this.
- 
+
         ! Very shallow = nearly uniform suspension?
         ! FIXME: Perhaps this should be evaluated with a trapezoidal type
         ! algorithm?
@@ -833,13 +832,29 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
 
         ! Create horizontal eddy diffusivity profile     
         SELECT CASE(edify_model)
+
             CASE('constant')
-                edify = 0.24*d*us ! Constant
+                IF(d>0.0_dp) THEN
+                    edify = 0.24*d*us ! Constant
+                ELSE
+                    edify = 0.0_dp
+                END IF
+
             CASE('Parabolic')
-                edify = 0.4_dp*us*d*(z_tmp-bedh)*(water-z_tmp)/(0.25_dp*d**2) ! Parabolic
+                IF(d>0.0_dp) THEN
+                    edify = 0.4_dp*us*d*(z_tmp-bedh)*(water-z_tmp)/(0.25_dp*d**2) ! Parabolic
+                ELSE
+                    edify=0.0_dp
+                END IF
+
             CASE('Parabola_const')
                 ! Parabolic lower half, constant upper half
-                edify = 0.4_dp*us*d*min(z_tmp-bedh, d*0.5_dp)*max(water-z_tmp,d*0.5_dp)/(0.25_dp*d**2)
+                IF(d>0.0_dp) THEN
+                    edify = 0.4_dp*us*d*min(z_tmp-bedh, d*0.5_dp)*max(water-z_tmp,d*0.5_dp)/(0.25_dp*d**2)
+                ELSE
+                    edify=0.0_dp
+                END IF
+
             CASE DEFAULT
                 print*, 'ERROR: Invalid value of edify_model in int_edify_f'
                 stop

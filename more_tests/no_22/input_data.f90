@@ -46,7 +46,7 @@ tbston=.true. !When true (false) this term switches on (off) the sqrt(1+slopes^2
 layers=1 !The number of bed layers
 lincrem = 1000.031 ! The distance between bed layers (m). Set it to a very high number to avoid the multi bed layers having any influence.
 mu = 10000.60 !Angle of repose - this can be used to influence the critical shear stress if the code is adjusted
-failure_slope = 1.0 ! Slope at which mass failure occurs.
+failure_slope = 1000.0 ! Slope at which mass failure occurs.
 tauinc = 0.00 ! A DEFUNCT constant (Pa)
 erconst = 0.15 ! The constant determining the min critical shear and the critical shear increment
 taucrit_slope_reduction=.FALSE. ! Is taucrit reduced on lateral slopes?
@@ -71,7 +71,7 @@ sus_vert_prof='Rouse' !'exp', 'Rouse'
 edify_model='Parabolic' ! 'Constant', 'Parabolic', 'Parabola_const'
 x_len_scale=1000.0 ! x length scale. In dynamic_sus_dist dC/dx ~= (C -k*C)/x_len_scale
 sus2d = .false. !Do we use a fully 2d suspended sediment - this is only applicable to the case with many cross sections strung together - the quasi 2d model.
-norm=.FALSE. !Is erosion to be directed normal to the bed?
+norm=.TRUE. !Is erosion to be directed normal to the bed?
 vertical=.true. !Is the vertical shear method (SKM) to be used (support for Pizzuto method may not be complete, and in this case it should be .true.
 
 readin = .FALSE. !Do we read the initial conditions from a file?
