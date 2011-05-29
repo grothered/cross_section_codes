@@ -21,8 +21,8 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     ! We solve the equation
     !
     ! depth d (Cbar) / dt + U*depth dCbar/dx +
-    ! V*depth* d(Cbar)/dy - d/dy( Fl ) -
-    ! (Es - ws*cb) = 0.
+    ! V*depth* d(Cbar)/dy = - d/dy( Fl ) +
+    ! (Es - ws*cb)
     !
     ! With suitable approximations for dCbar/dx and V, and if needed, numerical
     ! integration to calculate Fl (the lateral flux)
@@ -240,7 +240,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
             ! Method with vertically constant lateral eddy diffusivity
             ! This does not require numerical integration to calculate the
             ! lateral flux:
-            ! int ( eddif_y * d(cb*f)/dy ) dz
+            ! Fl = -int ( eddif_y * d(cb*f)/dy ) dz
             ! -- so is much faster than the case with vertically
             ! variable lateral eddy diffusivity. 
             ! Note though that the code for the case with vertically variable
@@ -277,15 +277,15 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
             tmp1 = 0.5_dp*(eddif_y(i+1)+eddif_y(i))/(dy_outer*(ys_temp(i+1) - ys_temp(i)))
             IF(i<a) THEN
                 ! 2 point derivative approx
-                M1_upper(i) = M1_upper(i) + tmp1*depth(i+1)
-                M1_diag(i)  = M1_diag(i)  - tmp1*depth(i)
+                M1_upper(i) = M1_upper(i) - tmp1*depth(i+1)
+                M1_diag(i)  = M1_diag(i)  + tmp1*depth(i)
             END IF
      
             tmp1 = 0.5_dp*(eddif_y(i) + eddif_y(i-1))/((ys_temp(i) - ys_temp(i-1))*dy_outer)
             IF(i>1) THEN
                 ! 2 point derivative approx
-                M1_diag(i)  = M1_diag(i)  - tmp1*depth(i)
-                M1_lower(i) = M1_lower(i) + tmp1*depth(i-1)
+                M1_diag(i)  = M1_diag(i)  + tmp1*depth(i)
+                M1_lower(i) = M1_lower(i) - tmp1*depth(i-1)
             END IF
             
             ! d/dy ( eddify* dbed/dy * cb)
@@ -297,8 +297,8 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
 
             IF(i<a) THEN
                 !Estimate of 1/dy_outer*(eddify* dbed/dy *cb) at i+1/2
-                M1_upper(i) = M1_upper(i) + 0.5_dp*tmp1/zetamult(i+1)  ! Note that 1.0/zetamult(i)*Cbar = cb
-                M1_diag(i)  = M1_diag(i)  + 0.5_dp*tmp1/zetamult(i)
+                M1_upper(i) = M1_upper(i) - 0.5_dp*tmp1/zetamult(i+1)  ! Note that 1.0/zetamult(i)*Cbar = cb
+                M1_diag(i)  = M1_diag(i)  - 0.5_dp*tmp1/zetamult(i)
             END IF
 
             ! Compute eddify*dbed/dy at i-1/2
@@ -308,15 +308,15 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
 
             IF(i>1) THEN
                 !Estimate of 1/dy_outer*(eddify*dbed/dy*cb) at i-1/2
-                M1_diag(i)   = M1_diag(i)   - 0.5_dp*tmp1/zetamult(i)  ! Note that 1.0/zetamult(i)*Cbar = cb
-                M1_lower(i)  = M1_lower(i)  - 0.5_dp*tmp1/zetamult(i-1)
+                M1_diag(i)   = M1_diag(i)   + 0.5_dp*tmp1/zetamult(i)  ! Note that 1.0/zetamult(i)*Cbar = cb
+                M1_lower(i)  = M1_lower(i)  + 0.5_dp*tmp1/zetamult(i-1)
             END IF
  
         ELSE
             ! Case with vertically variable eddy diffusivity. This requires
             ! numerical integration to calculate the flux terms. We calculate
             !
-            ! int( Fl) dz = int( eddif_y* d(cb*f)/dy ) dz
+            ! int( Fl) dz =  - int( eddif_y* d(cb*f)/dy ) dz
             !
             ! where eddif_y is the lateral eddy diffusivity, which varies with
             ! z, and f defines the vertical profile of suspended sediment
@@ -343,28 +343,28 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
             tmp2 = 1.0_dp/(ys_temp(i+1)-ys_temp(i))
             IF(i<a) THEN
                 ! 2 point derivative approx -- note cb = Cbar/zetamult
-                M1_upper(i) = M1_upper(i) + tmp1*tmp2*int_edif_f(i+1)/zetamult(i+1)
-                M1_diag(i)  = M1_diag(i)  - tmp1*tmp2*int_edif_f(i+1)/zetamult(i)
+                M1_upper(i) = M1_upper(i) - tmp1*tmp2*int_edif_f(i+1)/zetamult(i+1)
+                M1_diag(i)  = M1_diag(i)  + tmp1*tmp2*int_edif_f(i+1)/zetamult(i)
             END IF
 
             tmp2 = 1.0_dp/(ys_temp(i)-ys_temp(i-1))
             IF(i>1) THEN
                 ! 2 point derivative approx
-                M1_diag(i)  = M1_diag(i)  - tmp1*tmp2*int_edif_f(i)/zetamult(i)
-                M1_lower(i) = M1_lower(i) + tmp1*tmp2*int_edif_f(i)/zetamult(i-1)
+                M1_diag(i)  = M1_diag(i)  + tmp1*tmp2*int_edif_f(i)/zetamult(i)
+                M1_lower(i) = M1_lower(i) - tmp1*tmp2*int_edif_f(i)/zetamult(i-1)
             END IF
             
 
             
             !! d/dy ( cb*INT(edify*df/dy )dz  )
             IF(i<a) THEN
-                M1_upper(i) = M1_upper(i) + 0.5_dp*tmp1*int_edif_dfdy(i+1)/zetamult(i+1)  ! Note that 1/zetamult(i)*Cbar = cb
-                M1_diag(i)  = M1_diag(i)  + 0.5_dp*tmp1*int_edif_dfdy(i+1)/zetamult(i)
+                M1_upper(i) = M1_upper(i) - 0.5_dp*tmp1*int_edif_dfdy(i+1)/zetamult(i+1)  ! Note that 1/zetamult(i)*Cbar = cb
+                M1_diag(i)  = M1_diag(i)  - 0.5_dp*tmp1*int_edif_dfdy(i+1)/zetamult(i)
             END IF
             
             IF(i>1) THEN
-                M1_diag(i)   = M1_diag(i)   - 0.5_dp*tmp1*int_edif_dfdy(i)/zetamult(i)  ! Note that 1/zetamult(i)*Cbar = cb
-                M1_lower(i)  = M1_lower(i)  - 0.5_dp*tmp1*int_edif_dfdy(i)/zetamult(i-1)
+                M1_diag(i)   = M1_diag(i)   + 0.5_dp*tmp1*int_edif_dfdy(i)/zetamult(i)  ! Note that 1/zetamult(i)*Cbar = cb
+                M1_lower(i)  = M1_lower(i)  + 0.5_dp*tmp1*int_edif_dfdy(i)/zetamult(i-1)
             END IF 
         END IF
     END DO

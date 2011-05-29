@@ -21,7 +21,7 @@
 !!!!!!!!!!!!!!!!!!!!!
 
 nos = 2000 ! Number of spatial grid points
-writfreq = 2000 !24*5*5 ! The output is written every writfreq 'th timestep
+writfreq = 1!2000 !24*5*5 ! The output is written every writfreq 'th timestep
 jmax= 2000001!2000001 !1382400 !24*5*2*45*4*4*4*4*5 ! The number of time steps
 t = 0.00 ! Starting time (s)
 dT = 300.00 !Time step (s)
@@ -67,7 +67,7 @@ talmon=.FALSE. !Do we use a talmon lateral bedload closure?
 resus_type = 'vanrijn' ! 'cohesive', 'vanrijn'
 
 susdist = .TRUE. !Do we have a laterally variable suspended load? This can ONLY treat the case of steady state. The total load flux (bedload + spsuended load) is assumed to be integrated_load_flux
-sus_vert_prof='exp' !'exp', 'Rouse'
+sus_vert_prof='Rouse' !'exp', 'Rouse'
 edify_model='Parabolic' ! 'Constant', 'Parabolic', 'Parabola_const'
 x_len_scale=100000.0 ! x length scale. In dynamic_sus_dist dC/dx ~= (C -k*C)/x_len_scale
 sus2d = .false. !Do we use a fully 2d suspended sediment - this is only applicable to the case with many cross sections strung together - the quasi 2d model.
