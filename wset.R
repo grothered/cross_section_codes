@@ -168,21 +168,28 @@ einstein_j1<-function(z,E, n=10){
 
 
 test_susdist<-function(ys, bed, water, Cbed, Es, wset, qby, aref, ustar, num_z =
-        5000, c_return=FALSE ){
-    # Function to check the numerical solution of the suspended sediment
-    # distribution equation when the channel is at equilibrium:
-    #
-    # d(F_l)/dy = Es - Ds
-    #
-    # and equivalently:
-    #
-    # F_l + qb_l = 0
-    #
-    # We do this by taking the model output, using it to estimate the
-    # appropriate terms, and then seeing if they balance.  An important aspect
-    # is that this routine is coded independently of the original model (so we
-    # do not copy-and-paste previous errors), and uses slightly different
-    # calculation procedures.
+        1000, c_return=FALSE ){
+    # Function to calculate the lateral flux of suspended load Fl, as a check on
+    # the fortran code
+    
+    # We do this by taking the fortran model output, using it to estimate Fl,
+    # and then comparing this with Fl in the fortran code. This is a useful way
+    # to debug (code twice!) -- I actually found a fundamental bug this way.  An
+    # important aspect is that this routine is coded independently of the
+    # original model (so we do not copy-and-paste previous errors), and uses
+    # slightly different calculation procedures. 
+
+    # This R code actually uses a method which is much less efficient than the
+    # fortran code, such that to get the R code to agree well with the fortran
+    # version, you need a lot of points in the (fortran) input. Basically, this
+    # happens because in the R version we calculate the lateral flux by
+    # numerically differentiating the suspended sediment concentration for every
+    # value of z, and the integrating this * (eddy diffusivity) in the vertical.
+    # The problem is that when the bed increases or decreases, we cannot
+    # numerically evaluate dc/dy near the bed in the R version of the code. The
+    # fortran version of the code avoids this problem by using the chain rule to
+    # avoid having to numerically calculate dc/dy for all z -- which has the
+    # advantage of being much more accurate. 
 
     # ys = y value
     # bed = bed elevation
@@ -197,7 +204,7 @@ test_susdist<-function(ys, bed, water, Cbed, Es, wset, qby, aref, ustar, num_z =
 
 
     # a = 2
-    # tmp = test_susdist( ys[a,],h[a,],0.0, Cbed[a,],Qe[a,], 0.014,Qby[a,],a_ref[a,], sqrt(tau[a,]/1026) )
+    # tmp = test_susdist( ys[a,],h[a,],0.0, Cbed[a,],Qe[a,], 0.016,Qby[a,],a_ref[a,], sqrt(tau[a,]/1026) )
 
     # Deposition rate    
     Ds = wset*Cbed
@@ -222,7 +229,7 @@ test_susdist<-function(ys, bed, water, Cbed, Es, wset, qby, aref, ustar, num_z =
     zs = seq(min(bed), water, len=num_z) # z coordinate
     f = zs*NA
     for (i in 1:length(ys)){
-        print(i)     
+        #print(i)     
         #for(j in 1:num_z){
             #print(c(i,j))
         f = Rouse(zs, bed[i], water, aref[i], wset, ustar[i])
@@ -247,7 +254,6 @@ test_susdist<-function(ys, bed, water, Cbed, Es, wset, qby, aref, ustar, num_z =
     for(i in 1:(length(bed)-1)){
         dcdy_h[,i] = (c[,i+1] -c[,i])/(ys[i+1]-ys[i]) 
         epsy_h[,i] = 0.5*(epsy[,i+1]+epsy[,i])
-        
     }
 
     # Finally, calculate integrated lateral flux

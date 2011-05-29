@@ -18,7 +18,7 @@ REAL(dp):: wslope, ar, Q, t, &
             qby,v, bedlast, hss, tss, ddd, hss2, handy, dqbeddx, &
             epsl,epsu, slopes, E, D, C, rmult,Area, inuc, NN,&
              Width,C0,waterlast, dt, slpmx,sllength, vel, &
-            integrated_load_flux, DT1,DT1_old, tau_g, f_g, Cbar, &
+            DT1,DT1_old, tau_g, f_g, Cbar, &
             taucrit_dep, hlim, mor, Arealast, taucrit_dep_ys, &
             ht,vlast, dst, taucrit, mu, & 
             tauinc, erconst, lifttodrag, vegdrag, sconc, rho, ysold, &
@@ -42,7 +42,7 @@ NAMELIST /inputdata/ nos,writfreq,jmax, layers, hlim, mor, mu, tauinc,&
                 g, kvis, norm, &
                 vertical, lambdacon, alpha, tbston, normmov, sus2d, &
                 Qbedon, susQbal, TR, talmon, variable_timestep, & 
-                integrated_load_flux, friction_type, no_discharges, &
+                friction_type, no_discharges, &
                 discharges, susconcs, high_order_shear, &
                 high_order_bedload, high_order_Cflux, grain_friction_type, &
                 resus_type, bedload_type, sus_vert_prof, edify_model, &
@@ -545,7 +545,7 @@ DO Q_loop= 1, no_discharges!15
                             Qe(l:u), Qbed(l:u), wset, dqbeddx(l:u), rhos, voidf, d50, g, &
                             kvis, norm, vertical, lambdacon, tbston,&
                             Qbedon, normmov, sus2d, ysl, ysu, bedl,bedu, iii, bedlast(l:u), &
-                            susQbal, talmon, high_order_bedload) 
+                            talmon, high_order_bedload) 
 
             ! Correct the banks. In the case that we allow bedload at l-1/2 and
             ! u+1/2, this is very important to ensure mass conservation, because

@@ -445,24 +445,6 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     END IF
    
 
-    ! Store the lateral flux of suspended load = -cb*int_edif_dfdy -
-    ! dcb/dy*int_edif_f
-        lat_sus_flux = 0.0_dp
-    DO i=0,a
-        ! Near bed suspended sediment concentration at i+1, i
-        IF((i<a).and.(i>0)) THEN
-            cbed_tmp1 = Cbar(i+1)/zetamult(i+1) ! cbed(i)
-            cbed_tmp2 = Cbar(i)/zetamult(i) ! cbed(i)
-        ELSE
-            cbed_tmp1 = 0.0_dp
-            cbed_tmp2 = 0.0_dp
-        END IF
-        ! Lat sus flux at i+1/2
-        ! e.g. lat_sus_flux(1) = flux at 1/2
-        !      lat_sus_flux(a+1) = flux at a+1/2
-        lat_sus_flux(i+1) = -int_edif_f(i+1)*(cbed_tmp1-cbed_tmp2)/(ys_temp(i+1)-ys_temp(i))
-        lat_sus_flux(i+1) = lat_sus_flux(i+1) -0.5_dp*(cbed_tmp1 + cbed_tmp2)*int_edif_dfdy(i+1) 
-    END DO 
     ! Sometimes, the near bed diffusive flux can lead to small negative values
     ! of Cbed being predicted right near the channel edge. This is because when
     ! the depth is changing by order of magnitude (e.g. from 1.0e-05 to 1.0e-02)
@@ -529,6 +511,25 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     END IF 
 
     
+    ! Store the lateral flux of suspended load = -cb*int_edif_dfdy -
+    ! dcb/dy*int_edif_f
+    lat_sus_flux = 0.0_dp
+    DO i=0,a
+        ! Near bed suspended sediment concentration at i+1, i
+        IF((i<a).and.(i>0)) THEN
+            cbed_tmp1 = Cbar(i+1)/zetamult(i+1) ! cbed(i)
+            cbed_tmp2 = Cbar(i)/zetamult(i) ! cbed(i)
+        ELSE
+            cbed_tmp1 = 0.0_dp
+            cbed_tmp2 = 0.0_dp
+        END IF
+        ! Lat sus flux at i+1/2
+        ! e.g. lat_sus_flux(1) = flux at 1/2
+        !      lat_sus_flux(a+1) = flux at a+1/2
+        lat_sus_flux(i+1) = -int_edif_f(i+1)*(cbed_tmp1-cbed_tmp2)/(ys_temp(i+1)-ys_temp(i))
+        lat_sus_flux(i+1) = lat_sus_flux(i+1) -0.5_dp*(cbed_tmp1 + cbed_tmp2)*int_edif_dfdy(i+1) 
+    END DO 
+
     ! Calculate total sediment flux at time = t, 
     ! We will use this to compute the x derivative terms
     ! in dynamic_sus_dist and update_bed
@@ -711,12 +712,12 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
     ys_tmp(a+1) = ysu
 
     ustar_tmp(1:a) = ustar
-    ustar_tmp(0)   = 0.0_dp
-    ustar_tmp(a+1) = 0.0_dp
+    ustar_tmp(0)   = ustar(1)
+    ustar_tmp(a+1) = ustar(a)
     
     aref_tmp(1:a) = a_ref(1:a)
-    aref_tmp(0)   = 0._dp !a_ref(1)
-    aref_tmp(a+1) = 0._dp !a_ref(a)
+    aref_tmp(0)   = a_ref(1)
+    aref_tmp(a+1) = a_ref(a)
 
     ! Loop through (0.5, 1.5, ... a+0.5) to compute integrals
     DO i=1,a+1
@@ -752,7 +753,7 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
                 f = exp(-wset/eps_z*(z_tmp-bedh))
                 
                 ! df/dy = df/deps_z * deps_z/dy + df/dbed*dbed/dy
-                df_dy = +wset*(z_tmp-bedh)/eps_z**2*f*depsz_dy + &
+                df_dy = wset*(z_tmp-bedh)/eps_z**2*f*depsz_dy + &
                                 wset/eps_z*f*dbed_dy
 
             CASE('Rouse')

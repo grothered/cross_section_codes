@@ -213,14 +213,14 @@ END SUBROUTINE calc_resus_bedload
 SUBROUTINE update_bed(a, dT, water, Q, bed,ys,Area, bottom, ff,recrd, E, D,C,rmu,a2, inuc,tau,taug,NN, &
     counter,slopes, hlim,mor,taucrit_dep,layers, taucrit_dep_ys, nos, taucrit, vegdrag, susdist,rho, Qe, Qbed, & 
     wset,dqbeddx, rhos, voidf, d50, g, kvis, norm, vertical, lambdacon, tbston, Qbedon, normmov,sus2d,ysl, & 
-    ysu,bedl,bedu,iii, bedlast, susQbal, talmon, high_order_bedload)
+    ysu,bedl,bedu,iii, bedlast, talmon, high_order_bedload)
 
     INTEGER, INTENT(IN)::a,a2,counter,layers, nos, iii
     REAL(dp), INTENT(IN)::water,Q, Area, bottom, ff, hlim,mor, vegdrag, dt, rho, Qbed, Qe, dqbeddx, &
         rhos, voidf, d50, g, kvis,wset, lambdacon, ysl,ysu, bedlast, taug,C !QbedI, dQbedI
     REAL(dp), INTENT(IN OUT):: bed, recrd, E, D,rmu,inuc,tau, NN, ys,taucrit_dep, taucrit_dep_ys, slopes, & 
         taucrit, bedu, bedl
-    LOGICAL, INTENT(IN):: susdist, norm, vertical, tbston, Qbedon, normmov, sus2d, susQbal, talmon, high_order_bedload
+    LOGICAL, INTENT(IN):: susdist, norm, vertical, tbston, Qbedon, normmov, sus2d, talmon, high_order_bedload
     DIMENSION bed(a),ys(a), ff(a),recrd(0:a),tau(a),taug(a), NN(a),slopes(a),taucrit_dep(nos,layers),C(a),&
         taucrit_dep_ys(nos),taucrit(nos,0:layers), vegdrag(a), Qbed(a), Qe(a), dqbeddx(a), bedlast(a) ! 
 

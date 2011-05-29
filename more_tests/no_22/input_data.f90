@@ -33,7 +33,7 @@ Width = 150.0 !Width of computational domain (m)
 
 no_discharges = 7
 Discharges = 6.44    6.44    6.44    6.44    6.44    6.44    6.44 
-susconcs =   5.0e-04 2.0e-04 1.0e-04 5.0e-05 1.0e-05 5.0e-06 0.0e-06 !manning=.true. !Do we use a manning friction factor? If not, then we use a Darcy Weisbach friction factor, calculated as f=man_n**2*8.*9.8 -i.e., the equivalent manning friction value if the depth were 1 everywhere. Hence, the variable man_n is used to set either a manning or darcy friction. Same deal for vegetation drag
+susconcs =   2.0e-04 1.0e-04 7.5e-05 5.0e-05 1.0e-05 5.0e-06 0.0e-06 !manning=.true. !Do we use a manning friction factor? If not, then we use a Darcy Weisbach friction factor, calculated as f=man_n**2*8.*9.8 -i.e., the equivalent manning friction value if the depth were 1 everywhere. Hence, the variable man_n is used to set either a manning or darcy friction. Same deal for vegetation drag
 friction_type = 'manning' !'manning'!, 'darcy', 'vanrijn', 'ks'
 grain_friction_type  = 'vanrijn' ! 'vanrijn', 'colebrook', 'onethird','one' -- model for bed shear acting on grains 
 rough_coef =0.03 ! A value depending on the friction type. if 'manning' = Mannings n for the basic bed, if 'ks' = value of ks, if 'darcy' = f, etc, if 'vanrijn', then the value is not used.
@@ -61,17 +61,15 @@ d50 = 0.000177 !0.000062 ! median grain size for bedload formula (m)
 g = 9.8 !Gravity (m/s^2)
 kvis = 1.0E-06 !Kinematic viscosity of water. 
 alpha=0.00228 !The constant for the erosion formula E= alpha*(tau-taue)/sqrt(taue)
-Qbedon=.TRUE. !Is bedload active
+Qbedon=.FALSE. !Is bedload active
 bedload_type='vanrijn' ! 'mpm', 'vanrijn'
 talmon=.FALSE. !Do we use a talmon lateral bedload closure?
 resus_type = 'vanrijn'! ! 'cohesive', 'vanrijn', 'smithmac'
 
-susdist = .TRUE. !Do we have a laterally variable suspended load? This can ONLY treat the case of steady state. The total load flux (bedload + spsuended load) is assumed to be integrated_load_flux
+susdist = .TRUE. !Do we have a laterally variable suspended load? 
 sus_vert_prof='Rouse' !'exp', 'Rouse'
 edify_model='Parabolic' ! 'Constant', 'Parabolic', 'Parabola_const'
 x_len_scale=1000.0 ! x length scale. In dynamic_sus_dist dC/dx ~= (C -k*C)/x_len_scale
-susQbal= .FALSE. !Is there a balance between the lateral flux of suspended load and bedload? Only relevant if susdist=.true.
-integrated_load_flux= -1.0 !The total flux (suspended load + bedload) through the cross-section, in kg/s =  (kg/m^3)*m^2*m/s. Only used if susdist=.true., but NOT in dynamic_sus_dist, which is presently in favour. Hence I set it negative.
 sus2d = .false. !Do we use a fully 2d suspended sediment - this is only applicable to the case with many cross sections strung together - the quasi 2d model.
 norm=.FALSE. !Is erosion to be directed normal to the bed?
 vertical=.true. !Is the vertical shear method (SKM) to be used (support for Pizzuto method may not be complete, and in this case it should be .true.
