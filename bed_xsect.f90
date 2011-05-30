@@ -12,7 +12,7 @@ contains
 SUBROUTINE calc_resus_bedload(a, dT, water, Q, bed,ys,Area, bottom, ff,recrd, E, D,C, wset, rmu,a2, inuc,tau,vel,NN & 
     ,counter,slopes, hlim,mor,taucrit_dep,layers, taucrit_dep_ys, nos, taucrit, vegdrag, susdist, rho, Qe, Qbed, rhos,& 
     voidf, dsand, d50, g, kvis, norm, vertical,alpha, tbston, Qbedon, ysl,ysu,bedl,bedu, resus_type, bedload_type, a_ref) 
-    ! Calculate the rate of resuspension and bedload transport over a
+    ! Purpose: Calculate the rate of resuspension and bedload transport over a
     ! cross-section
 
     INTEGER, INTENT(IN)::a,a2,counter,layers, nos
@@ -214,6 +214,7 @@ SUBROUTINE update_bed(a, dT, water, Q, bed,ys,Area, bottom, ff,recrd, E, D,C,rmu
     counter,slopes, hlim,mor,taucrit_dep,layers, taucrit_dep_ys, nos, taucrit, vegdrag, susdist,rho, Qe, Qbed, & 
     wset,dqbeddx, rhos, voidf, d50, g, kvis, norm, vertical, lambdacon, tbston, Qbedon, normmov,sus2d,ysl, & 
     ysu,bedl,bedu,iii, bedlast, talmon, high_order_bedload)
+    ! Purpose: Solve the sediment continuity equation to update the channel bed.
 
     INTEGER, INTENT(IN)::a,a2,counter,layers, nos, iii
     REAL(dp), INTENT(IN)::water,Q, Area, bottom, ff, hlim,mor, vegdrag, dt, rho, Qbed, Qe, dqbeddx, &
@@ -746,9 +747,9 @@ END SUBROUTINE qbh_approx
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!
 SUBROUTINE dbeddyH_approx(a,ys,bed, dbeddyH, ysl, ysu, bedl, bedu, order)
-! This routine takes ys, bed, and calculates the coefficients b1, b2, b3, b4,
-! where dhdy_(i+1/2) = b1*bed(i-1) + b2*bed(i) + b3*bed(i+1) + b4*bed(i+2)
-! These are stored in dbeddyH
+! Purpose: This routine takes ys, bed, and calculates the coefficients b1, b2,
+! b3, b4, where dhdy_(i+1/2) = b1*bed(i-1) + b2*bed(i) + b3*bed(i+1) +
+! b4*bed(i+2) These are stored in dbeddyH
 ! The coefficients come from fitting a curve to the points, which is either a
 ! cubic (order =3), or a linear fit (order =2 -- note that a parabola gives the
 ! same answer though)
@@ -877,7 +878,9 @@ END SUBROUTINE dbeddyH_approx
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 SUBROUTINE basic_slope_limit(nos,ys,bed,failure_slope, remesh)
-    ! Basic routine to limit the absolute value of the lateral slope to be <= failure_slope
+    ! Purpose: Basic routine to limit the absolute value of the lateral slope to be <= failure_slope
+    ! Input: The channel geometry, and the slope at which the bank 'fails'
+    ! Output: The updated channel geometry
     INTEGER, INTENT(IN):: nos
     REAL(dp), INTENT(IN):: ys(nos), failure_slope
     REAL(dp), INTENT(IN OUT):: bed(nos)

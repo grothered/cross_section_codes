@@ -89,8 +89,9 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
             
             DO i=1, a
                 IF((eddif_z(i)>0._dp).and.(depth(i)>0.0e-00_dp)) THEN 
-                    ! Ikeda and Izumi (1991)
-                    zetamult(i)= eddif_z(i)/depth(i)*wset*(1._dp-exp(-(wset/eddif_z(i))*depth(i)) )
+                    ! Ikeda and Izumi (1991) relation, divided by depth as
+                    ! appropriate
+                    zetamult(i)= eddif_z(i)/(depth(i)*wset)*(1._dp-exp(-(wset/eddif_z(i))*depth(i)) )
                 ELSE 
                     zetamult(i)=1.0e-08_dp !1.0e-04_dp
                 END IF
@@ -168,7 +169,6 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
              
     DO i = 1, a
         !PRINT*, 'SANITY CHECK a'
-        IF(isnan(vd(i))) print*, 'vd(', i,') is NAN'
         IF(isnan(M1_diag(i))) print*, 'M1_diag(', i,') is NaN a'    
         IF(isnan(M1_lower(i))) print*, 'M1_upper(', i,') is NaN a'    
         IF(isnan(M1_upper(i))) print*, 'M1_upper(', i,') is NaN a'    
@@ -606,22 +606,12 @@ REAL(dp) FUNCTION rouse_int(z,d_aref)
     REAL(dp), INTENT(IN):: z, d_aref
 
     INTEGER:: i
-    REAL(dp):: db_const, F1, J1, j, E2, z2, perturb = 1.0e-05
+    REAL(dp):: db_const, F1, J1, j, E2, z2, perturb = 1.0e-05, eps, d_eps
    
     IF(z>10.0_dp) THEN
         ! If z>10.0, there is no suspended load, make a quick exit
         rouse_int = 0.0_dp 
         
-    ELSEIF(d_aref>0.3_dp) THEN
-        !FIXME: Check that the 0.3 above is okay -- the Guo and Julien algorithm
-        ! should theoretically converge for d_aref<0.5_dp, although I had some
-        ! experiences which made me want to use a lower threshold than this.
-
-        ! Very shallow = nearly uniform suspension?
-        ! FIXME: Perhaps this should be evaluated with a trapezoidal type
-        ! algorithm?
-        rouse_int = 0.9999_dp  
-
     ELSE
         !Proceed with the Guo and Julien algorithm        
 
@@ -637,16 +627,37 @@ REAL(dp) FUNCTION rouse_int(z,d_aref)
         db_const = ((1.0_dp-d_aref)/d_aref)**(-z2)
 
         ! Compute F1, eqn 8
-        F1 =((1.0_dp-d_aref)**z2)/d_aref**(z2-1.0_dp) 
-        E2 = d_aref/(1.0_dp-d_aref)
+        IF(d_aref<0.1_dp) THEN
+            ! Here is the Guo and Julien algorithm -- it reportedly only
+            ! converges in the infinite sum for d_aref<0.5. 
+            ! FIXME: I chose the 0.1 after some bad experiences, although I am
+            ! not sure about the convergence behaviour
+            F1 =((1.0_dp-d_aref)**z2)/d_aref**(z2-1.0_dp) 
+            E2 = d_aref/(1.0_dp-d_aref)
 
-        DO i=1,10
-            j=i*1.0_dp
-            F1 = F1 - z2*((-1)**j)/(j-z2)*(E2)**(j-z2)
-        END DO
+            DO i=1,10
+                j=i*1.0_dp
+                F1 = F1 - z2*((-1)**j)/(j-z2)*(E2)**(j-z2)
+            END DO
 
-        ! Compute J1, eqn 9
-        J1 = z2*pi/sin(z2*pi) -F1
+            ! Compute J1, eqn 9
+            J1 = z2*pi/sin(z2*pi) -F1
+
+        ELSE
+            ! Here we compute J1 using a brute-force trapezoidal rule
+            J1 = 0.0_dp
+
+            ! Trapezoidal Rule integration
+            d_eps = ((1.0_dp-d_aref)/100._dp)
+            DO i=1,100
+                ! Evaluate the function at at (0.5, 1.5, 2.5, ...99.5) / 100 of the
+                ! integration domain, 
+                eps = d_aref + ((i-0.5_dp))*d_eps
+                ! J1 = J1 + f(eps,z)*deps
+                J1 = J1 + ( (1.0_dp-eps)/eps)**(z)*d_eps
+            END DO       
+
+        END IF
 
         ! Compute the desired integration factor
         rouse_int=J1*db_const
