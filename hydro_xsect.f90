@@ -275,17 +275,21 @@ SUBROUTINE shear(nn,ys,bed,water,wslope,taus,ks, f,NNN,slopes, counter, Q, vegdr
     END IF
     
     ! BOUNDARY CONDITIONS 
-    ! Assume here that the momentum flux at 0+1/2 = 0 (so the system is not
-    ! losing any momentum)
+    ! Assume here that the momentum flux at (i=1/2) is 0 (so the system is not
+    ! losing any momentum), and same for (i=nn-1/2)
+    ! FIXME: I think this is still only momentum conservative if we have an even
+    ! grid?
     IF(.TRUE.) THEN
         ! Left boundary
-        alpht(1)=  0._dp - 1._dp/(.5_dp*(dyf(1)+(ys(1)-ysl)*(bed(1)-water)/(bed(1)-bedl)))*( (Bf(1))*1._dp/dyf(1)) 
+        !alpht(1)=  0._dp - 1._dp/(.5_dp*(dyf(1)+(ys(1)-ysl)*(bed(1)-water)/(bed(1)-bedl)))*( (Bf(1))*1._dp/dyf(1)) 
+        alpht(1)=  0._dp - 1._dp/(.5_dp*(dyf(1)+(ys(1)-ysl)))*( (Bf(1))*1._dp/dyf(1)) 
         alphb(1)= 0._dp
         diag(1)= rho*(f(1)/8._dp)*tbst(1) +rho*vegdrag(1)*(water-bed(1)) -alpht(1)  
        
         ! Right boundary 
         alpht(nn)=0._dp
-        alphb(nn)= 0._dp - 1._dp/(.5_dp*(dyf(nn-1)+(ysu-ys(nn) )*(water-bed(nn))/(bedu-bed(nn)) ))*((Bf(nn-1))*1._dp/dyf(nn-1))
+        !alphb(nn)= 0._dp - 1._dp/(.5_dp*(dyf(nn-1)+(ysu-ys(nn) )*(water-bed(nn))/(bedu-bed(nn)) ))*((Bf(nn-1))*1._dp/dyf(nn-1))
+        alphb(nn)= 0._dp - 1._dp/(.5_dp*(dyf(nn-1)+(ysu-ys(nn) ) ))*((Bf(nn-1))*1._dp/dyf(nn-1))
         diag(nn) =  rho*(f(nn)/8._dp)*tbst(nn)+rho*vegdrag(nn)*(water-bed(nn))  -alphb(nn) 
         !!!!!!!!
     END IF
