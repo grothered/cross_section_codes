@@ -722,8 +722,8 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
     ys_tmp(a+1) = ysu
 
     ustar_tmp(1:a) = ustar
-    ustar_tmp(0)   = ustar(1)
-    ustar_tmp(a+1) = ustar(a)
+    ustar_tmp(0)   = 0.0_dp !ustar(1)
+    ustar_tmp(a+1) = 0.0_dp !ustar(a)
     
     aref_tmp(1:a) = a_ref(1:a)
     aref_tmp(0)   = a_ref(1)
