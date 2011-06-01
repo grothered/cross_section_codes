@@ -522,8 +522,8 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
             cbed_tmp1 = 0.0_dp
             cbed_tmp2 = 0.0_dp
         END IF
-        ! Lat sus flux at i+1/2
-        ! e.g. lat_sus_flux(1) = flux at 1/2
+        ! Compute lat sus flux at i+1/2
+        ! e.g. lat_sus_flux(1) = flux at 1/2 
         !      lat_sus_flux(a+1) = flux at a+1/2
         lat_sus_flux(i+1) = -int_edif_f(i+1)*(cbed_tmp1-cbed_tmp2)/(ys_temp(i+1)-ys_temp(i))
         lat_sus_flux(i+1) = lat_sus_flux(i+1) -0.5_dp*(cbed_tmp1 + cbed_tmp2)*int_edif_dfdy(i+1) 
@@ -820,8 +820,8 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
                     ! Step4: df_dy = df/dbedh*dbedh/dy + df/aref*daref/dy + df/dus*dus/dy
                     df_dy = df_dbedh*dbed_dy + df_darefh*daref_dy + df_dus*dus_dy
                 ELSE
-                    !PRINT*, 'ERROR - d< aref in suspended_xsect (int_edify_f)', d, arefh, aref_tmp(i), aref_tmp(i-1), bed_tmp(i), bed_tmp(i-1)
-                    !stop
+                    PRINT*, 'ERROR - d< aref in suspended_xsect (int_edify_f)', d, arefh, aref_tmp(i), aref_tmp(i-1), bed_tmp(i), bed_tmp(i-1)
+                    stop
                     !z_tmp = elevation above bed = at 0.5, 1.5, ... 99.5 * depth/no_subints.0,
                     
                     ! adjusted so z>arefh 

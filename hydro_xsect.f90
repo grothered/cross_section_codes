@@ -278,7 +278,8 @@ SUBROUTINE shear(nn,ys,bed,water,wslope,taus,ks, f,NNN,slopes, counter, Q, vegdr
     ! Assume here that the momentum flux at (i=1/2) is 0 (so the system is not
     ! losing any momentum), and same for (i=nn-1/2)
     ! FIXME: I think this is still only momentum conservative if we have an even
-    ! grid?
+    ! grid? Because the 1/dy( F(i+1/2) - F(i-1/2)) is only conservative if dy
+    ! doesn't change?
     IF(.TRUE.) THEN
         ! Left boundary
         !alpht(1)=  0._dp - 1._dp/(.5_dp*(dyf(1)+(ys(1)-ysl)*(bed(1)-water)/(bed(1)-bedl)))*( (Bf(1))*1._dp/dyf(1)) 
