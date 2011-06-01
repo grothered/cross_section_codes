@@ -379,15 +379,15 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     END DO
 
     ! Erosion and deposition
-    IF(.TRUE.) THEN
-        DO i = 1, a
+    !IF(.TRUE.) THEN
+    !    DO i = 1, a
 
-            RHS(i) = RHS(i) +Qe(i)
-            M1_diag(i) = M1_diag(i) + wset/zetamult(i)  ! Note that 1/zetamult(i)*Cbar = cb
+    !        RHS(i) = RHS(i) +Qe(i)
+    !        M1_diag(i) = M1_diag(i) + wset/zetamult(i)  ! Note that 1/zetamult(i)*Cbar = cb
 
 
-        END DO
-    END IF
+    !    END DO
+    !END IF
 
     !Sanity-check
     DO i = 1, a
@@ -509,7 +509,8 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
         ! one in that paper that Steve Roberts pointed you to.
     END IF 
 
-    
+   
+ 
     ! Store the lateral flux of suspended load = -cb*int_edif_dfdy -
     ! dcb/dy*int_edif_f
     lat_sus_flux = 0.0_dp
@@ -528,6 +529,12 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
         lat_sus_flux(i+1) = -int_edif_f(i+1)*(cbed_tmp1-cbed_tmp2)/(ys_temp(i+1)-ys_temp(i))
         lat_sus_flux(i+1) = lat_sus_flux(i+1) -0.5_dp*(cbed_tmp1 + cbed_tmp2)*int_edif_dfdy(i+1) 
     END DO 
+
+    ! Add Erosion and deposition here using operator splitting
+    ! depth*dCbar/dt +wset*Cbed = Qe  
+    ! depth/dt*(Cbar_new -Cbar) + wset*(Cbar_new/zetamult) = Qe
+    ! Cbar_new( depth/dt + wset/zetamult) = Qe + depth/dt*Cbar
+    Cbar = (Qe + depth/delT*Cbar)/(depth/delT + wset/zetamult)
 
     ! Calculate total sediment flux at time = t, 
     ! We will use this to compute the x derivative terms
@@ -726,8 +733,8 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
     ustar_tmp(a+1) = 0.0_dp !ustar(a)
     
     aref_tmp(1:a) = a_ref(1:a)
-    aref_tmp(0)   = a_ref(1)
-    aref_tmp(a+1) = a_ref(a)
+    aref_tmp(0)   = 0.0_dp !a_ref(1)
+    aref_tmp(a+1) = 0.0_dp !a_ref(a)
 
     ! Loop through (0.5, 1.5, ... a+0.5) to compute integrals
     DO i=1,a+1
