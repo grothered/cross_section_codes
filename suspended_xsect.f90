@@ -534,7 +534,8 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     ! depth*dCbar/dt +wset*Cbed = Qe  
     ! depth/dt*(Cbar_new -Cbar) + wset*(Cbar_new/zetamult) = Qe
     ! Cbar_new( depth/dt + wset/zetamult) = Qe + depth/dt*Cbar
-    Cbar = (Qe + depth/delT*Cbar)/(depth/delT + wset/zetamult)
+    ! But note the re-scaling by 'rhos' which has happened above
+    Cbar = (Qe*rhos + depth/delT*Cbar)/(depth/delT + wset/zetamult)
 
     ! Calculate total sediment flux at time = t, 
     ! We will use this to compute the x derivative terms
