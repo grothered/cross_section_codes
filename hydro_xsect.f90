@@ -73,7 +73,7 @@ SUBROUTINE shear(nn,ys,bed,water,wslope,taus,ks, f,NNN,slopes, counter, Q, vegdr
 
     ! Solves the equation:
     ! rho*g*Sf*depth = rho*f/8*U^2*sqrt(1+(dbed/dy)^2) + rho*vegdrag*depth*U^2
-    !                 + d/dy(rho*0.5*lambdacon*depth^2*sqrt(f/8)*dU^2/dy) 
+    !                 - d/dy(rho*0.5*lambdacon*depth^2*sqrt(f/8)*dU^2/dy) 
     ! for U^2 (and thus tau = rho*f/8*U^2)
 
     !nn is the number of bed points
@@ -203,36 +203,36 @@ SUBROUTINE shear(nn,ys,bed,water,wslope,taus,ks, f,NNN,slopes, counter, Q, vegdr
         ! Derivative term
         ! d/dy( B dU^2/dy)
         dy_outer= 2._dp/(ys(i+1) - ys(i-1))
-        IF((i>1).and.(i<nn-1).and.(const_mesh).and.(high_order_shear)) THEN
-            ! Use high order derivative
-            tmp = dy_outer*1.0_dp/24.0_dp*Bf(i)*1._dp/dyf(i)
-            tmp1 = dy_outer*9.0_dp/8.0_dp*Bf(i)*1._dp/dyf(i)
+        !IF((i>1).and.(i<nn-1).and.(const_mesh).and.(high_order_shear)) THEN
+        !    ! Use high order derivative
+        !    tmp = dy_outer*1.0_dp/24.0_dp*Bf(i)*1._dp/dyf(i)
+        !    tmp1 = dy_outer*9.0_dp/8.0_dp*Bf(i)*1._dp/dyf(i)
 
-            alpht2(i) = alpht2(i) + tmp
-            alpht(i) = alpht(i)   - tmp1           
-            diag(i) = diag(i)     + tmp1
-            alphb(i) = alphb(i)   - tmp
-        ELSE
+        !    alpht2(i) = alpht2(i) + tmp
+        !    alpht(i) = alpht(i)   - tmp1           
+        !    diag(i) = diag(i)     + tmp1
+        !    alphb(i) = alphb(i)   - tmp
+        !ELSE
             ! Use central derivative
             tmp = dy_outer*Bf(i)*1._dp/dyf(i)
             alpht(i) =alpht(i) -tmp
             diag(i) = diag(i)  +tmp
-        END IF
+        !END IF
 
-        IF((i>2).and.(i<nn).and.(const_mesh).and.(high_order_shear)) THEN
-            ! Use high order derivative
-            tmp = dy_outer*1.0_dp/24.0_dp*Bf(i-1)*1._dp/dyf(i-1)
-            tmp1 = dy_outer*9.0_dp/8.0_dp*Bf(i-1)*1._dp/dyf(i-1)
-            alpht(i) = alpht(i)  -tmp
-            diag(i) =  diag(i)   +tmp1
-            alphb(i) = alphb(i)  -tmp1
-            alphb2(i) = alphb2(i)+tmp
-        ELSE
+        !IF((i>2).and.(i<nn).and.(const_mesh).and.(high_order_shear)) THEN
+        !    ! Use high order derivative
+        !    tmp = dy_outer*1.0_dp/24.0_dp*Bf(i-1)*1._dp/dyf(i-1)
+        !    tmp1 = dy_outer*9.0_dp/8.0_dp*Bf(i-1)*1._dp/dyf(i-1)
+        !    alpht(i) = alpht(i)  -tmp
+        !    diag(i) =  diag(i)   +tmp1
+        !    alphb(i) = alphb(i)  -tmp1
+        !    alphb2(i) = alphb2(i)+tmp
+        !ELSE
             ! Use central derivative
             tmp = dy_outer*Bf(i-1)*1._dp/dyf(i-1)
             diag(i) = diag(i) +tmp
             alphb(i) = alphb(i) -tmp
-        END IF
+        !END IF
      
     END DO
 
@@ -257,7 +257,7 @@ SUBROUTINE shear(nn,ys,bed,water,wslope,taus,ks, f,NNN,slopes, counter, Q, vegdr
     ! BOUNDARY CONDITIONS 
     ! Assume here that U^2 -> 0 as depth -> 0, and be careful to estimate the
     ! exact location of the waters edge. 
-    IF(.TRUE.) THEN
+    IF(.FALSE.) THEN
         ! Left boundary
         alpht(1)=  0._dp - 1._dp/(.5_dp*(dyf(1)+(ys(1)-ysl)*(bed(1)-water)/(bed(1)-bedl)))*( (Bf(1))*1._dp/dyf(1)) 
         alphb(1)= 0._dp
@@ -271,6 +271,22 @@ SUBROUTINE shear(nn,ys,bed,water,wslope,taus,ks, f,NNN,slopes, counter, Q, vegdr
         diag(nn) =  rho*(f(nn)/8._dp)*tbst(nn)+rho*vegdrag(nn)*(water-bed(nn))  -alphb(nn) +&
             1._dp/(.5_dp*(dyf(nn-1)+(ysu-ys(nn) )*(water-bed(nn))/(bedu-bed(nn)) ))*.5_dp*B(nn)*1._dp/& 
             ((ysu-ys(nn))*(water-bed(nn))/(bedu-bed(nn)))
+        !!!!!!!!
+    END IF
+    
+    ! BOUNDARY CONDITIONS 
+    ! Assume here that the momentum flux at 0+1/2 = 0 (so the system is not
+    ! losing any momentum)
+    IF(.TRUE.) THEN
+        ! Left boundary
+        alpht(1)=  0._dp - 1._dp/(.5_dp*(dyf(1)+(ys(1)-ysl)*(bed(1)-water)/(bed(1)-bedl)))*( (Bf(1))*1._dp/dyf(1)) 
+        alphb(1)= 0._dp
+        diag(1)= rho*(f(1)/8._dp)*tbst(1) +rho*vegdrag(1)*(water-bed(1)) -alpht(1)  
+       
+        ! Right boundary 
+        alpht(nn)=0._dp
+        alphb(nn)= 0._dp - 1._dp/(.5_dp*(dyf(nn-1)+(ysu-ys(nn) )*(water-bed(nn))/(bedu-bed(nn)) ))*((Bf(nn-1))*1._dp/dyf(nn-1))
+        diag(nn) =  rho*(f(nn)/8._dp)*tbst(nn)+rho*vegdrag(nn)*(water-bed(nn))  -alphb(nn) 
         !!!!!!!!
     END IF
 
