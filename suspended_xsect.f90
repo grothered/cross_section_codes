@@ -379,15 +379,15 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     END DO
 
     ! Erosion and deposition
-    !IF(.TRUE.) THEN
-    !    DO i = 1, a
+    IF(.TRUE.) THEN
+        DO i = 1, a
 
-    !        RHS(i) = RHS(i) +Qe(i)
-    !        M1_diag(i) = M1_diag(i) + wset/zetamult(i)  ! Note that 1/zetamult(i)*Cbar = cb
+            RHS(i) = RHS(i) +Qe(i)
+            M1_diag(i) = M1_diag(i) + wset/zetamult(i)  ! Note that 1/zetamult(i)*Cbar = cb
 
 
-    !    END DO
-    !END IF
+        END DO
+    END IF
 
     !Sanity-check
     DO i = 1, a
@@ -456,7 +456,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     ! assuming that the flux 'stopped' when the sediment ran out during the last
     ! time step.
     DO i = 1,a
-        IF((Cbar(i)<0._dp).and.(.FALSE.)) THEN
+        IF((Cbar(i)<0._dp).and.(.TRUE.)) THEN
             ! Clip negligably small Cbar values
             !IF(abs(Cbar(i))<1.0e-10) THEN
             !    Cbar(i) = 0._dp
@@ -535,7 +535,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     ! depth/dt*(Cbar_new -Cbar) + wset*(Cbar_new/zetamult) = Qe
     ! Cbar_new( depth/dt + wset/zetamult) = Qe + depth/dt*Cbar
     ! But note the re-scaling by 'rhos' which has happened above
-    Cbar = (Qe*rhos + depth/delT*Cbar)/(depth/delT + wset/zetamult)
+    !Cbar = (Qe*rhos + depth/delT*Cbar)/(depth/delT + wset/zetamult)
 
     ! Calculate total sediment flux at time = t, 
     ! We will use this to compute the x derivative terms
