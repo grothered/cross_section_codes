@@ -456,7 +456,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     ! assuming that the flux 'stopped' when the sediment ran out during the last
     ! time step.
     DO i = 1,a
-        IF((Cbar(i)<0._dp).and.(.TRUE.)) THEN
+        IF((Cbar(i)<0._dp).and.(.FALSE.)) THEN
             ! Clip negligably small Cbar values
             !IF(abs(Cbar(i))<1.0e-10) THEN
             !    Cbar(i) = 0._dp
