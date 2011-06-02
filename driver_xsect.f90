@@ -533,7 +533,7 @@ DO Q_loop= 1, no_discharges!15
             !! UPDATE THE BED
  
             ! Calculate dqbed/dx ~= (Qbed - sed_lag_scale*Qbed)/x_len_scale
-            dqbeddx(l:u) = Qbed(l:u)*(1.0_dp-sed_lag_scale)/x_len_scale 
+            !dqbeddx(l:u) = Qbed(l:u)*(1.0_dp-sed_lag_scale)/x_len_scale 
             bedlast= bed ! Record the bed prior to updating
            
             call update_bed(u-l+1,DT1,water,Q,bed(l:u),ys(l:u),Area, &
