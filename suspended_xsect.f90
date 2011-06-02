@@ -124,6 +124,12 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     zetamult(a+1) = 1.0_dp
     zetamult = max(zetamult, 1.0e-08)
 
+    ! Add Erosion and deposition here using operator splitting
+    ! depth*dCbar/dt +wset*Cbed = Qe  
+    ! depth/dt*(Cbar_new -Cbar) + wset*(Cbar_new/zetamult) = Qe
+    ! Cbar_new( depth/dt + wset/zetamult) = Qe + depth/dt*Cbar
+    Cbar = (Qe + depth(1:a)/delT*Cbar - 0.0_dp*wset/zetamult(1:a)*Cbar)/ &
+           (depth(1:a)/delT + 1.0_dp*wset/zetamult(1:a))
 
     ! Solve initially for the depth - averaged suspended sediment concentration
     ! depth d (Cbar) / dt + U*depth*dCbar/dx +
@@ -137,6 +143,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     M1_upper = 0._dp
     M1_upper2 = 0._dp
     RHS = 0._dp
+    
    
     !
     ! Fill out matrices term-by-term
@@ -435,8 +442,8 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     XXX(1:a,1) = RHS(1:a)
     call DGTSV(a, 1, bandmat(4,1:a-1), bandmat(3,1:a), bandmat(2,2:a), XXX(1:a,1), a, info)
 
-    ! New Cbar, converted to kg/m^3
-    Cbar = XXX(1:a,1)*rhos
+    ! New Cbar
+    Cbar = XXX(1:a,1)
 
     IF(info.ne.0) THEN
             print*, 'ERROR: info = ', info, ' in DGTSV, dynamic_sus_dist'
@@ -537,7 +544,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     ! e.g. dQbed/dx = (Qbed - sed_lag_scale*Qbed)/x_len_scale
     ! e.g. dCbar/dx = (Cbar - sed_lag_scale*Cbar)/x_len_scale
     sus_flux = sum( & 
-            (Qbed+Cbar/rhos*abs(vel)*max(water-bed,0._dp) )*& ! Total load
+            (Qbed+Cbar*abs(vel)*max(water-bed,0._dp) )*& ! Total load
             ( ( (/ ys(2:a), ysu /) - (/ ysl, ys(1:a-1) /) )*0.5_dp) &  ! dy
                   )
     !
@@ -557,17 +564,14 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     ! depth*dCbar/dT + depth*vel*dCbar/dx = 0.0
     ! Implicit 
     Cbar = Cbar*(1.0_dp - 0.0_dp*delT*vel*(1._dp-sed_lag_scale)/x_len_scale)/ &
-           (1.0 + 1.0_dp*delT*vel*(1.0_dp-sed_lag_scale)/x_len_scale )
+           (1.0_dp + 1.0_dp*delT*vel*(1.0_dp-sed_lag_scale)/x_len_scale)
 
-    ! Add Erosion and deposition here using operator splitting
-    ! depth*dCbar/dt +wset*Cbed = Qe  
-    ! depth/dt*(Cbar_new -Cbar) + wset*(Cbar_new/zetamult) = Qe
-    ! Cbar_new( depth/dt + wset/zetamult) = Qe + depth/dt*Cbar
-    ! But note the re-scaling by 'rhos' which has happened above
-    Cbar = (Qe*rhos + depth(1:a)/delT*Cbar)/(depth(1:a)/delT + wset/zetamult(1:a))
     
 
-    ! New near bed cb
+    ! Convert back to kg/m^3
+    Cbar = Cbar*rhos
+
+    ! Compute new near bed cb
     DO i = 1, a
         IF(zetamult(i) > 0._dp) THEN
             cb(i) = Cbar(i)/zetamult(i)
@@ -615,7 +619,8 @@ REAL(dp) FUNCTION rouse_int(z,d_aref)
     ! It can be shown that K=J1*db_const (where db_const is defined below) 
     REAL(dp), INTENT(IN):: z, d_aref
 
-    INTEGER:: i
+    ! num_trapz_pts = number of points used in trapezoidal integration
+    INTEGER:: i, num_trapz_pts=100 
     REAL(dp):: db_const, F1, J1, j, E2, z2, perturb = 1.0e-05, eps, d_eps
    
     IF(z>10.0_dp) THEN
@@ -658,8 +663,8 @@ REAL(dp) FUNCTION rouse_int(z,d_aref)
             J1 = 0.0_dp
 
             ! Trapezoidal Rule integration
-            d_eps = ((1.0_dp-d_aref)/100._dp)
-            DO i=1,100
+            d_eps = ((1.0_dp-d_aref)/(num_trapz_pts*1._dp))
+            DO i=1,num_trapz_pts
                 ! Evaluate the function at at (0.5, 1.5, 2.5, ...99.5) / 100 of the
                 ! integration domain, 
                 eps = d_aref + ((i-0.5_dp))*d_eps
