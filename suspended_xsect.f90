@@ -150,16 +150,13 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     ! Here, we try to add a constant to cb across the channel, such that the 
     ! sus_flux is right
     ! If we do it this way, then the idea is we will not affect Fl
-    sed_lag_scale = sconc*Q - sus_flux
-    sed_lag_scale = min(sed_lag_scale, sus_flux*0.5_dp)
-    sed_lag_scale = max(sed_lag_scale, -sus_flux*0.5_dp)
-
     tmp1 = sum(1.0_dp*zetamult(1:a)*abs(vel)**max(water-bed,0._dp)*& 
                 ( ( (/ ys(2:a), ysu /) - (/ ysl, ys(1:a-1) /) )*0.5_dp) &  ! dy
                   )
-    ! if k*tmp1  = desired_extra_flux, then k*zetamult represents the extra Cbar
-    ! that we need to add everywhere get the flux correct  
-    Cbar = Cbar + (sed_lag_scale/tmp1)*zetamult(1:a) !Adding a constant
+    ! If k*tmp1  = desired_extra_flux, then k*zetamult represents the extra Cbar
+    ! that we need to add everywhere get the flux correct. Note that the
+    ! desired_extra_flux = sed_lag_scale*sus_flux - sus_flux  
+    Cbar = Cbar + ( (sed_lag_scale*sus_flux-sus_flux)/tmp1)*zetamult(1:a) !Adding a constant
 
     ! Now we add the term U*d*dCbar/dx using an operator splitting technique
     ! depth*dCbar/dT + depth*vel*dCbar/dx = 0.0
