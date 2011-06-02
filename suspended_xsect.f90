@@ -125,22 +125,17 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     zetamult = max(zetamult, 1.0e-08)
 
     
-    ! Calculate total sediment flux at time = t, 
-    ! We will use this to compute the x derivative terms
-    ! in dynamic_sus_dist and update_bed
-    ! e.g. dQbed/dx = (Qbed - sed_lag_scale*Qbed)/x_len_scale
-    ! e.g. dCbar/dx = (Cbar - sed_lag_scale*Cbar)/x_len_scale
+    ! Calculate total sediment flux at time = t.
+    ! We will use this to 'correct' the sediment flux towards the desired value 
     sus_flux = sum( & 
             (Qbed+Cbar*abs(vel)*max(water-bed,0._dp) )*& ! Total load
             ( ( (/ ys(2:a), ysu /) - (/ ysl, ys(1:a-1) /) )*0.5_dp) &  ! dy
                   )
-    !
     IF(sus_flux > 1.0e-12_dp) THEN
         sed_lag_scale = 1.0_dp*((sconc*Q)/sus_flux) !Desired flux / actual flux
-    !    ! Prevent very high or low values
+        ! Prevent very high or low values
         sed_lag_scale = min(max(sed_lag_scale,0.666_dp),1.5_dp) 
         IF(mod(counter,1000).eq.1) PRINT*, 'sed_lag_scale = ', sed_lag_scale
-    !    !print*, sed_lag_scale                        
     ELSE
         sed_lag_scale = 1.0_dp
     END IF
@@ -148,13 +143,14 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
 
 
     ! Here, we try to add a constant to cb across the channel, such that the 
-    ! sus_flux is right
-    ! If we do it this way, then the idea is we will not affect Fl
+    ! sus_flux is as desired
+    ! If we do it by adjusting cb, then the idea is we will not affect Fl
     tmp1 = sum(1.0_dp*zetamult(1:a)*abs(vel)**max(water-bed,0._dp)*& 
                 ( ( (/ ys(2:a), ysu /) - (/ ysl, ys(1:a-1) /) )*0.5_dp) &  ! dy
                   )
-    ! If k*tmp1  = desired_extra_flux, then k*zetamult represents the extra Cbar
-    ! that we need to add everywhere get the flux correct. Note that the
+    ! Note that if k*tmp1  = desired_extra_flux, then k*zetamult represents the
+    ! extra Cbar that we need to add everywhere get the flux correct (and k is
+    ! the extra cbed, which is constant, as desired). Note that the
     ! desired_extra_flux = sed_lag_scale*sus_flux - sus_flux  
     Cbar = Cbar + ( (sed_lag_scale*sus_flux-sus_flux)/tmp1)*zetamult(1:a) !Adding a constant
 
