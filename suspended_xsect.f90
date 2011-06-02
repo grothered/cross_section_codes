@@ -124,6 +124,35 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     zetamult(a+1) = 1.0_dp
     zetamult = max(zetamult, 1.0e-08)
 
+    
+    ! Calculate total sediment flux at time = t, 
+    ! We will use this to compute the x derivative terms
+    ! in dynamic_sus_dist and update_bed
+    ! e.g. dQbed/dx = (Qbed - sed_lag_scale*Qbed)/x_len_scale
+    ! e.g. dCbar/dx = (Cbar - sed_lag_scale*Cbar)/x_len_scale
+    sus_flux = sum( & 
+            (Qbed+Cbar*abs(vel)*max(water-bed,0._dp) )*& ! Total load
+            ( ( (/ ys(2:a), ysu /) - (/ ysl, ys(1:a-1) /) )*0.5_dp) &  ! dy
+                  )
+    !
+    IF(sus_flux > 1.0e-12_dp) THEN
+        sed_lag_scale = 1.0_dp*((sconc*Q)/sus_flux) !Desired flux / actual flux
+    !    ! Prevent very high or low values
+        sed_lag_scale = min(max(sed_lag_scale,0.666_dp),1.5_dp) 
+        IF(mod(counter,1000).eq.1) PRINT*, 'sed_lag_scale = ', sed_lag_scale
+    !    !print*, sed_lag_scale                        
+    ELSE
+        sed_lag_scale = 1.0_dp
+    END IF
+    IF(mod(counter,1000).eq.1) print*, 'sus_flux is:', sus_flux, ' desired flux is:', sconc*Q
+
+
+    ! Now we add the term U*d*dCbar/dx using an operator splitting technique
+    ! depth*dCbar/dT + depth*vel*dCbar/dx = 0.0
+    ! Implicit 
+    Cbar = Cbar*(1.0_dp - 0.0_dp*delT*vel*(1._dp-sed_lag_scale)/x_len_scale)/ &
+           (1.0_dp + 1.0_dp*delT*vel*(1.0_dp-sed_lag_scale)/x_len_scale)
+
     ! Add Erosion and deposition here using operator splitting
     ! depth*dCbar/dt +wset*Cbed = Qe  
     ! depth/dt*(Cbar_new -Cbar) + wset*(Cbar_new/zetamult) = Qe
@@ -538,33 +567,6 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     END DO 
 
 
-    ! Calculate total sediment flux at time = t, 
-    ! We will use this to compute the x derivative terms
-    ! in dynamic_sus_dist and update_bed
-    ! e.g. dQbed/dx = (Qbed - sed_lag_scale*Qbed)/x_len_scale
-    ! e.g. dCbar/dx = (Cbar - sed_lag_scale*Cbar)/x_len_scale
-    sus_flux = sum( & 
-            (Qbed+Cbar*abs(vel)*max(water-bed,0._dp) )*& ! Total load
-            ( ( (/ ys(2:a), ysu /) - (/ ysl, ys(1:a-1) /) )*0.5_dp) &  ! dy
-                  )
-    !
-    IF(sus_flux > 1.0e-12_dp) THEN
-        sed_lag_scale = 1.0_dp*((sconc*Q)/sus_flux) !Desired flux / actual flux
-    !    ! Prevent very high or low values
-        sed_lag_scale = min(max(sed_lag_scale,0.666_dp),1.5_dp) 
-        IF(mod(counter,1000).eq.1) PRINT*, 'sed_lag_scale = ', sed_lag_scale
-    !    !print*, sed_lag_scale                        
-    ELSE
-        sed_lag_scale = 1.0_dp
-    END IF
-    IF(mod(counter,1000).eq.1) print*, 'sus_flux is:', sus_flux, ' desired flux is:', sconc*Q
-
-
-    ! Now we add the term U*d*dCbar/dx using an operator splitting technique
-    ! depth*dCbar/dT + depth*vel*dCbar/dx = 0.0
-    ! Implicit 
-    Cbar = Cbar*(1.0_dp - 0.0_dp*delT*vel*(1._dp-sed_lag_scale)/x_len_scale)/ &
-           (1.0_dp + 1.0_dp*delT*vel*(1.0_dp-sed_lag_scale)/x_len_scale)
 
     
 
