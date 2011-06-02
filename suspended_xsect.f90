@@ -147,18 +147,26 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     IF(mod(counter,1000).eq.1) print*, 'sus_flux is:', sus_flux, ' desired flux is:', sconc*Q
 
 
+    ! Here, we try to add a constant to cb across the channel, such that the 
+    ! sus_flux is right
+    ! If we do it this way, then the idea is we will not affect Fl
+    sed_lag_scale = sconc*Q - sus_flux
+    sed_lag_scale = min(sed_lag_scale, sus_flux*0.5_dp)
+    sed_lag_scale = max(sed_lag_scale, -sus_flux*0.5_dp)
+
+    tmp1 = sum(1.0_dp*zetamult(1:a)*abs(vel)**max(water-bed,0._dp)*& 
+                ( ( (/ ys(2:a), ysu /) - (/ ysl, ys(1:a-1) /) )*0.5_dp) &  ! dy
+                  )
+    ! if k*tmp1  = desired_extra_flux, then k*zetamult represents the extra Cbar
+    ! that we need to add everywhere get the flux correct  
+    Cbar = Cbar + (sed_lag_scale/tmp1)*zetamult(1:a) !Adding a constant
+
     ! Now we add the term U*d*dCbar/dx using an operator splitting technique
     ! depth*dCbar/dT + depth*vel*dCbar/dx = 0.0
     ! Implicit 
-    Cbar = Cbar*(1.0_dp - 0.0_dp*delT*vel*(1._dp-sed_lag_scale)/x_len_scale)/ &
-           (1.0_dp + 1.0_dp*delT*vel*(1.0_dp-sed_lag_scale)/x_len_scale)
+    !Cbar = Cbar*(1.0_dp - 0.0_dp*delT*vel*(1._dp-sed_lag_scale)/x_len_scale)/ &
+    !       (1.0_dp + 1.0_dp*delT*vel*(1.0_dp-sed_lag_scale)/x_len_scale)
 
-    ! Add Erosion and deposition here using operator splitting
-    ! depth*dCbar/dt +wset*Cbed = Qe  
-    ! depth/dt*(Cbar_new -Cbar) + wset*(Cbar_new/zetamult) = Qe
-    ! Cbar_new( depth/dt + wset/zetamult) = Qe + depth/dt*Cbar
-    Cbar = (Qe + depth(1:a)/delT*Cbar - 0.0_dp*wset/zetamult(1:a)*Cbar)/ &
-           (depth(1:a)/delT + 1.0_dp*wset/zetamult(1:a))
 
     ! Solve initially for the depth - averaged suspended sediment concentration
     ! depth d (Cbar) / dt + U*depth*dCbar/dx +
@@ -566,6 +574,12 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
         lat_sus_flux(i+1) = lat_sus_flux(i+1) -0.5_dp*(cbed_tmp1 + cbed_tmp2)*int_edif_dfdy(i+1) 
     END DO 
 
+    ! Add Erosion and deposition here using operator splitting
+    ! depth*dCbar/dt +wset*Cbed = Qe  
+    ! depth/dt*(Cbar_new -Cbar) + wset*(Cbar_new/zetamult) = Qe
+    ! Cbar_new( depth/dt + wset/zetamult) = Qe + depth/dt*Cbar
+    Cbar = (Qe + depth(1:a)/delT*Cbar - 0.0_dp*wset/zetamult(1:a)*Cbar)/ &
+           (depth(1:a)/delT + 1.0_dp*wset/zetamult(1:a))
 
 
     
