@@ -379,15 +379,15 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     END DO
 
     ! Erosion and deposition
-    IF(.FALSE.) THEN
-        DO i = 1, a
+    !IF(.FALSE.) THEN
+    !    DO i = 1, a
 
-            RHS(i) = RHS(i) +Qe(i)
-            M1_diag(i) = M1_diag(i) + wset/zetamult(i)  ! Note that 1/zetamult(i)*Cbar = cb
+    !        RHS(i) = RHS(i) +Qe(i)
+    !        M1_diag(i) = M1_diag(i) + wset/zetamult(i)  ! Note that 1/zetamult(i)*Cbar = cb
 
 
-        END DO
-    END IF
+    !    END DO
+    !END IF
 
     !Sanity-check
     DO i = 1, a
@@ -530,12 +530,6 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
         lat_sus_flux(i+1) = lat_sus_flux(i+1) -0.5_dp*(cbed_tmp1 + cbed_tmp2)*int_edif_dfdy(i+1) 
     END DO 
 
-    ! Add Erosion and deposition here using operator splitting
-    ! depth*dCbar/dt +wset*Cbed = Qe  
-    ! depth/dt*(Cbar_new -Cbar) + wset*(Cbar_new/zetamult) = Qe
-    ! Cbar_new( depth/dt + wset/zetamult) = Qe + depth/dt*Cbar
-    ! But note the re-scaling by 'rhos' which has happened above
-    Cbar = (Qe*rhos + depth(1:a)/delT*Cbar)/(depth(1:a)/delT + wset/zetamult(1:a))
 
     ! Calculate total sediment flux at time = t, 
     ! We will use this to compute the x derivative terms
@@ -548,7 +542,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
                   )
     !
     IF(sus_flux > 1.0e-12_dp) THEN
-        sed_lag_scale = 1.0_dp*((sconc*Q)/sus_flux)
+        sed_lag_scale = 1.0_dp*((sconc*Q)/sus_flux) !Desired flux / actual flux
     !    ! Prevent very high or low values
         sed_lag_scale = min(max(sed_lag_scale,0.666_dp),1.5_dp) 
         IF(mod(counter,1000).eq.1) PRINT*, 'sed_lag_scale = ', sed_lag_scale
@@ -564,6 +558,14 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     ! Implicit 
     Cbar = Cbar*(1.0_dp - 0.0_dp*delT*vel*(1._dp-sed_lag_scale)/x_len_scale)/ &
            (1.0 + 1.0_dp*delT*vel*(1.0_dp-sed_lag_scale)/x_len_scale )
+
+    ! Add Erosion and deposition here using operator splitting
+    ! depth*dCbar/dt +wset*Cbed = Qe  
+    ! depth/dt*(Cbar_new -Cbar) + wset*(Cbar_new/zetamult) = Qe
+    ! Cbar_new( depth/dt + wset/zetamult) = Qe + depth/dt*Cbar
+    ! But note the re-scaling by 'rhos' which has happened above
+    Cbar = (Qe*rhos + depth(1:a)/delT*Cbar)/(depth(1:a)/delT + wset/zetamult(1:a))
+    
 
     ! New near bed cb
     DO i = 1, a
