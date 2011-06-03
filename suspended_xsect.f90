@@ -124,7 +124,8 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     zetamult(a+1) = 1.0_dp
     zetamult = max(zetamult, 1.0e-08)
 
-    
+
+    !!! PUSH THE SUSPENDED FLUX TOWARDS THE DESIRED VALUE   
     ! Calculate total sediment flux at time = t.
     ! We will use this to 'correct' the sediment flux towards the desired value 
     sus_flux = sum( & 
@@ -141,7 +142,6 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     END IF
     IF(mod(counter,1000).eq.1) print*, 'sus_flux is:', sus_flux, ' desired flux is:', sconc*Q
 
-
     ! Here, we try to add a constant to cb across the channel, such that the 
     ! sus_flux is as desired
     ! If we do it by adjusting cb, then the idea is we will not affect Fl
@@ -153,6 +153,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     ! the extra cbed, which is constant, as desired). Note that the
     ! desired_extra_flux = sed_lag_scale*sus_flux - sus_flux  
     Cbar = Cbar + ( (sed_lag_scale*sus_flux-sus_flux)/tmp1)*zetamult(1:a) !Adding a constant
+
 
     ! Now we add the term U*d*dCbar/dx using an operator splitting technique
     ! depth*dCbar/dT + depth*vel*dCbar/dx = 0.0
@@ -416,15 +417,15 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     END DO
 
     ! Erosion and deposition
-    !IF(.FALSE.) THEN
-    !    DO i = 1, a
+    IF(.TRUE.) THEN
+        DO i = 1, a
 
-    !        RHS(i) = RHS(i) +Qe(i)
-    !        M1_diag(i) = M1_diag(i) + wset/zetamult(i)  ! Note that 1/zetamult(i)*Cbar = cb
+            RHS(i) = RHS(i) +Qe(i)
+            !M1_diag(i) = M1_diag(i) + wset/zetamult(i)  ! Note that 1/zetamult(i)*Cbar = cb
 
 
-    !    END DO
-    !END IF
+        END DO
+    END IF
 
     !Sanity-check
     DO i = 1, a
@@ -493,7 +494,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     ! assuming that the flux 'stopped' when the sediment ran out during the last
     ! time step.
     DO i = 1,a
-        IF((Cbar(i)<0._dp).and.(.TRUE.)) THEN
+        IF((Cbar(i)<0._dp).and.(.FALSE.)) THEN
             ! Clip negligably small Cbar values
             !IF(abs(Cbar(i))<1.0e-10) THEN
             !    Cbar(i) = 0._dp
@@ -571,7 +572,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     ! depth*dCbar/dt +wset*Cbed = Qe  
     ! depth/dt*(Cbar_new -Cbar) + wset*(Cbar_new/zetamult) = Qe
     ! Cbar_new( depth/dt + wset/zetamult) = Qe + depth/dt*Cbar
-    Cbar = (Qe + depth(1:a)/delT*Cbar - 0.0_dp*wset/zetamult(1:a)*Cbar)/ &
+    Cbar = (Qe*0.0_dp + depth(1:a)/delT*Cbar - 0.0_dp*wset/zetamult(1:a)*Cbar)/ &
            (depth(1:a)/delT + 1.0_dp*wset/zetamult(1:a))
 
 
