@@ -89,11 +89,10 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
             
             DO i=1, a
                 IF((eddif_z(i)>0._dp).and.(depth(i)>0.0e-00_dp)) THEN 
-                    ! Ikeda and Izumi (1991) relation, divided by depth as
-                    ! appropriate
+                    ! Ikeda and Izumi (1991) relation, divided by depth
                     zetamult(i)= eddif_z(i)/(depth(i)*wset)*(1._dp-exp(-(wset/eddif_z(i))*depth(i)) )
                 ELSE 
-                    zetamult(i)=1.0e-08_dp !1.0e-04_dp
+                    zetamult(i)=1.0e-12_dp
                 END IF
             END DO
 
@@ -122,7 +121,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     ! Limit zetamult to a non-zero value to avoid division problems
     zetamult(0)   = 1.0_dp
     zetamult(a+1) = 1.0_dp
-    zetamult = max(zetamult, 1.0e-08)
+    zetamult = max(zetamult, 1.0e-12)
 
 
     !!! PUSH THE SUSPENDED FLUX TOWARDS THE DESIRED VALUE   
@@ -132,34 +131,43 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
             (Qbed+Cbar*abs(vel)*max(water-bed,0._dp) )*& ! Total load
             ( ( (/ ys(2:a), ysu /) - (/ ysl, ys(1:a-1) /) )*0.5_dp) &  ! dy
                   )
+    ! Compute the discharge using the same approach
+    tmp1 = sum( abs(vel)*max(water-bed,0.0_dp)*& 
+              ( ( (/ ys(2:a), ysu /) - (/ ysl, ys(1:a-1) /) )*0.5_dp) &  ! dy
+                  )
+
     IF(sus_flux > 1.0e-12_dp) THEN
-        sed_lag_scale = 1.0_dp*((sconc*Q)/sus_flux) !Desired flux / actual flux
+        sed_lag_scale = 1.0_dp*((sconc*tmp1)/sus_flux) !Desired flux / actual flux
+
         ! Prevent very high or low values
         sed_lag_scale = min(max(sed_lag_scale,0.666_dp),1.5_dp) 
         IF(mod(counter,1000).eq.1) PRINT*, 'sed_lag_scale = ', sed_lag_scale
+
     ELSE
         sed_lag_scale = 1.0_dp
+
     END IF
+
     IF(mod(counter,1000).eq.1) print*, 'sus_flux is:', sus_flux, ' desired flux is:', sconc*Q
 
     ! Here, we try to add a constant to cb across the channel, such that the 
     ! sus_flux is as desired
     ! If we do it by adjusting cb, then the idea is we will not affect Fl
-    tmp1 = sum(1.0_dp*zetamult(1:a)*abs(vel)**max(water-bed,0._dp)*& 
-                ( ( (/ ys(2:a), ysu /) - (/ ysl, ys(1:a-1) /) )*0.5_dp) &  ! dy
-                  )
+    !tmp1 = sum(1.0_dp*zetamult(1:a)*abs(vel)**max(water-bed,0._dp)*& 
+    !            ( ( (/ ys(2:a), ysu /) - (/ ysl, ys(1:a-1) /) )*0.5_dp) &  ! dy
+    !              )
     ! Note that if k*tmp1  = desired_extra_flux, then k*zetamult represents the
     ! extra Cbar that we need to add everywhere get the flux correct (and k is
     ! the extra cbed, which is constant, as desired). Note that the
     ! desired_extra_flux = sed_lag_scale*sus_flux - sus_flux  
-    Cbar = Cbar + ( (sed_lag_scale*sus_flux-sus_flux)/tmp1)*zetamult(1:a) !Adding a constant
+    !Cbar = Cbar + ( (sed_lag_scale*sus_flux-sus_flux)/tmp1)*zetamult(1:a) !Adding a constant
 
 
     ! Now we add the term U*d*dCbar/dx using an operator splitting technique
     ! depth*dCbar/dT + depth*vel*dCbar/dx = 0.0
     ! Implicit 
-    !Cbar = Cbar*(1.0_dp - 0.0_dp*delT*vel*(1._dp-sed_lag_scale)/x_len_scale)/ &
-    !       (1.0_dp + 1.0_dp*delT*vel*(1.0_dp-sed_lag_scale)/x_len_scale)
+    Cbar = Cbar*(1.0_dp - 0.0_dp*delT*vel*(1._dp-sed_lag_scale)/x_len_scale)/ &
+           (1.0_dp + 1.0_dp*delT*vel*(1.0_dp-sed_lag_scale)/x_len_scale)
 
 
     ! Solve initially for the depth - averaged suspended sediment concentration
@@ -417,11 +425,11 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     END DO
 
     ! Erosion and deposition
-    IF(.TRUE.) THEN
+    IF(.FALSE.) THEN
         DO i = 1, a
 
             RHS(i) = RHS(i) +Qe(i)
-            !M1_diag(i) = M1_diag(i) + wset/zetamult(i)  ! Note that 1/zetamult(i)*Cbar = cb
+            M1_diag(i) = M1_diag(i) + wset/zetamult(i)  ! Note that 1/zetamult(i)*Cbar = cb
 
 
         END DO
@@ -489,12 +497,12 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     ! ] can be much greater than the amount of suspended sediment over the small
     ! depth point. In my experience, this often happens at points with a tiny
     ! depth right next to the dry bank. (e.g. depth(i-1)=0.0)
-    ! A simple fix is to make Cbed = 0.0 if negative, and remove the required
+    ! A simple 'fix' is to make Cbed = 0.0 if negative, and remove the required
     ! amount of suspended sediment from the neighbouring point -- equivalent to
     ! assuming that the flux 'stopped' when the sediment ran out during the last
     ! time step.
     DO i = 1,a
-        IF((Cbar(i)<0._dp).and.(.FALSE.)) THEN
+        IF((Cbar(i)*depth(i)<0.0).and.(.FALSE.)) THEN
             ! Clip negligably small Cbar values
             !IF(abs(Cbar(i))<1.0e-10) THEN
             !    Cbar(i) = 0._dp
@@ -572,7 +580,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     ! depth*dCbar/dt +wset*Cbed = Qe  
     ! depth/dt*(Cbar_new -Cbar) + wset*(Cbar_new/zetamult) = Qe
     ! Cbar_new( depth/dt + wset/zetamult) = Qe + depth/dt*Cbar
-    Cbar = (Qe*0.0_dp + depth(1:a)/delT*Cbar - 0.0_dp*wset/zetamult(1:a)*Cbar)/ &
+    Cbar = (Qe + depth(1:a)/delT*Cbar - 0.0_dp*wset/zetamult(1:a)*Cbar)/ &
            (depth(1:a)/delT + 1.0_dp*wset/zetamult(1:a))
 
 
@@ -845,7 +853,8 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
                     ! Step4: df_dy = df/dbedh*dbedh/dy + df/aref*daref/dy + df/dus*dus/dy
                     df_dy = df_dbedh*dbed_dy + df_darefh*daref_dy + df_dus*dus_dy
                 ELSE
-                    PRINT*, 'ERROR - d< aref in suspended_xsect (int_edify_f)', d, arefh, aref_tmp(i), aref_tmp(i-1), bed_tmp(i), bed_tmp(i-1)
+                    PRINT*, 'ERROR - d< aref in suspended_xsect (int_edify_f)', &
+                            d, arefh, aref_tmp(i), aref_tmp(i-1), bed_tmp(i), bed_tmp(i-1)
                     stop
                     !z_tmp = elevation above bed = at 0.5, 1.5, ... 99.5 * depth/no_subints.0,
                     

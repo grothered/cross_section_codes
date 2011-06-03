@@ -64,6 +64,7 @@ ALLOCATABLE ys(:), bed(:), dists(:), tau(:),ks(:),tbst(:),&
 discharges = -1.0_dp
 susconcs = -1.0_dp
 
+!INCLUDE 'input_data.modin'
 !!Read the input parameters
 !open(1001,file= 'input_data.modin')
 !close(1001)
@@ -592,7 +593,14 @@ DO Q_loop= 1, no_discharges!15
             !        !END IF
             !    END IF
             !END IF
-            
+           
+            !Update Cbar
+            !DO i=1,nos
+            !    IF((water>bedlast(i)).and.(water>bed(i))) THEN
+            !        Cbar(i) = Cbar(i)*(water-bedlast(i))/(water-bed(i))
+            !    END IF
+            !END DO
+ 
             ! BASIC LIMITING OF THE CHANNEL SLOPE -- to circumvent the numerically
             ! difficult problem of allowing infinite banks otherwise
             IF(mod(j,1)==0) call basic_slope_limit(nos,ys,bed,failure_slope, remesh)
