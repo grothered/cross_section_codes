@@ -527,6 +527,7 @@ DO Q_loop= 1, no_discharges!15
 
             ELSE
                 ! Constant suspended sediment concentration
+                Clast = C
                 C(l:u) = sconc
                 Cbar(l:u) = sconc
             END IF
@@ -594,16 +595,16 @@ DO Q_loop= 1, no_discharges!15
             !    END IF
             !END IF
            
-            !Update Cbar
+ 
+            ! BASIC LIMITING OF THE CHANNEL SLOPE -- to circumvent the numerically
+            ! difficult problem of allowing infinite banks otherwise
+            IF(mod(j,1)==0) call basic_slope_limit(nos,ys,bed,failure_slope, remesh, 1.0e-010_dp)
+            !Update Cbar to reflect changes in the bed.
             !DO i=1,nos
             !    IF((water>bedlast(i)).and.(water>bed(i))) THEN
             !        Cbar(i) = Cbar(i)*(water-bedlast(i))/(water-bed(i))
             !    END IF
             !END DO
- 
-            ! BASIC LIMITING OF THE CHANNEL SLOPE -- to circumvent the numerically
-            ! difficult problem of allowing infinite banks otherwise
-            IF(mod(j,1)==0) call basic_slope_limit(nos,ys,bed,failure_slope, remesh)
 
 
             !! WRITE OUTPUTS -- notice that these are all supposed to be at the

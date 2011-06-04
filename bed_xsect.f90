@@ -877,12 +877,14 @@ END SUBROUTINE dbeddyH_approx
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-SUBROUTINE basic_slope_limit(nos,ys,bed,failure_slope, remesh)
+SUBROUTINE basic_slope_limit(nos,ys,bed,failure_slope, remesh,limit_fail)
     ! Purpose: Basic routine to limit the absolute value of the lateral slope to be <= failure_slope
-    ! Input: The channel geometry, and the slope at which the bank 'fails'
+    ! Input: The channel geometry, and the slope at which the bank 'fails', and
+    ! limit_fail = a number from (0-1], which can be used to make the failure
+    ! happen over more time.
     ! Output: The updated channel geometry
     INTEGER, INTENT(IN):: nos
-    REAL(dp), INTENT(IN):: ys(nos), failure_slope
+    REAL(dp), INTENT(IN):: ys(nos), failure_slope, limit_fail
     REAL(dp), INTENT(IN OUT):: bed(nos)
     LOGICAL, INTENT(IN):: remesh
 
@@ -902,11 +904,11 @@ SUBROUTINE basic_slope_limit(nos,ys,bed,failure_slope, remesh)
                     ! Note the 'explicit' nature of the computation:
                     ! bed(post_failure) = bed(pre_failure) +
                     !                     failure_amount(pre_failure)
-                    tmp = bed(i)-(bed(i-1) + failure_slope*(ys(i)-ys(i-1)) )
+                    tmp = (bed(i)-(bed(i-1) + failure_slope*(ys(i)-ys(i-1)) ))*limit_fail
                     hss(i) = hss(i)-tmp*0.5_dp
                     hss(i-1) = hss(i-1) + tmp*0.5_dp    
                 ELSE
-                    tmp = bed(i-1)-(bed(i) + failure_slope*(ys(i)-ys(i-1)) )
+                    tmp = (bed(i-1)-(bed(i) + failure_slope*(ys(i)-ys(i-1))))*limit_fail
                     hss(i) = hss(i)+tmp*0.5_dp
                     hss(i-1) = hss(i-1) - tmp*0.5_dp    
 
@@ -918,11 +920,11 @@ SUBROUTINE basic_slope_limit(nos,ys,bed,failure_slope, remesh)
         DO i=nos/2,nos-1,1 !nos/2,nos-1,1
             IF(abs(bed(i)-bed(i+1))>failure_slope*(ys(i+1)-ys(i))) THEN
                 IF(bed(i)>bed(i+1)) THEN
-                    tmp = bed(i)-(bed(i+1) + failure_slope*(ys(i+1)-ys(i)) )
+                    tmp = (bed(i)-(bed(i+1) + failure_slope*(ys(i+1)-ys(i)) ))*limit_fail
                     hss(i) = hss(i)-tmp*0.5_dp
                     hss(i+1) = hss(i+1) + tmp*0.5_dp    
                 ELSE
-                    tmp = bed(i+1)-(bed(i) + failure_slope*(ys(i+1)-ys(i)) )
+                    tmp = (bed(i+1)-(bed(i) + failure_slope*(ys(i+1)-ys(i))))*limit_fail
                     hss(i) = hss(i)+tmp*0.5_dp
                     hss(i+1) = hss(i+1) - tmp*0.5_dp    
                 END IF

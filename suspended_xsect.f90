@@ -425,11 +425,11 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     END DO
 
     ! Erosion and deposition
-    IF(.FALSE.) THEN
+    IF(.TRUE.) THEN
         DO i = 1, a
 
             RHS(i) = RHS(i) +Qe(i)
-            M1_diag(i) = M1_diag(i) + wset/zetamult(i)  ! Note that 1/zetamult(i)*Cbar = cb
+            !M1_diag(i) = M1_diag(i) + wset/zetamult(i)  ! Note that 1/zetamult(i)*Cbar = cb
 
 
         END DO
@@ -502,7 +502,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     ! assuming that the flux 'stopped' when the sediment ran out during the last
     ! time step.
     DO i = 1,a
-        IF((Cbar(i)*depth(i)<0.0).and.(.FALSE.)) THEN
+        IF((Cbar(i)*depth(i)<0.0).and.(Cbar(i)*depth(i)> - 1.0e-09_dp)) THEN
             ! Clip negligably small Cbar values
             !IF(abs(Cbar(i))<1.0e-10) THEN
             !    Cbar(i) = 0._dp
@@ -547,7 +547,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     END DO
     
     IF((.TRUE.).and.(minval(Cbar)<0._dp)) THEN
-        print*, 'Cbar clip', minval(Cbar)
+        print*, 'Cbar clip', minval(Cbar), minval(Cbar)*depth(minloc(Cbar))
         Cbar = max(Cbar, 0._dp)
         IF(counter.eq.1) print*, 'WARNING: Negative Cbar values are being clipped &
                                 to zero'
@@ -580,7 +580,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     ! depth*dCbar/dt +wset*Cbed = Qe  
     ! depth/dt*(Cbar_new -Cbar) + wset*(Cbar_new/zetamult) = Qe
     ! Cbar_new( depth/dt + wset/zetamult) = Qe + depth/dt*Cbar
-    Cbar = (Qe + depth(1:a)/delT*Cbar - 0.0_dp*wset/zetamult(1:a)*Cbar)/ &
+    Cbar = (Qe*0.0_dp + depth(1:a)/delT*Cbar - 0.0_dp*wset/zetamult(1:a)*Cbar)/ &
            (depth(1:a)/delT + 1.0_dp*wset/zetamult(1:a))
 
 
