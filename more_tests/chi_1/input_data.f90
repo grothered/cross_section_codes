@@ -27,7 +27,7 @@ t = 0.00 ! Starting time (s)
 dT = 50.00 !Time step (s)
 variable_timestep=.FALSE. !Do we change the timestepping for high sediment concentrations? -- this is presently inconsistent with bed layers
 
-waterM = 0.0 !Initial water elevation (m) and mean water elevation
+waterM = 0.01 !Initial water elevation (m) and mean water elevation
 TR=0.0 !Tidal range. If it is set to zero then the discharge is constant, otherwise the continuity based method is used.
 Width = 800.0 !Width of computational domain (m)
 
