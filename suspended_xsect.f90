@@ -596,8 +596,13 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     DO i=0,a
         ! Near bed suspended sediment concentration at i+1, i
         IF((i<a).and.(i>0)) THEN
-            cbed_tmp1 = Cbar(i+1)/zetamult(i+1) ! cbed(i)
-            cbed_tmp2 = Cbar(i)/zetamult(i) ! cbed(i)
+            cbed_tmp1 = Cbar(i+1)/zetamult(i+1) - Cbar(i)/zetamult(i) ! diff(cbed)
+            !cbed_tmp2 = cbed(i)
+            IF(Cbar(i)<Cbar(i+1)) THEN
+                cbed_tmp2 = Cbar(i)/zetamult(i)
+            ELSE
+                cbed_tmp2 = Cbar(i+1)/zetamult(i+1)
+            END IF
         ELSE
             cbed_tmp1 = 0.0_dp
             cbed_tmp2 = 0.0_dp
@@ -605,8 +610,8 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
         ! Compute lat sus flux at i+1/2
         ! e.g. lat_sus_flux(1) = flux at 1/2 
         !      lat_sus_flux(a+1) = flux at a+1/2
-        lat_sus_flux(i+1) = -int_edif_f(i+1)*(cbed_tmp1-cbed_tmp2)/(ys_temp(i+1)-ys_temp(i))
-        lat_sus_flux(i+1) = lat_sus_flux(i+1) -0.5_dp*(cbed_tmp1 + cbed_tmp2)*int_edif_dfdy(i+1) 
+        lat_sus_flux(i+1) = -int_edif_f(i+1)*(cbed_tmp1)/(ys_temp(i+1)-ys_temp(i))
+        lat_sus_flux(i+1) = lat_sus_flux(i+1) -(cbed_tmp2)*int_edif_dfdy(i+1) 
     END DO 
 
     ! Add deposition here using operator splitting
