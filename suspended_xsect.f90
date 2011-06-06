@@ -421,8 +421,10 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
                     
                     ! Experimenting with this approach to try to avoid negative
                     ! Cbar values
-                    IF(Cbar(i)<Cbar(i+1)) M1_diag(i)  = M1_diag(i)  - 1.0_dp*tmp1*int_edif_dfdy(i+1)/zetamult(i)
-                    IF(Cbar(i)>Cbar(i+1)) M1_upper(i)  = M1_upper(i)  - 1.0_dp*tmp1*int_edif_dfdy(i+1)/zetamult(i+1)
+                    IF(Cbar(i)/zetamult(i) <Cbar(i+1)/zetamult(i+1)) & 
+                            M1_diag(i)  = M1_diag(i)  - 1.0_dp*tmp1*int_edif_dfdy(i+1)/zetamult(i)
+                    IF(Cbar(i)/zetamult(i)>=Cbar(i+1)/zetamult(i+1)) &
+                            M1_upper(i)  = M1_upper(i)  - 1.0_dp*tmp1*int_edif_dfdy(i+1)/zetamult(i+1)
                 END IF
             !END IF
     
@@ -433,8 +435,10 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
         
                     ! Experimenting with this approach to try to avoid negative
                     ! Cbar values.
-                    IF(Cbar(i)<Cbar(i-1)) M1_diag(i)   = M1_diag(i)   + 1.0_dp*tmp1*int_edif_dfdy(i)/zetamult(i)  ! Note that 1/zetamult(i)*Cbar = cb
-                    IF(Cbar(i)>Cbar(i-1)) M1_lower(i)   = M1_lower(i)   + 1.0_dp*tmp1*int_edif_dfdy(i)/zetamult(i-1)  ! Note that 1/zetamult(i)*Cbar = cb
+                    IF(Cbar(i)/zetamult(i)<Cbar(i-1)/zetamult(i-1)) &
+                             M1_diag(i)   = M1_diag(i)   + 1.0_dp*tmp1*int_edif_dfdy(i)/zetamult(i)  ! Note that 1/zetamult(i)*Cbar = cb
+                    IF(Cbar(i)/zetamult(i)>=Cbar(i-1)/zetamult(i-1)) & 
+                             M1_lower(i)   = M1_lower(i)   + 1.0_dp*tmp1*int_edif_dfdy(i)/zetamult(i-1)  ! Note that 1/zetamult(i)*Cbar = cb
 
                 END IF
             !END IF 
