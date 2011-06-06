@@ -59,6 +59,8 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     cb = cb/rhos
     Cbar = Cbar/rhos 
 
+    Cbar_old = Cbar
+
     ! Depth, including at zero-depth boundaries ( 0 and a+1 )
     depth(1:a) = max(water -bed, 0._dp)
     depth(0) = 0._dp
@@ -66,8 +68,8 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
 
     ! y coordinate, including at zero depth boundaries (0 and a+1)
     ys_temp(1:a) = ys
-    ys_temp(0) = ysl
-    ys_temp(a+1) = ysu
+    ys_temp(0) = ys(1) - (ys(1) - ysl)*abs(water-bed(1))/(bedl-bed(1))!ysl
+    ys_temp(a+1) = ys(a) + (ysu-ys(a))*abs(water-bed(a))/(bedu-bed(a)) !ysu
 
 
     ! Calculate the value of 'zetamult', where:
@@ -230,8 +232,10 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     ! V*d = int( -dwater/dt - d(U*d)/dx) dy 
     ! 
     ! with appropriate boundary conditions 
-    vd(0) = 0._dp ! =  (lateral velocity)*(depth at zero depth boundary)=0
-    vd(a+1) = 0._dp 
+    !vd(0) = 0._dp ! =  (lateral velocity)*(depth at zero depth boundary)=0
+    !vd(a+1) = 0._dp 
+
+    vd = 0.0_dp
 
     ! Estimate d(ud)/dx, using
     ! d(U*d)/dx ~ Ud/Q*dQ/dx --- approximate model for longitudinal momentum derivative
@@ -386,31 +390,43 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
             ! d/dy [ dcb/dy*(int(eddif_y*f) dz) ]
             tmp1 = 1.0_dp/dy_outer
             tmp2 = 1.0_dp/(ys_temp(i+1)-ys_temp(i))
-            IF(i<a) THEN
-                ! 2 point derivative approx -- note cb = Cbar/zetamult
-                M1_upper(i) = M1_upper(i) - tmp1*tmp2*int_edif_f(i+1)/zetamult(i+1)
-                M1_diag(i)  = M1_diag(i)  + tmp1*tmp2*int_edif_f(i+1)/zetamult(i)
-            END IF
-
-            tmp2 = 1.0_dp/(ys_temp(i)-ys_temp(i-1))
-            IF(i>1) THEN
-                ! 2 point derivative approx
-                M1_diag(i)  = M1_diag(i)  + tmp1*tmp2*int_edif_f(i)/zetamult(i)
-                M1_lower(i) = M1_lower(i) - tmp1*tmp2*int_edif_f(i)/zetamult(i-1)
-            END IF
             
+            !IF((depth(i)<10.0_dp*depth(i+1)).and.(depth(i)<10.0_dp*depth(i-1)).and. &
+            !  (depth(i+1)<10.0_dp*depth(i)).and.(depth(i-1)<10.0_dp*depth(i))) THEN
+                ! When the depth changes rapidly, this term can induce negative
+                ! values of Cbar. 
+            !IF((depth(i+1)/depth(i)<10.0_dp).and.(depth(i)/depth(i+1)<10.0_dp)) THEN
+                IF(i<a) THEN
+                    ! 2 point derivative approx -- note cb = Cbar/zetamult
+                    M1_upper(i) = M1_upper(i) - tmp1*tmp2*int_edif_f(i+1)/zetamult(i+1)
+                    M1_diag(i)  = M1_diag(i)  + tmp1*tmp2*int_edif_f(i+1)/zetamult(i)
+                END IF
+            !END IF
+
+                tmp2 = 1.0_dp/(ys_temp(i)-ys_temp(i-1))
+            !IF((depth(i)/depth(i-1)<10.0_dp).and.(depth(i-1)/depth(i)<10.0_dp)) THEN
+                IF(i>1) THEN
+                    ! 2 point derivative approx
+                    M1_diag(i)  = M1_diag(i)  + tmp1*tmp2*int_edif_f(i)/zetamult(i)
+                    M1_lower(i) = M1_lower(i) - tmp1*tmp2*int_edif_f(i)/zetamult(i-1)
+                END IF
+            !END IF 
 
             
             !! d/dy ( cb*INT(edify*df/dy )dz  )
-            IF(i<a) THEN
-                M1_upper(i) = M1_upper(i) - 0.5_dp*tmp1*int_edif_dfdy(i+1)/zetamult(i+1)  ! Note that 1/zetamult(i)*Cbar = cb
-                M1_diag(i)  = M1_diag(i)  - 0.5_dp*tmp1*int_edif_dfdy(i+1)/zetamult(i)
-            END IF
-            
-            IF(i>1) THEN
-                M1_diag(i)   = M1_diag(i)   + 0.5_dp*tmp1*int_edif_dfdy(i)/zetamult(i)  ! Note that 1/zetamult(i)*Cbar = cb
-                M1_lower(i)  = M1_lower(i)  + 0.5_dp*tmp1*int_edif_dfdy(i)/zetamult(i-1)
-            END IF 
+            !IF((depth(i+1)/depth(i)<10.0_dp).and.(depth(i)/depth(i+1)<10.0_dp)) THEN
+                IF(i<a) THEN
+                    M1_upper(i) = M1_upper(i) - 0.5_dp*tmp1*int_edif_dfdy(i+1)/zetamult(i+1)  ! Note that 1/zetamult(i)*Cbar = cb
+                    M1_diag(i)  = M1_diag(i)  - 0.5_dp*tmp1*int_edif_dfdy(i+1)/zetamult(i)
+                END IF
+            !END IF
+    
+            !IF((depth(i)/depth(i-1)<10.0_dp).and.(depth(i-1)/depth(i)<10.0_dp)) THEN
+                IF(i>1) THEN
+                    M1_diag(i)   = M1_diag(i)   + 0.5_dp*tmp1*int_edif_dfdy(i)/zetamult(i)  ! Note that 1/zetamult(i)*Cbar = cb
+                    M1_lower(i)  = M1_lower(i)  + 0.5_dp*tmp1*int_edif_dfdy(i)/zetamult(i-1)
+                END IF
+            !END IF 
         END IF
     END DO
 
@@ -502,7 +518,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     ! assuming that the flux 'stopped' when the sediment ran out during the last
     ! time step.
     DO i = 1,a
-        IF((Cbar(i)*depth(i)<0.0).and.(Cbar(i)*depth(i)> - 1.0e-09_dp)) THEN
+        IF((Cbar(i)*depth(i)<0.0).and.(.FALSE.)) THEN
             ! Clip negligably small Cbar values
             !IF(abs(Cbar(i))<1.0e-10) THEN
             !    Cbar(i) = 0._dp
@@ -519,7 +535,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
                     Cbar(i) = 0._dp
                 ELSE IF((depth(i-1)==0._dp).and.(depth(i+1)==0._dp)) THEN
                     ! Isolated point
-                    Cbar(i) = 0._dp
+                    Cbar(i) = 1.e-012_dp
                 END IF
 
             ELSE
@@ -527,17 +543,17 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
                 IF(i==1) THEN
                     IF(depth(i+1)>0._dp) THEN
                         Cbar(i+1) =(Cbar(i+1)*depth(i+1)+Cbar(i)*depth(i))/depth(i+1)
-                        Cbar(i) = 0._dp
+                        Cbar(i) = 1.0e-012_dp
                     ELSE
                         ! Isolated point
-                        Cbar(i) = 0._dp
+                        Cbar(i) = 1.e-012_dp
                     END IF 
                 ELSE IF(i==a) THEN
                     IF(depth(i-1)>0._dp) THEN
                         Cbar(i-1) =(Cbar(i-1)*depth(i-1)+Cbar(i)*depth(i))/depth(i-1)
-                        Cbar(i) = 0._dp
+                        Cbar(i) = 1.0e-012_dp
                     ELSE
-                        Cbar(i)=0._dp
+                        Cbar(i)=1.e-12_dp
                     END IF
                 END IF
 
@@ -546,14 +562,20 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
         END IF
     END DO
     
-    IF((.TRUE.).and.(minval(Cbar)<0._dp)) THEN
-        print*, 'Cbar clip', minval(Cbar), minval(Cbar)*depth(minloc(Cbar))
-        Cbar = max(Cbar, 0._dp)
-        IF(counter.eq.1) print*, 'WARNING: Negative Cbar values are being clipped &
-                                to zero'
-        ! IDEA -- try approaching this with an approach along the lines of the
-        ! one in that paper that Steve Roberts pointed you to.
-    END IF 
+    DO i=1,a
+        IF(Cbar(i)<0.0_dp) THEN
+            IF(Cbar(i)< -1.0e-012_dp) print*, 'Cbar clip', i, Cbar(i), Cbar_old(i), depth(i)
+            Cbar(i) = 1.0e-12_dp
+        END IF
+    END DO
+    !IF((.TRUE.).and.(minval(Cbar)<0._dp)) THEN
+    !    print*, 'Cbar clip', minval(Cbar), minval(Cbar)*depth(minloc(Cbar))
+    !    Cbar = max(Cbar, 0._dp)
+    !    IF(counter.eq.1) print*, 'WARNING: Negative Cbar values are being clipped &
+    !                            to zero'
+    !    ! IDEA -- try approaching this with an approach along the lines of the
+    !    ! one in that paper that Steve Roberts pointed you to.
+    !END IF 
 
    
  
@@ -576,10 +598,10 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
         lat_sus_flux(i+1) = lat_sus_flux(i+1) -0.5_dp*(cbed_tmp1 + cbed_tmp2)*int_edif_dfdy(i+1) 
     END DO 
 
-    ! Add Erosion and deposition here using operator splitting
-    ! depth*dCbar/dt +wset*Cbed = Qe  
-    ! depth/dt*(Cbar_new -Cbar) + wset*(Cbar_new/zetamult) = Qe
-    ! Cbar_new( depth/dt + wset/zetamult) = Qe + depth/dt*Cbar
+    ! Add deposition here using operator splitting
+    ! depth*dCbar/dt +wset*Cbed =  0 
+    ! depth/dt*(Cbar_new -Cbar) + wset*(Cbar_new/zetamult) = 0
+    ! Cbar_new( depth/dt + wset/zetamult) = 0 + depth/dt*Cbar
     Cbar = (Qe*0.0_dp + depth(1:a)/delT*Cbar - 0.0_dp*wset/zetamult(1:a)*Cbar)/ &
            (depth(1:a)/delT + 1.0_dp*wset/zetamult(1:a))
 

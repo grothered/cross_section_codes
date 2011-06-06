@@ -20,11 +20,11 @@
 !Algorithm options
 !!!!!!!!!!!!!!!!!!!!!
 
-nos = 400 ! Number of spatial grid points
+nos = 1000 ! Number of spatial grid points
 writfreq = 2000 !24*5*5 ! The output is written every writfreq 'th timestep
 jmax= 2000001 !2000001 !1382400 !24*5*2*45*4*4*4*4*5 ! The number of time steps
 t = 0.00 ! Starting time (s)
-dT = 50.00 !Time step (s)
+dT = 1.00 !Time step (s)
 variable_timestep=.FALSE. !Do we change the timestepping for high sediment concentrations? -- this is presently inconsistent with bed layers
 
 waterM = 0.01 !Initial water elevation (m) and mean water elevation
@@ -46,7 +46,7 @@ tbston=.TRUE. !When true (false) this term switches on (off) the sqrt(1+slopes^2
 layers=1 !The number of bed layers
 lincrem = 1000.031 ! The distance between bed layers (m). Set it to a very high number to avoid the multi bed layers having any influence.
 mu = 10000.60 !Angle of repose - this can be used to influence the critical shear stress if the code is adjusted
-failure_slope = 2.0 ! Slope at which mass failure occurs.
+failure_slope = 0.60 ! Slope at which mass failure occurs.
 tauinc = 0.00 ! A DEFUNCT constant (Pa)
 erconst = 0.14  ! The constant determining the min critical shear and the critical shear increment
 taucrit_slope_reduction=.FALSE. ! Is taucrit reduced on lateral slopes?
