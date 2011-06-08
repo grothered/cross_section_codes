@@ -602,7 +602,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
         IF((i<a).and.(i>0)) THEN
             cbed_tmp1 = Cbar(i+1)/zetamult(i+1) - Cbar(i)/zetamult(i) ! diff(cbed)
             !cbed_tmp2 = cbed(i)
-            IF(Cbar(i)<Cbar(i+1)) THEN
+            IF(Cbar_old(i)/zetamult(i)<Cbar(i+1)/zetamult(i+1)) THEN
                 cbed_tmp2 = Cbar(i)/zetamult(i)
             ELSE
                 cbed_tmp2 = Cbar(i+1)/zetamult(i+1)
@@ -693,7 +693,11 @@ REAL(dp) FUNCTION rouse_int(z,d_aref)
         ! Prevent integer values of z, by 'perturbing' the z value away from an
         ! integer if needed. 
         IF(abs(z-anint(z))<perturb) THEN
-            z2 = anint(z)+perturb
+            IF(z<anint(z)) THEN 
+                z2 = anint(z)-perturb
+            ELSE
+                z2 = anint(z) + perturb
+            END IF
         ELSE
             z2=z
         END IF
