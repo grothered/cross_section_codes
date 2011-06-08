@@ -602,7 +602,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
         IF((i<a).and.(i>0)) THEN
             cbed_tmp1 = Cbar(i+1)/zetamult(i+1) - Cbar(i)/zetamult(i) ! diff(cbed)
             !cbed_tmp2 = cbed(i)
-            IF(Cbar_old(i)/zetamult(i)<Cbar(i+1)/zetamult(i+1)) THEN
+            IF(Cbar_old(i)/zetamult(i)<Cbar_old(i+1)/zetamult(i+1)) THEN
                 cbed_tmp2 = Cbar(i)/zetamult(i)
             ELSE
                 cbed_tmp2 = Cbar(i+1)/zetamult(i+1)
@@ -683,8 +683,8 @@ REAL(dp) FUNCTION rouse_int(z,d_aref)
     INTEGER:: i, num_trapz_pts=100 
     REAL(dp):: db_const, F1, J1, j, E2, z2, perturb = 1.0e-05, eps, d_eps
    
-    IF(z>10.0_dp) THEN
-        ! If z>10.0, there is no suspended load, make a quick exit
+    IF(z>20.0_dp) THEN
+        ! If z is large, there is no suspended load, make a quick exit
         rouse_int = 0.0_dp 
         
     ELSE
@@ -692,7 +692,7 @@ REAL(dp) FUNCTION rouse_int(z,d_aref)
 
         ! Prevent integer values of z, by 'perturbing' the z value away from an
         ! integer if needed. 
-        IF(abs(z-anint(z))<perturb) THEN
+        IF((abs(z-anint(z))<perturb).and.(anint(z)>0)) THEN
             IF(z<anint(z)) THEN 
                 z2 = anint(z)-perturb
             ELSE
