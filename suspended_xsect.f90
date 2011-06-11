@@ -681,10 +681,10 @@ REAL(dp) FUNCTION rouse_int(z,d_aref)
 
     ! num_trapz_pts = number of points used in trapezoidal integration
     INTEGER:: i, num_trapz_pts=100 
-    REAL(dp):: db_const, F1, J1, j, E2, z2, perturb = 1.0e-05, eps, d_eps
+    REAL(dp):: db_const, F1, J1, j, E2, z2, perturb = 1.0e-05_dp, eps, d_eps
    
-    IF(z>20.0_dp) THEN
-        ! If z is large, there is no suspended load, make a quick exit
+    IF((z>20.0_dp).or.(d_aref>1.0_dp)) THEN
+        ! If z is large, or aref is larger than the depth, there is no suspended load, make a quick exit
         rouse_int = 0.0_dp 
         
     ELSE
@@ -801,8 +801,8 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
     ys_tmp(a+1) = ysu
 
     ustar_tmp(1:a) = ustar
-    ustar_tmp(0)   = 0.0_dp !ustar(1)
-    ustar_tmp(a+1) = 0.0_dp !ustar(a)
+    ustar_tmp(0)   = ustar(1)
+    ustar_tmp(a+1) = ustar(a)
     
     aref_tmp(1:a) = a_ref(1:a)
     aref_tmp(0)   = a_ref(1)
