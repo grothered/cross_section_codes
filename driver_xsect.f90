@@ -281,6 +281,8 @@ DO Q_loop= 1, no_discharges!15
 
                 taucrit(i,jj) = erconst*(1._dp+ jj*1._dp)*max(multa,1.0e-01_dp)
 
+                !if(bed(i)>-1.0_dp) taucrit(i,jj) = taucrit(i,jj)*2.0_dp
+
                 IF( isnan(taucrit(i,jj))) THEN
                     PRINT*, "taucrit(", i,",", jj, ") is nan"
                     STOP

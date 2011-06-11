@@ -580,7 +580,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     DO i=1,a
         IF(Cbar(i)<0.0_dp) THEN
             IF(Cbar(i)< -1.0e-012_dp) print*, 'Cbar clip', i, Cbar(i), Cbar_old(i), depth(i)
-            Cbar(i) = 1.0e-12_dp
+            Cbar(i) = 0.0e-12_dp
         END IF
     END DO
     !IF((.TRUE.).and.(minval(Cbar)<0._dp)) THEN
@@ -805,8 +805,8 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
     ustar_tmp(a+1) = 0.0_dp !ustar(a)
     
     aref_tmp(1:a) = a_ref(1:a)
-    aref_tmp(0)   = 0.0_dp !a_ref(1)
-    aref_tmp(a+1) = 0.0_dp !a_ref(a)
+    aref_tmp(0)   = a_ref(1)
+    aref_tmp(a+1) = a_ref(a)
 
     ! Loop through (0.5, 1.5, ... a+0.5) to compute integrals
     DO i=1,a+1
@@ -899,9 +899,9 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
                     ! Step4: df_dy = df/dbedh*dbedh/dy + df/aref*daref/dy + df/dus*dus/dy
                     df_dy = df_dbedh*dbed_dy + df_darefh*daref_dy + df_dus*dus_dy
                 ELSE
-                    PRINT*, 'ERROR - d< aref in suspended_xsect (int_edify_f)', &
-                            d, arefh, aref_tmp(i), aref_tmp(i-1), bed_tmp(i), bed_tmp(i-1)
-                    stop
+                    !PRINT*, 'ERROR - d< aref in suspended_xsect (int_edify_f)', &
+                    !        d, arefh, aref_tmp(i), aref_tmp(i-1), bed_tmp(i), bed_tmp(i-1)
+                    !stop
                     !z_tmp = elevation above bed = at 0.5, 1.5, ... 99.5 * depth/no_subints.0,
                     
                     ! adjusted so z>arefh 
