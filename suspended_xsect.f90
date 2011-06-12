@@ -789,7 +789,8 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
                 bed_tmp(0:a+1), ustar_tmp(0:a+1), &
                 eps_z, ys_tmp(0:a+1), dbed_dy, depsz_dy, aref_tmp(0:a+1),&
                 arefh, daref_dy, dus_dy, df_dbedh(no_subints), df_darefh(no_subints), df_dus(no_subints), &
-                tmp2(no_subints), z2surf(no_subints), z2bed(no_subints), z2ratio(no_subints), dz
+                tmp2(no_subints), z2surf(no_subints), z2bed(no_subints), z2ratio(no_subints), dz, dyinv, &
+                d_on_aref_les1
 
     ! Predefine bed_tmp, ys, and ustar, including boundary values
     bed_tmp(1:a) = bed
@@ -818,9 +819,10 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
         arefh = 0.5_dp*(aref_tmp(i)+aref_tmp(i-1))
 
         ! Define daref/dy and dbed/dy, dustar/dy at i-1/2
-        daref_dy = (aref_tmp(i) - aref_tmp(i-1))/(ys_tmp(i)-ys_tmp(i-1)) 
-        dbed_dy = (bed_tmp(i) - bed_tmp(i-1))/(ys_tmp(i)-ys_tmp(i-1)) 
-        dus_dy = (ustar_tmp(i) - ustar_tmp(i-1))/(ys_tmp(i)-ys_tmp(i-1)) 
+        dyinv = 1.0_dp/(ys_tmp(i)-ys_tmp(i-1)) 
+        daref_dy = (aref_tmp(i) - aref_tmp(i-1))*dyinv
+        dbed_dy = (bed_tmp(i) - bed_tmp(i-1))*dyinv
+        dus_dy = (ustar_tmp(i) - ustar_tmp(i-1))*dyinv 
         
 
         ! Create vertical suspended sediment profile
@@ -861,9 +863,10 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
                     !z2surf= water-z_tmp ! Distance from z_tmp to the surface
                     z2bed = z_tmp-bedh  ! Distance from z_tmp to the bed
                     z2ratio = d/z2bed ! A ratio that comes up a lot
-
+                    d_on_aref_les1 = (d/arefh -1.0_dp)
+                    
                     ! Calculate vertical profile of suspended sediment
-                    f = ( (z2ratio-1.0_dp)/(d/arefh -1.0_dp))**(wset/(0.4_dp*us))
+                    f = ( (z2ratio-1.0_dp)/(d_on_aref_les1))**(wset/(0.4_dp*us))
                     !IF(minval(f)<0._dp) THEN
                     !    print*, ' MINVAL f < 0._dp'
                     !    stop
@@ -880,21 +883,22 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
                     !     1   E+0*wset/ustar)*(((Y-h)/(z-h)-1)/(aref*((Y-h)/aref-1)**2)+((Y-h
                     !     2   )/(z-h)**2-1/(z-h))/((Y-h)/aref-1))/(ustar*((Y-h)/(z-h)-1))]
                     df_dbedh = &
-                            (wset/0.4_dp)*(d/arefh-1.0_dp)*f* &
-                            ((z2ratio-1.0_dp)/(arefh*(d/arefh-1.0_dp)**2)+&
-                            (d/z2bed**2-1.0_dp/z2bed)/(d/arefh-1.0_dp))/(us*(z2ratio-1.0_dp))
+                            (wset/0.4_dp)*(d_on_aref_les1)*f* &
+                            ((z2ratio-1.0_dp)/(arefh*(d_on_aref_les1)**2)+&
+                            (d/z2bed**2-1.0_dp/z2bed)/(d_on_aref_les1))/(us*(z2ratio-1.0_dp))
 
                     ! Step2: df/darefh, evaluated using maxima (symbolic algebra) 
                     ! -- see code in the file lat_flux.max
                     ! [2.5E+0*wset*(Y-h)*(((Y-h)/(z-h)-1)/((Y-h)/aref-1))**(2.5E+0*wset/
                     !     1   ustar)/(aref**2*ustar*((Y-h)/aref-1))]
-                    df_darefh = (wset/0.4_dp)*d*f/(arefh**2*us*(d/arefh-1.0_dp))
+                    df_darefh = (wset/0.4_dp)*d*f/(arefh**2*us*(d_on_aref_les1))
 
                     ! Step3: df/dus, evaluated using maxima (symbolic algebra) 
                     ! -- see code in the file lat_flux.max
                     ! [-2.5E+0*wset*(((Y-h)/(z-h)-1)/((Y-h)/aref-1))**(2.5E+0*wset/ustar
                     !     1   )*log(((Y-h)/(z-h)-1)/((Y-h)/aref-1))/ustar**2]
-                    df_dus = -(wset/0.4_dp)*f*log((z2ratio-1.0_dp)/(d/arefh-1.0_dp))/us**2
+                    !df_dus = -(wset/0.4_dp)*f*log((z2ratio-1.0_dp)/(d_on_aref_les1))/us**2
+                    df_dus = -(f/us)*log(f)
 
                     ! Step4: df_dy = df/dbedh*dbedh/dy + df/aref*daref/dy + df/dus*dus/dy
                     df_dy = df_dbedh*dbed_dy + df_darefh*daref_dy + df_dus*dus_dy
