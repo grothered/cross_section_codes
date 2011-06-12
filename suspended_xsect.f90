@@ -456,15 +456,15 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     END DO
 
     ! Erosion and deposition
-    IF(.TRUE.) THEN
-        DO i = 1, a
+    !IF(.TRUE.) THEN
+    !    DO i = 1, a
 
-            RHS(i) = RHS(i) +Qe(i)
-            !M1_diag(i) = M1_diag(i) + wset/zetamult(i)  ! Note that 1/zetamult(i)*Cbar = cb
+    !        RHS(i) = RHS(i) +Qe(i)
+    !        !M1_diag(i) = M1_diag(i) + wset/zetamult(i)  ! Note that 1/zetamult(i)*Cbar = cb
 
 
-        END DO
-    END IF
+    !    END DO
+    !END IF
 
     !Sanity-check
     DO i = 1, a
@@ -622,7 +622,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     ! depth*dCbar/dt +wset*Cbed =  0 
     ! depth/dt*(Cbar_new -Cbar) + wset*(Cbar_new/zetamult) = 0
     ! Cbar_new( depth/dt + wset/zetamult) = 0 + depth/dt*Cbar
-    Cbar = (Qe*0.0_dp + depth(1:a)/delT*Cbar - 0.0_dp*wset/zetamult(1:a)*Cbar)/ &
+    Cbar = (Qe*1.0_dp + depth(1:a)/delT*Cbar - 0.0_dp*wset/zetamult(1:a)*Cbar)/ &
            (depth(1:a)/delT + 1.0_dp*wset/zetamult(1:a))
 
 
@@ -911,7 +911,7 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
                     ! In these shallow waters, define things so there is no
                     ! lateral flux of suspended load -- hmm, actually, not such
                     ! a good idea?
-                    f = 1.0_dp ! Uniform suspended load in very shallow water?
+                    f = 0.0_dp !1.0_dp ! Uniform suspended load in very shallow water?
                     df_dy= 0.0_dp ! FIXME: Is this appropriate?
                 END IF
 
