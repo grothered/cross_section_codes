@@ -886,9 +886,9 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
                     !     1   E+0*wset/ustar)*(((Y-h)/(z-h)-1)/(aref*((Y-h)/aref-1)**2)+((Y-h
                     !     2   )/(z-h)**2-1/(z-h))/((Y-h)/aref-1))/(ustar*((Y-h)/(z-h)-1))]
                     df_dbedh = &
-                            (wset/0.4_dp)*(d_on_aref_les1)*f* &
-                            ((z2ratio-1.0_dp)/(arefh*(d_on_aref_les1)**2)+&
-                            (d*z2bed_inv**2-z2bed_inv)/(d_on_aref_les1))/(us*(z2ratio-1.0_dp))
+                            (wset/(0.4_dp*us))*(d_on_aref_les1)*f* &
+                            (1.0_dp/(arefh*(d_on_aref_les1)**2)+&
+                            z2bed_inv/(d_on_aref_les1))
 
                     ! Step2: df/darefh, evaluated using maxima (symbolic algebra) 
                     ! -- see code in the file lat_flux.max
