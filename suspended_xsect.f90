@@ -790,7 +790,7 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
                 eps_z, ys_tmp(0:a+1), dbed_dy, depsz_dy, aref_tmp(0:a+1),&
                 arefh, daref_dy, dus_dy, df_dbedh(no_subints), df_darefh(no_subints), df_dus(no_subints), &
                 tmp2(no_subints), z2surf(no_subints), z2bed(no_subints), z2ratio(no_subints), dz, dyinv, &
-                d_on_aref_les1
+                d_on_aref_les1, z2bed_inv(no_subints)
 
     ! Predefine bed_tmp, ys, and ustar, including boundary values
     bed_tmp(1:a) = bed
@@ -860,9 +860,12 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
                     z_tmp = bedh+arefh+ ((d-arefh)/no_subints*1.0_dp)*( (/ (j,j=1,no_subints) /)*1.0_dp-0.5_dp)
 
                     ! Useful shorthand variables, which save computation
+                    ! This routine is computationally demanding, so it is worth
+                    ! making some effort.
                     !z2surf= water-z_tmp ! Distance from z_tmp to the surface
                     z2bed = z_tmp-bedh  ! Distance from z_tmp to the bed
-                    z2ratio = d/z2bed ! A ratio that comes up a lot
+                    z2bed_inv = 1.0_dp/z2bed ! Inverse of above, reuse below
+                    z2ratio = d*z2bed_inv ! A ratio that comes up a lot
                     d_on_aref_les1 = (d/arefh -1.0_dp)
                     
                     ! Calculate vertical profile of suspended sediment
@@ -885,7 +888,7 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
                     df_dbedh = &
                             (wset/0.4_dp)*(d_on_aref_les1)*f* &
                             ((z2ratio-1.0_dp)/(arefh*(d_on_aref_les1)**2)+&
-                            (d/z2bed**2-1.0_dp/z2bed)/(d_on_aref_les1))/(us*(z2ratio-1.0_dp))
+                            (d*z2bed_inv**2-z2bed_inv)/(d_on_aref_les1))/(us*(z2ratio-1.0_dp))
 
                     ! Step2: df/darefh, evaluated using maxima (symbolic algebra) 
                     ! -- see code in the file lat_flux.max
