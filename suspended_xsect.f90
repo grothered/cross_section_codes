@@ -618,10 +618,10 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
         lat_sus_flux(i+1) = lat_sus_flux(i+1) -(cbed_tmp2)*int_edif_dfdy(i+1) 
     END DO 
 
-    ! Add deposition here using operator splitting
-    ! depth*dCbar/dt +wset*Cbed =  0 
-    ! depth/dt*(Cbar_new -Cbar) + wset*(Cbar_new/zetamult) = 0
-    ! Cbar_new( depth/dt + wset/zetamult) = 0 + depth/dt*Cbar
+    ! Add deposition and erosion here using operator splitting
+    ! depth*dCbar/dt +wset*Cbed =  Qe 
+    ! depth/dt*(Cbar_new -Cbar) + wset*(Cbar_new/zetamult) = Qe
+    ! Cbar_new( depth/dt + wset/zetamult) = Qe + depth/dt*Cbar
     Cbar = (Qe*1.0_dp + depth(1:a)/delT*Cbar - 0.0_dp*wset/zetamult(1:a)*Cbar)/ &
            (depth(1:a)/delT + 1.0_dp*wset/zetamult(1:a))
 
