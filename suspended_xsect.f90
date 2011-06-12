@@ -2,6 +2,7 @@ MODULE suspended_xsect
 
 !File of global parameters
 use global_defs
+use util_various
 
 contains
 
@@ -382,7 +383,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
                 ! int_edif_f
                 call int_edify_f(edify_model, sus_vert_prof, a, ys, bed, ysl, ysu,&
                                  bedl, bedu, water, sqrt(abs(tau)/rho), wset,a_ref,&
-                                 int_edif_f, int_edif_dfdy,100)
+                                 int_edif_f, int_edif_dfdy, 201)
                 !int_edif_f=0._dp
                 !int_edif_dfdy=0._dp
             END IF
@@ -789,8 +790,9 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
                 bed_tmp(0:a+1), ustar_tmp(0:a+1), &
                 eps_z, ys_tmp(0:a+1), dbed_dy, depsz_dy, aref_tmp(0:a+1),&
                 arefh, daref_dy, dus_dy, df_dbedh(no_subints), df_darefh(no_subints), df_dus(no_subints), &
-                tmp2(no_subints), z2surf(no_subints), z2bed(no_subints), z2ratio(no_subints), dz, dyinv, &
-                d_on_aref_les1, z2bed_inv(no_subints)
+                z2ratio(no_subints), dz, dyinv, d_on_aref_les1_inv, z2bed_inv(no_subints), arefh_inv, &
+                parabola(no_subints)
+                !z2surf(no_subints), z2bed(no_subints)
 
     ! Predefine bed_tmp, ys, and ustar, including boundary values
     bed_tmp(1:a) = bed
@@ -838,7 +840,7 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
                              )/(ys_tmp(i)-ys_tmp(i-1))
 
                 !z_tmp = elevation above bed = at 0.5, 1.5, ... 99.5 * depth/no_subints.0 
-                z_tmp = bedh + (d/no_subints*1.0_dp)*( (/ (j,j=1,no_subints) /)*1.0_dp-0.5_dp)
+                z_tmp = bedh + (d/((no_subints-1)*1.0_dp))*( (/ (j,j=0,no_subints-1) /))
 
                 ! Exponential vertical suspended sediment profile
                 f = exp(-wset/eps_z*(z_tmp-bedh))
@@ -857,18 +859,20 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
 
                     !z_tmp = elevation above bed = at 0.5, 1.5, ... 99.5 * depth/no_subints.0,
                     ! adjusted so z>arefh 
-                    z_tmp = bedh+arefh+ ((d-arefh)/no_subints*1.0_dp)*( (/ (j,j=1,no_subints) /)*1.0_dp-0.5_dp)
-
+                    z_tmp = bedh+arefh+ (d-arefh)/((no_subints-1)*1.0_dp)*( (/ (j,j=0,no_subints-1) /))
                     ! Useful shorthand variables, which save computation
                     ! This routine is computationally demanding, so it is worth
                     ! making some effort.
                     !z2surf= water-z_tmp ! Distance from z_tmp to the surface
                     z2bed_inv = 1.0_dp/(z_tmp-bedh) ! Inverse of above, reuse below
                     z2ratio = d*z2bed_inv ! A ratio that comes up a lot
-                    d_on_aref_les1 = (d/arefh -1.0_dp)
+                    z2ratio(no_subints)=1.0_dp ! Round-off can spoil this otherwise, and introduce singularities later.
+                    rouseno = wset/(0.4_dp*us) ! Rouse number
+                    arefh_inv = 1.0_dp/arefh
+                    d_on_aref_les1_inv = 1.0_dp/(d/arefh -1.0_dp) ! Useful term
                     
                     ! Calculate vertical profile of suspended sediment
-                    f = ( (z2ratio-1.0_dp)/(d_on_aref_les1))**(wset/(0.4_dp*us))
+                    f = ((z2ratio-1.0_dp)*(d_on_aref_les1_inv))**rouseno
                     !IF(minval(f)<0._dp) THEN
                     !    print*, ' MINVAL f < 0._dp'
                     !    stop
@@ -884,35 +888,44 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
                     ! [2.5E+0*wset*((Y-h)/aref-1)*(((Y-h)/(z-h)-1)/((Y-h)/aref-1))**(2.5
                     !     1   E+0*wset/ustar)*(((Y-h)/(z-h)-1)/(aref*((Y-h)/aref-1)**2)+((Y-h
                     !     2   )/(z-h)**2-1/(z-h))/((Y-h)/aref-1))/(ustar*((Y-h)/(z-h)-1))]
-                    df_dbedh = &
-                            (wset/(0.4_dp*us))*f* &
-                            (1.0_dp/(arefh*d_on_aref_les1)+z2bed_inv)
+                    df_dbedh =rouseno*f*(d_on_aref_les1_inv*arefh_inv+z2bed_inv)
 
                     ! Step2: df/darefh, evaluated using maxima (symbolic algebra) 
                     ! -- see code in the file lat_flux.max
                     ! [2.5E+0*wset*(Y-h)*(((Y-h)/(z-h)-1)/((Y-h)/aref-1))**(2.5E+0*wset/
                     !     1   ustar)/(aref**2*ustar*((Y-h)/aref-1))]
-                    df_darefh = (wset/0.4_dp)*d*f/(arefh**2*us*(d_on_aref_les1))
+                    df_darefh = rouseno*d*f*d_on_aref_les1_inv*arefh_inv**2
 
                     ! Step3: df/dus, evaluated using maxima (symbolic algebra) 
                     ! -- see code in the file lat_flux.max
                     ! [-2.5E+0*wset*(((Y-h)/(z-h)-1)/((Y-h)/aref-1))**(2.5E+0*wset/ustar
                     !     1   )*log(((Y-h)/(z-h)-1)/((Y-h)/aref-1))/ustar**2]
                     !df_dus = -(wset/0.4_dp)*f*log((z2ratio-1.0_dp)/(d_on_aref_les1))/us**2
-                    df_dus = -(f/us)*log(f)
+                    !df_dus = -(f/us)*log(f)
+                    ! Note f*log(f) --> 0 as f--> 0
+                    df_dus(1:(no_subints-1)) = -(f(1:(no_subints-1))/us)*log(f(1:(no_subints-1)))
+                    df_dus(no_subints)=0.0_dp
 
                     ! Step4: df_dy = df/dbedh*dbedh/dy + df/aref*daref/dy + df/dus*dus/dy
                     df_dy = df_dbedh*dbed_dy + df_darefh*daref_dy + df_dus*dus_dy
+
+                    !DO j=1,no_subints
+                    !    IF(df_dy(j).ne.df_dy(j)) print*, 'df_dy ', j, 'is nan',&
+                    !         i, d,rouseno, df_darefh(j), df_dus(j), df_dbedh(j), f(j), &
+                    !         z2ratio(j)
+                    !END DO
+
                 ELSE
                     !PRINT*, 'ERROR - d< aref in suspended_xsect (int_edify_f)', &
                     !        d, arefh, aref_tmp(i), aref_tmp(i-1), bed_tmp(i), bed_tmp(i-1)
                     !stop
                     !z_tmp = elevation above bed = at 0.5, 1.5, ... 99.5 * depth/no_subints.0,
                     
+                    z_tmp = bedh+arefh+ (d-arefh)/((no_subints-1)*1.0_dp)*( (/ (j,j=0,no_subints-1) /))
                     ! adjusted so z>arefh 
                     !z_tmp = bedh+arefh+ ((d-arefh)/no_subints*1.0_dp)*( (/ (j,j=1,no_subints) /)*1.0_dp-0.5_dp)
 
-                    z_tmp = bedh+ ((d-bedh)/no_subints*1.0_dp)*( (/ (j,j=1,no_subints) /)*1.0_dp-0.5_dp)
+                    !z_tmp = bedh+ ((d-bedh)/no_subints*1.0_dp)*( (/ (j,j=1,no_subints) /)*1.0_dp-0.5_dp)
                     ! In these shallow waters, define things so there is no
                     ! lateral flux of suspended load -- hmm, actually, not such
                     ! a good idea?
@@ -938,7 +951,9 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
 
             CASE('Parabolic')
                 IF(d>0.0_dp) THEN
-                    edify = 0.4_dp*us*d*(z_tmp-bedh)*(water-z_tmp)/(0.25_dp*d**2) ! Parabolic
+
+                    !edify = (0.4_dp*us*d)*(z_tmp-bedh)*(water-z_tmp)/(0.25_dp*d**2) ! Parabolic
+                    edify = (1.6_dp*us/d)*(z_tmp-bedh)*(water-z_tmp) ! Parabolic
                 ELSE
                     edify=0.0_dp
                 END IF
@@ -960,10 +975,14 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
 
         !Integral (edify*f) dz
         dz = (z_tmp(no_subints)-z_tmp(1))/(1.0_dp*(no_subints-1))
-        int_edif_f(i) = sum(edify*f)*dz
+        !int_edif_f(i) = sum(edify*f)*dz
+        !int_edif_f(i) = trapz_integrate(no_subints, dz, edify*f)
+        int_edif_f(i) = simpson_integrate(no_subints, dz, edify*f)
         
         !Integral (edify*df/dy) dz
-        int_edif_dfdy(i) = sum(edify*df_dy)*dz
+        !int_edif_dfdy(i) = sum(edify*df_dy)*dz
+        !int_edif_dfdy(i) = trapz_integrate(no_subints, dz, edify*df_dy)
+        int_edif_dfdy(i) = simpson_integrate(no_subints, dz, edify*df_dy)
 
         !print*,'#########', i, int_edif_f(i), int_edif_dfdy(i) 
         !print*, edify, df_dy

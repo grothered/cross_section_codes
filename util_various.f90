@@ -899,5 +899,36 @@ SUBROUTINE conservation_tests2(l1,Anew,wetwidth,delX,Q2,DT,C,C_old,FL1_mouth, FL
 
 END SUBROUTINE conservation_tests2
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+REAL(dp) FUNCTION simpson_integrate(a,dz,f)
+    ! Purpose: Numerically integrate f
+    ! Assume f(1), f(2), ...f(a) are evenly spaced by dz
+    INTEGER, INTENT(IN)::a
+    REAL(dp), INTENT(IN):: dz, f(a)
+    REAL(dp):: onethird=1.0_dp/3.0_dp
+
+    IF(mod(a,2)==0) THEN
+        print*, 'ERROR: Even number of points for simpsons rule in util_various'
+        stop
+    END IF
+
+    simpson_integrate = f(1) + f(a) + 4.0_dp*sum(f(2:a-1:2)) + 2.0*sum(f(3:a-2:2))
+
+    simpson_integrate = simpson_integrate*dz*onethird
+
+END FUNCTION simpson_integrate
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+REAL(dp) FUNCTION trapz_integrate(a,dz,f)
+    ! Purpose: Numerically integrate f
+    ! Assume f(1), f(2), ...f(a) are evenly spaced by dz
+    INTEGER, INTENT(IN)::a
+    REAL(dp), INTENT(IN):: dz, f(a)
+
+
+    trapz_integrate = ((f(1) + f(a))*0.5_dp + sum(f(2:a-1)))*dz
+
+END FUNCTION trapz_integrate
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
 
 END MODULE util_various
