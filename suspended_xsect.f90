@@ -863,8 +863,7 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
                     ! This routine is computationally demanding, so it is worth
                     ! making some effort.
                     !z2surf= water-z_tmp ! Distance from z_tmp to the surface
-                    z2bed = z_tmp-bedh  ! Distance from z_tmp to the bed
-                    z2bed_inv = 1.0_dp/z2bed ! Inverse of above, reuse below
+                    z2bed_inv = 1.0_dp/(z_tmp-bedh) ! Inverse of above, reuse below
                     z2ratio = d*z2bed_inv ! A ratio that comes up a lot
                     d_on_aref_les1 = (d/arefh -1.0_dp)
                     
