@@ -794,6 +794,10 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
                 parabola(64)
                 !z2surf(64), z2bed(64)
 
+    ! Note -- we assume 64 point gaussian quadrature is the method. Experiments
+    ! suggest that this works well, compared with e.g. 800 points using simpsons
+    ! rule or another higher order method.
+    ! I got the coefficients from the web -- see my math notes for the website
     REAL(dp):: gauss_weights(64)= (/ 0.0486909570091397_dp,0.0486909570091397_dp,0.0485754674415034_dp,0.0485754674415034_dp,&
                                      0.0483447622348030_dp,0.0483447622348030_dp,0.0479993885964583_dp,0.0479993885964583_dp,&
                                      0.0475401657148303_dp,0.0475401657148303_dp,0.0469681828162100_dp,0.0469681828162100_dp,&
@@ -811,7 +815,7 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
                                      0.0088467598263639_dp,0.0088467598263639_dp,0.0065044579689784_dp,0.0065044579689784_dp,&
                                      0.0041470332605625_dp,0.0041470332605625_dp,0.0017832807216964_dp,0.0017832807216964_dp /)
 
-    REAL(dp)::gauss_abscissae(64) =(/-0.0243502926634244_dp,0.0243502926634244_dp,-0.0729931217877990_dp,0.0729931217877990_dp,&
+    REAL(dp)::gauss_abscissae(64)= (/-0.0243502926634244_dp,0.0243502926634244_dp,-0.0729931217877990_dp,0.0729931217877990_dp,&
                                      -0.1214628192961206_dp,0.1214628192961206_dp,-0.1696444204239928_dp,0.1696444204239928_dp,&
                                      -0.2174236437400071_dp,0.2174236437400071_dp,-0.2646871622087674_dp,0.2646871622087674_dp,&
                                      -0.3113228719902110_dp,0.3113228719902110_dp,-0.3572201583376681_dp,0.3572201583376681_dp,&
