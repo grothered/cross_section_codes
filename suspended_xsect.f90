@@ -795,9 +795,9 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
                 !z2surf(64), z2bed(64)
 
     ! Note -- we assume 64 point gaussian quadrature is the method. Experiments
-    ! suggest that this works well, compared with e.g. 800 points using simpsons
-    ! rule or another higher order method.
-    ! I got the coefficients from the web -- see my math notes for the website
+    ! suggest that this works very well, compared with e.g. 800 points using simpsons
+    ! rule or another higher order method -- get the same answer -- and it is way cheaper.
+    ! I got the coefficients from the web -- see my 'math notes' folder for the website, with a folder on gaussian_quadrature there.
     REAL(dp):: gauss_weights(64)= (/ 0.0486909570091397_dp,0.0486909570091397_dp,0.0485754674415034_dp,0.0485754674415034_dp,&
                                      0.0483447622348030_dp,0.0483447622348030_dp,0.0479993885964583_dp,0.0479993885964583_dp,&
                                      0.0475401657148303_dp,0.0475401657148303_dp,0.0469681828162100_dp,0.0469681828162100_dp,&
@@ -905,7 +905,7 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
                     !z2surf= water-z_tmp ! Distance from z_tmp to the surface
                     z2bed_inv = 1.0_dp/(z_tmp-bedh) ! Inverse of above, reuse below
                     z2ratio = d*z2bed_inv ! A ratio that comes up a lot
-                    z2ratio(no_subints)=1.0_dp ! Round-off can spoil this otherwise, and introduce singularities later.
+                    !z2ratio(no_subints)=1.0_dp ! Round-off can spoil this otherwise, and introduce singularities later.
                     rouseno = wset/(0.4_dp*us) ! Rouse number
                     arefh_inv = 1.0_dp/arefh
                     d_on_aref_les1_inv = 1.0_dp/(d/arefh -1.0_dp) ! Useful term
@@ -1022,7 +1022,7 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
         !int_edif_f(i) = simpson_integrate(no_subints, dz, edify*f)
         !int_edif_f(i) = wedint(no_subints, dz, edify*f)
         !int_edif_f(i) = newtcotes7(no_subints, dz, edify*f)
-        int_edif_f(i) = sum(gauss_weights*edify*f)*(d-a_refh)/2.0_dp    
+        int_edif_f(i) = sum(gauss_weights*edify*f)*(d-a_refh)/2.0_dp ! gaussian quadrature
      
         !Integral (edify*df/dy) dz
         !int_edif_dfdy(i) = sum(edify*df_dy)*dz
@@ -1030,7 +1030,7 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
         !int_edif_dfdy(i) = simpson_integrate(no_subints, dz, edify*df_dy)
         !int_edif_dfdy(i) = wedint(no_subints, dz, edify*df_dy)
         !int_edif_dfdy(i) = newtcotes7(no_subints, dz, edify*df_dy)
-        int_edif_dfdy(i) = sum(gauss_weights*edify*df_dy)*(d-a_refh)/2.0_dp    
+        int_edif_dfdy(i) = sum(gauss_weights*edify*df_dy)*(d-a_refh)/2.0_dp !Gaussian quadrature   
 
         !print*,'#########', i, int_edif_f(i), int_edif_dfdy(i) 
         !print*, edify, df_dy
