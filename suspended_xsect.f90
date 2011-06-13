@@ -383,7 +383,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
                 ! int_edif_f
                 call int_edify_f(edify_model, sus_vert_prof, a, ys, bed, ysl, ysu,&
                                  bedl, bedu, water, sqrt(abs(tau)/rho), wset,a_ref,&
-                                 int_edif_f, int_edif_dfdy, 201)
+                                 int_edif_f, int_edif_dfdy) !, 205)
                 !int_edif_f=0._dp
                 !int_edif_dfdy=0._dp
             END IF
@@ -755,7 +755,7 @@ END FUNCTION rouse_int
 SUBROUTINE int_edify_f(edify_model,sus_vert_prof,& 
                       a,ys,bed,ysl, ysu, bedl, bedu, &
                       water, ustar,wset, a_ref, &
-                      int_edif_f, int_edif_dfdy, no_subints)
+                      int_edif_f, int_edif_dfdy) !, no_subints)
     ! PURPOSE: 
     !   To calculate
     !
@@ -774,10 +774,10 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
     ! cb*INT(edify*df/dy) dz + dcb/dy*INT(edify*f) dz
     !
     ! OUTPUTS: 
-    !   int_edif_f = Integral ( edify*f) dz, evaluated between grid points (i.e. 0.5, 1.5, ...a+0.5)
-    !   int_edif_dfdy = Integral ( edify*df/dy) dz, evaluated between grid points (i.e. 0.5, 1.5, ...a+0.5)
+    !   int_edif_f = Integral_{a_ref}^{water_surface} ( edify*f) dz
+    !   int_edif_dfdy = Integral_{a_ref}^{water_surface} ( edify*df/dy) dz
     !
-    INTEGER, INTENT(IN):: a, no_subints
+    INTEGER, INTENT(IN):: a 
     CHARACTER(len=20), INTENT(IN):: edify_model, sus_vert_prof
     REAL(dp), INTENT(IN):: ys, bed, ysl, ysu, bedl, bedu, ustar, water, wset, a_ref
     REAL(dp), INTENT(OUT):: int_edif_f, int_edif_dfdy
@@ -786,14 +786,47 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
     ! Local variables
     INTEGER:: i, j
 
-    REAL(dp):: d, us,bedh, f(no_subints), edify(no_subints), df_dy(no_subints), z_tmp(no_subints), &
+    REAL(dp):: d, us,bedh, f(64), edify(64), df_dy(64), z_tmp(64), &
                 bed_tmp(0:a+1), ustar_tmp(0:a+1), &
                 eps_z, ys_tmp(0:a+1), dbed_dy, depsz_dy, aref_tmp(0:a+1),&
-                arefh, daref_dy, dus_dy, df_dbedh(no_subints), df_darefh(no_subints), df_dus(no_subints), &
-                z2ratio(no_subints), dz, dyinv, d_on_aref_les1_inv, z2bed_inv(no_subints), arefh_inv, &
-                parabola(no_subints)
-                !z2surf(no_subints), z2bed(no_subints)
+                arefh, daref_dy, dus_dy, df_dbedh(64), df_darefh(64), df_dus(64), &
+                z2ratio(64), dz, dyinv, d_on_aref_les1_inv, z2bed_inv(64), arefh_inv, &
+                parabola(64)
+                !z2surf(64), z2bed(64)
 
+    REAL(dp):: gauss_weights(64)= (/ 0.0486909570091397_dp,0.0486909570091397_dp,0.0485754674415034_dp,0.0485754674415034_dp,&
+                                     0.0483447622348030_dp,0.0483447622348030_dp,0.0479993885964583_dp,0.0479993885964583_dp,&
+                                     0.0475401657148303_dp,0.0475401657148303_dp,0.0469681828162100_dp,0.0469681828162100_dp,&
+                                     0.0462847965813144_dp,0.0462847965813144_dp,0.0454916279274181_dp,0.0454916279274181_dp,&
+                                     0.0445905581637566_dp,0.0445905581637566_dp,0.0435837245293235_dp,0.0435837245293235_dp,&
+                                     0.0424735151236536_dp,0.0424735151236536_dp,0.0412625632426235_dp,0.0412625632426235_dp,&
+                                     0.0399537411327203_dp,0.0399537411327203_dp,0.0385501531786156_dp,0.0385501531786156_dp,&
+                                     0.0370551285402400_dp,0.0370551285402400_dp,0.0354722132568824_dp,0.0354722132568824_dp,&
+                                     0.0338051618371416_dp,0.0338051618371416_dp,0.0320579283548516_dp,0.0320579283548516_dp,&
+                                     0.0302346570724025_dp,0.0302346570724025_dp,0.0283396726142595_dp,0.0283396726142595_dp,&
+                                     0.0263774697150547_dp,0.0263774697150547_dp,0.0243527025687109_dp,0.0243527025687109_dp,&
+                                     0.0222701738083833_dp,0.0222701738083833_dp,0.0201348231535302_dp,0.0201348231535302_dp,&
+                                     0.0179517157756973_dp,0.0179517157756973_dp,0.0157260304760247_dp,0.0157260304760247_dp,&
+                                     0.0134630478967186_dp,0.0134630478967186_dp,0.0111681394601311_dp,0.0111681394601311_dp,&
+                                     0.0088467598263639_dp,0.0088467598263639_dp,0.0065044579689784_dp,0.0065044579689784_dp,&
+                                     0.0041470332605625_dp,0.0041470332605625_dp,0.0017832807216964_dp,0.0017832807216964_dp /)
+
+    REAL(dp)::gauss_abscissae(64) =(/-0.0243502926634244_dp,0.0243502926634244_dp,-0.0729931217877990_dp,0.0729931217877990_dp,&
+                                     -0.1214628192961206_dp,0.1214628192961206_dp,-0.1696444204239928_dp,0.1696444204239928_dp,&
+                                     -0.2174236437400071_dp,0.2174236437400071_dp,-0.2646871622087674_dp,0.2646871622087674_dp,&
+                                     -0.3113228719902110_dp,0.3113228719902110_dp,-0.3572201583376681_dp,0.3572201583376681_dp,&
+                                     -0.4022701579639916_dp,0.4022701579639916_dp,-0.4463660172534641_dp,0.4463660172534641_dp,&
+                                     -0.4894031457070530_dp,0.4894031457070530_dp,-0.5312794640198946_dp,0.5312794640198946_dp,&
+                                     -0.5718956462026340_dp,0.5718956462026340_dp,-0.6111553551723933_dp,0.6111553551723933_dp,&
+                                     -0.6489654712546573_dp,0.6489654712546573_dp,-0.6852363130542333_dp,0.6852363130542333_dp,&
+                                     -0.7198818501716109_dp,0.7198818501716109_dp,-0.7528199072605319_dp,0.7528199072605319_dp,&
+                                     -0.7839723589433414_dp,0.7839723589433414_dp,-0.8132653151227975_dp,0.8132653151227975_dp,&
+                                     -0.8406292962525803_dp,0.8406292962525803_dp,-0.8659993981540928_dp,0.8659993981540928_dp,&
+                                     -0.8893154459951141_dp,0.8893154459951141_dp,-0.9105221370785028_dp,0.9105221370785028_dp,&
+                                     -0.9295691721319396_dp,0.9295691721319396_dp,-0.9464113748584028_dp,0.9464113748584028_dp,&
+                                     -0.9610087996520538_dp,0.9610087996520538_dp,-0.9733268277899110_dp,0.9733268277899110_dp,&
+                                     -0.9833362538846260_dp,0.9833362538846260_dp,-0.9910133714767443_dp,0.9910133714767443_dp,&
+                                     -0.9963401167719553_dp,0.9963401167719553_dp,-0.9993050417357722_dp,0.9993050417357722_dp /)
     ! Predefine bed_tmp, ys, and ustar, including boundary values
     bed_tmp(1:a) = bed
     bed_tmp(0)   = bedl
@@ -840,7 +873,8 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
                              )/(ys_tmp(i)-ys_tmp(i-1))
 
                 !z_tmp = elevation above bed = at 0.5, 1.5, ... 99.5 * depth/no_subints.0 
-                z_tmp = bedh + (d/((no_subints-1)*1.0_dp))*( (/ (j,j=0,no_subints-1) /))
+                !z_tmp = bedh + (d/((no_subints-1)*1.0_dp))*( (/ (j,j=0,no_subints-1) /))
+                z_tmp = bedh+arefh+ (d-arefh)/(2.0_dp)*(gauss_abscissae +1.0_dp)
 
                 ! Exponential vertical suspended sediment profile
                 f = exp(-wset/eps_z*(z_tmp-bedh))
@@ -859,7 +893,8 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
 
                     !z_tmp = elevation above bed = at 0.5, 1.5, ... 99.5 * depth/no_subints.0,
                     ! adjusted so z>arefh 
-                    z_tmp = bedh+arefh+ (d-arefh)/((no_subints-1)*1.0_dp)*( (/ (j,j=0,no_subints-1) /))
+                    !z_tmp = bedh+arefh+ (d-arefh)/((no_subints-1)*1.0_dp)*( (/ (j,j=0,no_subints-1) /))
+                    z_tmp = bedh+arefh+ (d-arefh)/(2.0_dp)*(gauss_abscissae +1.0_dp)
                     ! Useful shorthand variables, which save computation
                     ! This routine is computationally demanding, so it is worth
                     ! making some effort.
@@ -903,8 +938,10 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
                     !df_dus = -(wset/0.4_dp)*f*log((z2ratio-1.0_dp)/(d_on_aref_les1))/us**2
                     !df_dus = -(f/us)*log(f)
                     ! Note f*log(f) --> 0 as f--> 0
-                    df_dus(1:(no_subints-1)) = -(f(1:(no_subints-1))/us)*log(f(1:(no_subints-1)))
-                    df_dus(no_subints)=0.0_dp
+                    !df_dus(1:(no_subints-1)) = -(f(1:(no_subints-1))/us)*log(f(1:(no_subints-1)))
+                    !df_dus(no_subints)=0.0_dp
+                    df_dus = -(f/us)*log(f)
+                
 
                     ! Step4: df_dy = df/dbedh*dbedh/dy + df/aref*daref/dy + df/dus*dus/dy
                     df_dy = df_dbedh*dbed_dy + df_darefh*daref_dy + df_dus*dus_dy
@@ -920,8 +957,9 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
                     !        d, arefh, aref_tmp(i), aref_tmp(i-1), bed_tmp(i), bed_tmp(i-1)
                     !stop
                     !z_tmp = elevation above bed = at 0.5, 1.5, ... 99.5 * depth/no_subints.0,
+                    z_tmp = bedh+arefh+ (d-arefh)/(2.0_dp)*(gauss_abscissae +1.0_dp)
                     
-                    z_tmp = bedh+arefh+ (d-arefh)/((no_subints-1)*1.0_dp)*( (/ (j,j=0,no_subints-1) /))
+                    !z_tmp = bedh+arefh+ (d-arefh)/((no_subints-1)*1.0_dp)*( (/ (j,j=0,no_subints-1) /))
                     ! adjusted so z>arefh 
                     !z_tmp = bedh+arefh+ ((d-arefh)/no_subints*1.0_dp)*( (/ (j,j=1,no_subints) /)*1.0_dp-0.5_dp)
 
@@ -974,15 +1012,21 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
 
 
         !Integral (edify*f) dz
-        dz = (z_tmp(no_subints)-z_tmp(1))/(1.0_dp*(no_subints-1))
+        !dz = (z_tmp(no_subints)-z_tmp(1))/(1.0_dp*(no_subints-1))
         !int_edif_f(i) = sum(edify*f)*dz
         !int_edif_f(i) = trapz_integrate(no_subints, dz, edify*f)
-        int_edif_f(i) = simpson_integrate(no_subints, dz, edify*f)
-        
+        !int_edif_f(i) = simpson_integrate(no_subints, dz, edify*f)
+        !int_edif_f(i) = wedint(no_subints, dz, edify*f)
+        !int_edif_f(i) = newtcotes7(no_subints, dz, edify*f)
+        int_edif_f(i) = sum(gauss_weights*edify*f)*(d-a_refh)/2.0_dp    
+     
         !Integral (edify*df/dy) dz
         !int_edif_dfdy(i) = sum(edify*df_dy)*dz
         !int_edif_dfdy(i) = trapz_integrate(no_subints, dz, edify*df_dy)
-        int_edif_dfdy(i) = simpson_integrate(no_subints, dz, edify*df_dy)
+        !int_edif_dfdy(i) = simpson_integrate(no_subints, dz, edify*df_dy)
+        !int_edif_dfdy(i) = wedint(no_subints, dz, edify*df_dy)
+        !int_edif_dfdy(i) = newtcotes7(no_subints, dz, edify*df_dy)
+        int_edif_dfdy(i) = sum(gauss_weights*edify*df_dy)*(d-a_refh)/2.0_dp    
 
         !print*,'#########', i, int_edif_f(i), int_edif_dfdy(i) 
         !print*, edify, df_dy

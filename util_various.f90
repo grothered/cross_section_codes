@@ -930,5 +930,129 @@ END FUNCTION trapz_integrate
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
+REAL(dp) FUNCTION wedint ( ntab, h, ftab)
+
+!*****************************************************************************80
+!
+!! WEDINT uses Weddle's rule to integrate data at equally spaced points.
+!
+!  Modified:
+!
+!    10 February 2006
+!
+!  Author:
+!
+!    John Burkardt
+!
+!  Parameters:
+!
+!    Input, integer NTAB, is the number of data points.  (NTAB-1) must be
+!    divisible by 6.
+!
+!    Input, real ( kind = 8 ) H, is the spacing between the points at which
+!    the data was evaluated.
+!
+!    Input, real ( kind = 8 ) FTAB(NTAB), contains the tabulated data values.
+!
+  implicit none
+
+  integer ntab
+
+  real(dp) ftab(ntab)
+  real(dp) h
+  integer i
+
+  wedint = 0.0_dp
+ 
+  !if ( ntab <= 1 ) then
+  !  write ( *, '(a)' ) ' '
+  !  write ( *, '(a)' ) 'WEDINT - Fatal error!'
+  !  write ( *, '(a)' ) '  NTAB < 2'
+  !  write ( *, '(a,i8)' ) '  NTAB = ', ntab
+  !  stop
+  !end if
+ 
+  if ( mod ( ntab, 6 ) /= 1 ) then
+    write ( *, '(a)' ) ' '
+    write ( *, '(a)' ) 'WEDINT - Fatal error!'
+    write ( *, '(a)' ) '  NTAB must equal 6*N+1 for some N!'
+    stop
+  end if
+ 
+  do i = 1, ntab-6, 6
+    wedint = wedint & 
+      +           ftab(i)   &
+      + 5.0_dp * ftab(i+1) &
+      +           ftab(i+2) &
+      + 6.0_dp * ftab(i+3) &
+      +           ftab(i+4) &
+      + 5.0_dp * ftab(i+5) &
+      +           ftab(i+6)
+  end do
+ 
+  wedint = 3.0_dp * h * wedint / 10.0_dp
+ 
+  return
+end function wedint
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+REAL(dp) FUNCTION newtcotes7( ntab, h, ftab)
+
+!*****************************************************************************80
+!
+! newtcotes7 uses a seven point  newton-cotes rule to integrate data at equally
+! spaced points.
+!
+!  Parameters:
+!
+!    Input, integer NTAB, is the number of data points.  (NTAB-1) must be
+!    divisible by 6.
+!
+!    Input, real ( kind = 8 ) H, is the spacing between the points at which
+!    the data was evaluated.
+!
+!    Input, real ( kind = 8 ) FTAB(NTAB), contains the tabulated data values.
+!
+  implicit none
+
+  integer ntab
+
+  real(dp) ftab(ntab)
+  real(dp) h
+  integer i
+
+  newtcotes7 = 0.0_dp
+ 
+  !if ( ntab <= 1 ) then
+  !  write ( *, '(a)' ) ' '
+  !  write ( *, '(a)' ) 'WEDINT - Fatal error!'
+  !  write ( *, '(a)' ) '  NTAB < 2'
+  !  write ( *, '(a,i8)' ) '  NTAB = ', ntab
+  !  stop
+  !end if
+ 
+  if ( mod ( ntab, 6 ) /= 1 ) then
+    write ( *, '(a)' ) ' '
+    write ( *, '(a)' ) 'WEDINT - Fatal error!'
+    write ( *, '(a)' ) '  NTAB must equal 6*N+1 for some N!'
+    stop
+  end if
+ 
+  do i = 1, ntab-6, 6
+    newtcotes7 = newtcotes7 & 
+      + 41.0_dp  * ftab(i)   &
+      + 216.0_dp * ftab(i+1) &
+      + 27.0_dp  * ftab(i+2) &
+      + 272.0_dp * ftab(i+3) &
+      + 27.0_dp  * ftab(i+4) &
+      + 216.0_dp * ftab(i+5) &
+      + 41.0_dp  * ftab(i+6)
+  end do
+ 
+  newtcotes7 = h * newtcotes7 / 140.0_dp
+ 
+  return
+end function newtcotes7
 
 END MODULE util_various
