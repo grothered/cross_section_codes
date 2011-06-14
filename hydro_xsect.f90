@@ -911,7 +911,7 @@ SUBROUTINE calc_friction(friction_type, grain_friction_type, rough_coef, water,&
         !a_ref = 0.5_dp*k_scr !, 0.01_dp*(water-bed(i))) !Reference level (m) 
         !a_ref =  max(0.01_dp, 0.5_dp*k_scr)!, 0.99_dp*(water-bed(i))) !, 0.01_dp*(water-bed(i))) !Reference level (m) 
         !a_ref = min(max(0.01_dp, 0.5_dp*k_scr), 0.99_dp*(water-bed(i))) !, 0.01_dp*(water-bed(i))) !Reference level (m) 
-        a_ref(i) = max(0.5_dp*k_scr, 0.01_dp*(water-bed(i))) !Reference level (m), van Rijn 2007
+        a_ref(i) = max(0.5_dp*k_scr, 0.01_dp*max(water-bed(i),1.0_dp)) !Reference level (m), van Rijn 2007
         !a_ref(i) = max(0.5_dp*k_scr, 0.01_dp) !Reference level (m), van Rijn 2007
     END DO
     
