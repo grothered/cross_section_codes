@@ -69,8 +69,8 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
 
     ! y coordinate, including at zero depth boundaries (0 and a+1)
     ys_temp(1:a) = ys
-    ys_temp(0) = ys(1) - (ys(1) - ysl)*abs(water-bed(1))/(bedl-bed(1))!ysl
-    ys_temp(a+1) = ys(a) + (ysu-ys(a))*abs(water-bed(a))/(bedu-bed(a)) !ysu
+    ys_temp(0) = ysl !ys(1) - (ys(1) - ysl)*abs(water-bed(1))/(bedl-bed(1))!ysl
+    ys_temp(a+1) = ysu !ys(a) + (ysu-ys(a))*abs(water-bed(a))/(bedu-bed(a)) !ysu
 
 
     ! Calculate the value of 'zetamult', where:
@@ -422,9 +422,11 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
                     
                     ! Experimenting with this approach to try to avoid negative
                     ! Cbar values
-                    IF(Cbar(i)/zetamult(i) <Cbar(i+1)/zetamult(i+1)) & 
+                    !IF(Cbar(i)/zetamult(i) <Cbar(i+1)/zetamult(i+1)) & 
+                    IF(bed(i)>bed(i+1)) &
                             M1_diag(i)  = M1_diag(i)  - 1.0_dp*tmp1*int_edif_dfdy(i+1)/zetamult(i)
-                    IF(Cbar(i)/zetamult(i)>=Cbar(i+1)/zetamult(i+1)) &
+                    !IF(Cbar(i)/zetamult(i)>=Cbar(i+1)/zetamult(i+1)) &
+                    IF(bed(i)<=bed(i+1)) &
                             M1_upper(i)  = M1_upper(i)  - 1.0_dp*tmp1*int_edif_dfdy(i+1)/zetamult(i+1)
                 END IF
             !END IF
@@ -436,9 +438,11 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
         
                     ! Experimenting with this approach to try to avoid negative
                     ! Cbar values.
-                    IF(Cbar(i)/zetamult(i)<Cbar(i-1)/zetamult(i-1)) &
+                    !IF(Cbar(i)/zetamult(i)<Cbar(i-1)/zetamult(i-1)) &
+                    IF(bed(i)>bed(i-1)) &
                              M1_diag(i)   = M1_diag(i)   + 1.0_dp*tmp1*int_edif_dfdy(i)/zetamult(i)  ! Note that 1/zetamult(i)*Cbar = cb
-                    IF(Cbar(i)/zetamult(i)>=Cbar(i-1)/zetamult(i-1)) & 
+                    !IF(Cbar(i)/zetamult(i)>=Cbar(i-1)/zetamult(i-1)) & 
+                    IF(bed(i)<=bed(i-1)) &
                              M1_lower(i)   = M1_lower(i)   + 1.0_dp*tmp1*int_edif_dfdy(i)/zetamult(i-1)  ! Note that 1/zetamult(i)*Cbar = cb
 
                 END IF
@@ -841,8 +845,8 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
     ys_tmp(a+1) = ysu
 
     ustar_tmp(1:a) = ustar
-    ustar_tmp(0)   = 0.0_dp !ustar(1)
-    ustar_tmp(a+1) = 0.0_dp !ustar(a)
+    ustar_tmp(0)   = ustar(1)
+    ustar_tmp(a+1) = ustar(a)
     
     aref_tmp(1:a) = a_ref(1:a)
     aref_tmp(0)   = a_ref(1)
