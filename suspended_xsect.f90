@@ -401,8 +401,8 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
                     ! 2 point derivative approx -- note cb = Cbar/zetamult
                     M1_upper(i) = M1_upper(i) - tmp1*tmp2*int_edif_f(i+1)/zetamult(i+1)
                     M1_diag(i)  = M1_diag(i)  + tmp1*tmp2*int_edif_f(i+1)/zetamult(i)
-                ELSE
-                    M1_diag(i)  = M1_diag(i)  + tmp1*tmp2*int_edif_f(i+1)/zetamult(i)
+                !ELSE
+                !    M1_diag(i)  = M1_diag(i)  + tmp1*tmp2*int_edif_f(i+1)/zetamult(i)
                 END IF
             !END IF
 
@@ -412,8 +412,8 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
                     ! 2 point derivative approx
                     M1_diag(i)  = M1_diag(i)  + tmp1*tmp2*int_edif_f(i)/zetamult(i)
                     M1_lower(i) = M1_lower(i) - tmp1*tmp2*int_edif_f(i)/zetamult(i-1)
-                ELSE
-                    M1_diag(i)  = M1_diag(i)  + tmp1*tmp2*int_edif_f(i)/zetamult(i)
+                !ELSE
+                !    M1_diag(i)  = M1_diag(i)  + tmp1*tmp2*int_edif_f(i)/zetamult(i)
 
                 END IF
             !END IF 
