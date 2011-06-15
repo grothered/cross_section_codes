@@ -401,6 +401,8 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
                     ! 2 point derivative approx -- note cb = Cbar/zetamult
                     M1_upper(i) = M1_upper(i) - tmp1*tmp2*int_edif_f(i+1)/zetamult(i+1)
                     M1_diag(i)  = M1_diag(i)  + tmp1*tmp2*int_edif_f(i+1)/zetamult(i)
+                ELSE
+                    M1_diag(i)  = M1_diag(i)  + tmp1*tmp2*int_edif_f(i+1)/zetamult(i)
                 END IF
             !END IF
 
@@ -410,6 +412,9 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
                     ! 2 point derivative approx
                     M1_diag(i)  = M1_diag(i)  + tmp1*tmp2*int_edif_f(i)/zetamult(i)
                     M1_lower(i) = M1_lower(i) - tmp1*tmp2*int_edif_f(i)/zetamult(i-1)
+                ELSE
+                    M1_diag(i)  = M1_diag(i)  + tmp1*tmp2*int_edif_f(i)/zetamult(i)
+
                 END IF
             !END IF 
 
@@ -428,7 +433,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
                     !IF(Cbar(i)/zetamult(i)>=Cbar(i+1)/zetamult(i+1)) &
                     IF(bed(i)<=bed(i+1)) &
                             M1_upper(i)  = M1_upper(i)  - 1.0_dp*tmp1*int_edif_dfdy(i+1)/zetamult(i+1)
-                ELSE
+                !ELSE
                     ! Here we must use the 'a'th point for cb
                 !            M1_diag(i)  = M1_diag(i)  - 1.0_dp*tmp1*int_edif_dfdy(i+1)/zetamult(i)
 
@@ -450,7 +455,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
                     IF(bed(i)<=bed(i-1)) &
                              M1_lower(i)   = M1_lower(i)   + 1.0_dp*tmp1*int_edif_dfdy(i)/zetamult(i-1)  ! Note that 1/zetamult(i)*Cbar = cb
 
-                ELSE
+                !ELSE
                     ! Here we must use the point at i=1 for cb
                 !             M1_diag(i)   = M1_diag(i)   + 1.0_dp*tmp1*int_edif_dfdy(i)/zetamult(i)  ! Note that 1/zetamult(i)*Cbar = cb
 
