@@ -69,8 +69,8 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
 
     ! y coordinate, including at zero depth boundaries (0 and a+1)
     ys_temp(1:a) = ys
-    ys_temp(0) = ysl !ys(1) - (ys(1) - ysl)*abs(water-bed(1))/(bedl-bed(1))!ysl
-    ys_temp(a+1) = ysu !ys(a) + (ysu-ys(a))*abs(water-bed(a))/(bedu-bed(a)) !ysu
+    ys_temp(0) = ys(1) - (ys(1) - ysl)*abs(water-bed(1))/(bedl-bed(1))!ysl
+    ys_temp(a+1) = ys(a) + (ysu-ys(a))*abs(water-bed(a))/(bedu-bed(a)) !ysu
 
 
     ! Calculate the value of 'zetamult', where:
@@ -428,6 +428,10 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
                     !IF(Cbar(i)/zetamult(i)>=Cbar(i+1)/zetamult(i+1)) &
                     IF(bed(i)<=bed(i+1)) &
                             M1_upper(i)  = M1_upper(i)  - 1.0_dp*tmp1*int_edif_dfdy(i+1)/zetamult(i+1)
+                ELSE
+                            M1_diag(i)  = M1_diag(i)  - 1.0_dp*tmp1*int_edif_dfdy(i+1)/zetamult(i)
+
+
                 END IF
             !END IF
     
@@ -444,6 +448,9 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
                     !IF(Cbar(i)/zetamult(i)>=Cbar(i-1)/zetamult(i-1)) & 
                     IF(bed(i)<=bed(i-1)) &
                              M1_lower(i)   = M1_lower(i)   + 1.0_dp*tmp1*int_edif_dfdy(i)/zetamult(i-1)  ! Note that 1/zetamult(i)*Cbar = cb
+
+                ELSE
+                             M1_diag(i)   = M1_diag(i)   + 1.0_dp*tmp1*int_edif_dfdy(i)/zetamult(i)  ! Note that 1/zetamult(i)*Cbar = cb
 
                 END IF
             !END IF 
@@ -599,7 +606,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
 
    
  
-    ! Store the lateral flux of suspended load = -cb*int_edif_dfdy -
+    ! STORE the lateral flux of suspended load = -cb*int_edif_dfdy -
     ! dcb/dy*int_edif_f
     lat_sus_flux = 0.0_dp
     DO i=0,a
@@ -607,7 +614,8 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
         IF((i<a).and.(i>0)) THEN
             cbed_tmp1 = Cbar(i+1)/zetamult(i+1) - Cbar(i)/zetamult(i) ! diff(cbed)
             !cbed_tmp2 = cbed(i)
-            IF(Cbar_old(i)/zetamult(i)<Cbar_old(i+1)/zetamult(i+1)) THEN
+            !IF(Cbar_old(i)/zetamult(i)<Cbar_old(i+1)/zetamult(i+1)) THEN
+            IF(bed(i+1)<bed(i)) THEN
                 cbed_tmp2 = Cbar(i)/zetamult(i)
             ELSE
                 cbed_tmp2 = Cbar(i+1)/zetamult(i+1)

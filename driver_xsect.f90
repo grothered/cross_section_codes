@@ -542,7 +542,7 @@ DO Q_loop= 1, no_discharges!15
            
             call update_bed(u-l+1,DT1,water,Q,bed(l:u),ys(l:u),Area, &
                              water- Area/(ys(u)-ys(l)+wdthx),f(l:u),qby((l-1):u),E,D, &
-                            C(l:u),rmult,2,inuc, tau(l:u),tau_g(l:u),& 
+                            Clast(l:u),rmult,2,inuc, tau(l:u),tau_g(l:u),& 
                             NN(l:u),j,slopes(l:u), hlim, mor, taucrit_dep(l:u,1:layers), &
                             layers, taucrit_dep_ys(l:u) & 
                             ,u-l+1, taucrit(l:u, 0:layers) , vegdrag(l:u), susdist, rho, &

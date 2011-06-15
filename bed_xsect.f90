@@ -897,7 +897,9 @@ SUBROUTINE basic_slope_limit(nos,ys,bed,failure_slope, remesh,limit_fail)
         hss = bed
         
         ! Move from centre of channel to left bank
-        DO i=nos/2,2,-1 !nos/2,2,-1
+        !DO i=nos/2,2,-1 !nos/2,2,-1
+        ! Move from left bank to the channel centre
+        DO i=2,floor(nos*0.5_dp), 1 !nos/2,2,-1
             IF(abs(bed(i)-bed(i-1))>failure_slope*(ys(i)-ys(i-1))) THEN
                 !print*, '.'
                 IF(bed(i)>bed(i-1)) THEN
@@ -917,7 +919,9 @@ SUBROUTINE basic_slope_limit(nos,ys,bed,failure_slope, remesh,limit_fail)
             END IF
         END DO
         ! Move from centre of channel to right bank
-        DO i=nos/2,nos-1,1 !nos/2,nos-1,1
+        !DO i=nos/2,nos-1,1 !nos/2,nos-1,1
+        ! Move from right bank to the channel centre
+        DO i=nos-1,ceiling(nos*0.5_dp), -1 !nos/2,nos-1,1
             IF(abs(bed(i)-bed(i+1))>failure_slope*(ys(i+1)-ys(i))) THEN
                 IF(bed(i)>bed(i+1)) THEN
                     tmp = (bed(i)-(bed(i+1) + failure_slope*(ys(i+1)-ys(i)) ))*limit_fail
