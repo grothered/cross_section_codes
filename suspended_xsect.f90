@@ -151,7 +151,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
 
     END IF
 
-    IF(mod(counter,1000).eq.1) print*, 'sus_flux is:', sus_flux, ' desired flux is:', sconc*Q
+    IF(mod(counter,1000).eq.1) print*, 'sus_flux is:', sus_flux, ' desired flux is:', sconc*tmp1
 
     ! Here, we try to add a constant to cb across the channel, such that the 
     ! sus_flux is as desired
