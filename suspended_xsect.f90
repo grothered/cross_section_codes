@@ -135,6 +135,10 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
             ( ( (/ ys(2:a), ysu /) - (/ ysl, ys(1:a-1) /) )*0.5_dp) &  ! dy
                   )
     ! Compute the discharge using the same approach
+    ! FIXME: Note that this method of computing the discharge is not 100%
+    ! consistent with the method in hydro_xsect, because it uses the ysu, ysl
+    ! boundaries, instead of the linearly interpolated approximations of the
+    ! boundaries. The differences is very minor though. 
     tmp1 = sum( abs(vel)*max(water-bed,0.0_dp)*& 
               ( ( (/ ys(2:a), ysu /) - (/ ysl, ys(1:a-1) /) )*0.5_dp) &  ! dy
                   )
