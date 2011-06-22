@@ -941,4 +941,32 @@ SUBROUTINE basic_slope_limit(nos,ys,bed,failure_slope, remesh,limit_fail)
 END SUBROUTINE basic_slope_limit
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+SUBROUTINE critical_slope_wasting(dT, nos,ys,bed,failure_slope, rate)
+    ! Purpose: Basic routine to limit the absolute value of the lateral slope.
+    !          This happens by having downslope motion whenever the slope is <= failure_slope
+    ! Input:   The channel geometry, the slope at which the bank starts to
+    !          have downslope motion, and rate = constant determining rate of
+    !          failure over time
+    ! Output:  The updated channel geometry
+    INTEGER, INTENT(IN):: nos
+    REAL(dp), INTENT(IN):: ys(nos), failure_slope, rate, dT
+    REAL(dp), INTENT(IN OUT):: bed(nos)
+
+    ! Local variables
+    REAL(dp):: flux(nos), slope
+
+    ! Determine rate of mass failure at i+1/2
+    DO i=1,nos-1
+        ! flux = -rate*max(abs(slope)-failure_slope,0.0)*sign(1.0,slope)
+        slope = (bed(i+1)-bed(i))/(ys(i+1)-ys(i))
+        flux(i) = -rate*max( abs(slope) - failure_slope,0.0_dp)*sign(1.0_dp, slope)
+    END DO
+    ! d(bed)/dT = -d(flux)/dy
+    bed(2:nos-1) = bed(2:nos-1) - dT*(flux(2:nos-1) - flux(1:nos-2))/(0.5_dp*(ys(3:nos)-ys(1:nos-2)))
+    bed(1) = bed(1) - dT*( + flux(1))/((ys(2)-ys(1)))
+    bed(nos) = bed(nos) - dT*( - flux(nos-1))/((ys(nos)-ys(nos-1)))
+    
+END SUBROUTINE critical_slope_wasting
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 END MODULE bed_xsect
