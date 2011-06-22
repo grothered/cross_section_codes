@@ -176,7 +176,6 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     Cbar = Cbar*(1.0_dp - 0.0_dp*delT*vel*(1._dp-sed_lag_scale)/x_len_scale)/ &
            (1.0_dp + 1.0_dp*delT*vel*(1.0_dp-sed_lag_scale)/x_len_scale)
 
-
     ! Solve initially for the depth - averaged suspended sediment concentration
     ! depth d (Cbar) / dt + U*depth*dCbar/dx +
     ! V*depth* d(Cbar)/dy - d/dy( Fl ) -
@@ -646,10 +645,12 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     ! depth*dCbar/dt +wset*Cbed =  Qe 
     ! depth/dt*(Cbar_new -Cbar) + wset*(Cbar_new/zetamult) = Qe
     ! Cbar_new( depth/dt + wset/zetamult) = Qe + depth/dt*Cbar
-    Cbar = (Qe*1.0_dp + depth(1:a)/delT*Cbar - 0.0_dp*wset/zetamult(1:a)*Cbar)/ &
-           (depth(1:a)/delT + 1.0_dp*wset/zetamult(1:a))
+    Cbar = 1.0_dp*(Qe*1.0_dp + depth(1:a)/delT*Cbar - 0.0_dp*wset/zetamult(1:a)*Cbar)/ &
+           (depth(1:a)/delT + 0.0_dp*wset/zetamult(1:a))
+    IF(counter==1) print*, 'WARNING: NO DEPOSITION, BUG FIX NEEDED HERE TO MAKE &
+                THINGS TIME-INDEPENDENT'
 
-
+    !print*, Qe(a/2)
     
 
     ! Convert back to kg/m^3

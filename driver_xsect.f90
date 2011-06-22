@@ -14,7 +14,7 @@ INTEGER:: nos, i,j, l, u, n, layers, ii, ind(1), indlast, Q_loop, jj, &
           writfreq, jmax, iii, iii2
 REAL(dp):: wslope, ar, Q, t, &
            ys,bed, water, waterM, dists, tau,ks,tbst, Qe, Qbed, Qd, &
-            f, aa, bb, cc, multa, bedold, &
+            f, aa, bb, cc, multa, bedold, Qelast, &
             qby,v, bedlast, hss, tss, ddd, hss2, handy, dqbeddx, &
             epsl,epsu, slopes, E, D, C, rmult,Area, inuc, NN,&
              Width,C0,waterlast, dt, slpmx,sllength, vel, &
@@ -50,7 +50,7 @@ NAMELIST /inputdata/ nos,writfreq,jmax, layers, hlim, mor, mu, tauinc,&
 
 ALLOCATABLE ys(:), bed(:), dists(:), tau(:),ks(:),tbst(:),& 
             qby(:), bedlast(:), hss(:), tss(:),  hss2(:), Qe(:),& 
-            Qbed(:), Qd(:),f(:),slopes(:), NN(:),C0(:),&
+            Qbed(:), Qd(:),f(:),slopes(:), NN(:),C0(:),Qelast(:),&
             taucrit_dep(:,:), C(:),bedold(:), &
             taucrit_dep_ys(:) ,dst(:,:), taucrit(:,:), slpmx(:,:), &
             vegdrag(:), ysold(:), dqbeddx(:), sllength(:), vel(:), &
@@ -112,7 +112,7 @@ OPEN(14,file='Fl')
 ! Allocate memory for arrays
 ALLOCATE(ys(nos),bed(nos),dists(nos),tau(nos),ks(nos),tbst(nos),& 
          qby(0:nos), bedlast(nos),hss(nos),tss(nos),hss2(nos),Qe(nos),&
-         Qd(nos),f(nos),slopes(nos),& 
+         Qd(nos),f(nos),slopes(nos),Qelast(nos),& 
          NN(nos), C0(nos),taucrit_dep(nos, layers), C(nos), &
          taucrit_dep_ys(nos),dst(nos,0:(layers+1)), &
          taucrit(nos, 0:layers), slpmx(nos,0:(layers+1)), vegdrag(nos),&
@@ -227,7 +227,8 @@ DO Q_loop= 1, no_discharges!15
     bedold = bed - 0.001_dp !
     DT1 = dt ! An adaptive timestep
     a_ref=0.0_dp !Reference level of vanrijn
-
+    Qe = 0.0_dp
+    Qelast=0.0_dp
     !!!Calculate area
     IF(l>0) THEN
         DO i= 1,nos-1
@@ -389,6 +390,7 @@ DO Q_loop= 1, no_discharges!15
         !!!!!!!!!!!!!!
         qby=0._dp
         tau=0._dp
+        Qelast=Qe
         Qe=0._dp
         Qbed=0._dp
         !tss=bed
@@ -432,12 +434,13 @@ DO Q_loop= 1, no_discharges!15
             !(bedu-bed(u))/(ysu-ys(u))*sqrt(1._dp+( (bedu-bed(u))/(ysu-ys(u)))**2) )/  &
             !(sqrt(1._dp+( (bedu-bed(u))/(ysu-ys(u)))**2) + sqrt(1._dp+slopes(u)**2) )
         
-            ! CALCULATE FRICTION
+            ! CALCULATE FRICTION on bed 'i' with vel 'i-1'
+
             call calc_friction(friction_type, grain_friction_type, rough_coef, water, u-l+1,&
                                  bed(l:u), vel(l:u), man_nveg,d50,veg_ht, rhos, rho, g,&
                                  f(l:u), vegdrag(l:u),f_g(l:u), dsand, j, a_ref(l:u)) 
 
-            ! CALCULATE BED SHEAR
+            ! CALCULATE BED SHEAR on bed 'i'
             call calc_shear(u-l+1,DT1,water,Q,bed(l:u),ys(l:u),Area, &
                             water-Area/(ys(u)-ys(l)+wdthx),f(l:u),qby((l-1):u),E,D, C(l:u),&
                             rmult,inuc, tau(l:u),& 
@@ -450,7 +453,7 @@ DO Q_loop= 1, no_discharges!15
             ! Calculate depth-averaged velocity
             vel = 0._dp 
             vel(l:u)=sqrt(abs(tau(l:u))/rho*8._dp/f(l:u))*sign(1._dp+0._dp*tau(l:u), tau(l:u))
-          
+         
             ! Calculate grain shear stress 
             ! NOTE that vanrijn writes that taug = 0.5*f_g*rho*U^2 -- however, his
             ! data in table2 of the paper are better predicted using the
@@ -461,7 +464,8 @@ DO Q_loop= 1, no_discharges!15
             !Following Abdel-Fattah et al 2004
             tau_g(l:u) = rho*vel(l:u)**2*(f_g(l:u)/8._dp)*sign(1._dp+0._dp*tau(l:u), tau(l:u))
             
-            ! CALCULATE RATES OF RESUSPENSION AND BEDLOAD TRANSPORT
+            ! CALCULATE RATES OF RESUSPENSION AND BEDLOAD TRANSPORT on bed 'i'
+            ! with shear 'i'
             call calc_resus_bedload(u-l+1,DT1,water,Q,bed(l:u),ys(l:u),Area,&
                                      water-Area/(ys(u)-ys(l)+wdthx),f(l:u),qby((l-1):u),E,D, &
                                     C(l:u),wset, rmult,2,inuc, tau_g(l:u),& 
@@ -508,8 +512,11 @@ DO Q_loop= 1, no_discharges!15
                 !Record old value of C for file output
                 Clast=C  
                 lat_sus_flux = 0.0_dp ! Preset to zero
+                ! Evolve the suspended sediment concentration one timestep
+                ! (from i-1 to i), using Qe from on morphology 'i'
+                !print*, DT1
                 call dynamic_sus_dist(u-l+1, DT1, ys(l:u), bed(l:u), water, waterlast, Q, tau(l:u), vel(l:u), wset, & 
-                                        Qe(l:u), lambdacon, rho,rhos, g, d50, bedl,bedu, ysl, ysu, C(l:u),&
+                                        0.5_dp*(Qe(l:u)+Qelast(l:u)), lambdacon, rho,rhos, g, d50, bedl,bedu, ysl, ysu, C(l:u),&
                                         Cbar(l:u), Qbed(l:u), sed_lag_scale, j, high_order_Cflux, a_ref(l:u), sus_vert_prof,&
                                         edify_model, x_len_scale, sconc, lat_sus_flux(l:u+1))
 
@@ -539,10 +546,12 @@ DO Q_loop= 1, no_discharges!15
             ! Calculate dqbed/dx ~= (Qbed - sed_lag_scale*Qbed)/x_len_scale
             dqbeddx(l:u) = Qbed(l:u)*(1.0_dp-sed_lag_scale)/x_len_scale 
             bedlast= bed ! Record the bed prior to updating
-           
+          
+            ! Update the bed from i to i+1, using the rates of erosion and
+            ! deposition calculated from bed i. 
             call update_bed(u-l+1,DT1,water,Q,bed(l:u),ys(l:u),Area, &
                              water- Area/(ys(u)-ys(l)+wdthx),f(l:u),qby((l-1):u),E,D, &
-                            Clast(l:u),rmult,2,inuc, tau(l:u),tau_g(l:u),& 
+                            C(l:u),rmult,2,inuc, tau(l:u),tau_g(l:u),& 
                             NN(l:u),j,slopes(l:u), hlim, mor, taucrit_dep(l:u,1:layers), &
                             layers, taucrit_dep_ys(l:u) & 
                             ,u-l+1, taucrit(l:u, 0:layers) , vegdrag(l:u), susdist, rho, &
@@ -618,6 +627,8 @@ DO Q_loop= 1, no_discharges!15
                 print*, 'bed change:', maxval(abs(bed-bedlast)), maxloc(abs(bed-bedlast))
                 !print*, 'Resus - dep:', maxval(abs(Qe(l:u) - Qd(l:u)))*mor*DT1, &
                 !                        maxloc(abs(Qe(l:u) - Qd(l:u)))
+                !print*, 'Qe(mid) = ', Qe(nos/2)
+
                 write(1,*) tau 
                 write(2,*) bedlast !Same bed as when tau was calculated
                 write(3,*) ys !critical shear

@@ -90,10 +90,10 @@ SUBROUTINE calc_resus_bedload(a, dT, water, Q, bed,ys,Area, bottom, ff,recrd, E,
         tt=0._dp
         Qelocal=0._dp
         !Check
-        IF(taucrit(i,jj)<0._dp) THEN
-            PRINT*, 'taucrit <0', counter, i,j, slopes(i) 
-            STOP
-        END IF
+        !IF(taucrit(i,jj)<0._dp) THEN
+        !    PRINT*, 'taucrit <0', counter, i,j, slopes(i) 
+        !    STOP
+        !END IF
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         !EROSION -- There are a number of cases to consider
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -138,7 +138,7 @@ SUBROUTINE calc_resus_bedload(a, dT, water, Q, bed,ys,Area, bottom, ff,recrd, E,
                         tt=  tt+ (dst(i,jj)-dst(i,jj-1))/(Qelocal*mor)*(1._dp-voidf) !This time taken to cut to this layer
                         GOTO 1456
                     ELSE !So we have eroded, but not entirely to the next layer
-                        Qe(i)= dst(i,jj)/(mor*dT)*(1._dp-voidf) + Qelocal*(dt-tt)/dt  
+                        Qe(i)= dst(i,jj)/(mor*dT)*(1._dp-voidf) + Qelocal*(dT-tt)/dT  
                     END IF !jj<layers and qelocal        
                 ELSE 
                     !So here, we (may) have eroded, and now we hit a layer that we
@@ -363,6 +363,7 @@ SUBROUTINE update_bed(a, dT, water, Q, bed,ys,Area, bottom, ff,recrd, E, D,C,rmu
     IF(maxval(abs(qb_G)) == 0.0_dp) THEN 
         IF(normmov.eqv..false.) THEN
 
+            !print*, 'b ', mor*dT/(1.0_dp-voidf), maxval(Qe)
             IF(iii==1) bed = bed + (-dqbeddx + Qd - Qe)*mor*dT/(1._dp-voidf)
             IF(iii==2) bed = bedlast + (-dqbeddx + Qd - Qe)*mor*dT/(1._dp-voidf)
 
@@ -964,8 +965,8 @@ SUBROUTINE critical_slope_wasting(dT, nos,ys,bed,failure_slope, rate)
     END DO
     ! d(bed)/dT = -d(flux)/dy
     bed(2:nos-1) = bed(2:nos-1) - dT*(flux(2:nos-1) - flux(1:nos-2))/(0.5_dp*(ys(3:nos)-ys(1:nos-2)))
-    bed(1) = bed(1) - dT*( + flux(1))/((ys(2)-ys(1)))
-    bed(nos) = bed(nos) - dT*( - flux(nos-1))/((ys(nos)-ys(nos-1)))
+    bed(1) = bed(1)             - dT*(flux(1)                      )/(ys(2)-ys(1))
+    bed(nos) = bed(nos)         - dT*(              - flux(nos-1)  )/(ys(nos)-ys(nos-1))
     
 END SUBROUTINE critical_slope_wasting
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
