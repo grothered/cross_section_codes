@@ -406,6 +406,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
                 impcon=1.0_dp
             END IF
 
+
             IF(i<a) THEN
                 ! 2 point derivative approx -- note cb = Cbar/zetamult
                 M1_upper(i) = M1_upper(i) - impcon*tmp1*tmp2*int_edif_f(i+1)/zetamult(i+1)
