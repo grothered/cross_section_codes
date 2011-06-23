@@ -403,8 +403,11 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
             !IF((depth(i+1)/depth(i)<10.0_dp).and.(depth(i)/depth(i+1)<10.0_dp)) THEN
                 IF(i<a) THEN
                     ! 2 point derivative approx -- note cb = Cbar/zetamult
-                    M1_upper(i) = M1_upper(i) - tmp1*tmp2*int_edif_f(i+1)/zetamult(i+1)
-                    M1_diag(i)  = M1_diag(i)  + tmp1*tmp2*int_edif_f(i+1)/zetamult(i)
+                    M1_upper(i) = M1_upper(i) - 1.0_dp*tmp1*tmp2*int_edif_f(i+1)/zetamult(i+1)
+                    M1_diag(i)  = M1_diag(i)  + 1.0_dp*tmp1*tmp2*int_edif_f(i+1)/zetamult(i)
+            
+                    !RHS(i)      = RHS(i) + 0.5_dp*tmp1*tmp2*int_edif_f(i+1)/zetamult(i+1)*Cbar(i+1)
+                    !RHS(i)      = RHS(i) - 0.5_dp*tmp1*tmp2*int_edif_f(i+1)/zetamult(i)*Cbar(i)
                 !ELSE
                 !    M1_diag(i)  = M1_diag(i)  + tmp1*tmp2*int_edif_f(i+1)/zetamult(i)
                 END IF
@@ -414,8 +417,11 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
             !IF((depth(i)/depth(i-1)<10.0_dp).and.(depth(i-1)/depth(i)<10.0_dp)) THEN
                 IF(i>1) THEN
                     ! 2 point derivative approx
-                    M1_diag(i)  = M1_diag(i)  + tmp1*tmp2*int_edif_f(i)/zetamult(i)
-                    M1_lower(i) = M1_lower(i) - tmp1*tmp2*int_edif_f(i)/zetamult(i-1)
+                    M1_diag(i)  = M1_diag(i)  + 1.0_dp*tmp1*tmp2*int_edif_f(i)/zetamult(i)
+                    M1_lower(i) = M1_lower(i) - 1.0_dp*tmp1*tmp2*int_edif_f(i)/zetamult(i-1)
+
+                    !RHS(i) = RHS(i) - 0.5_dp*tmp1*tmp2*int_edif_f(i)/zetamult(i)*Cbar(i)
+                    !RHS(i) = RHS(i) + 0.5_dp*tmp1*tmp2*int_edif_f(i)/zetamult(i-1)*Cbar(i-1)
                 !ELSE
                 !    M1_diag(i)  = M1_diag(i)  + tmp1*tmp2*int_edif_f(i)/zetamult(i)
 
@@ -431,12 +437,15 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
                     
                     ! Experimenting with this approach to try to avoid negative
                     ! Cbar values
-                    !IF(Cbar(i)/zetamult(i) <Cbar(i+1)/zetamult(i+1)) & 
-                    IF(bed(i)>bed(i+1)) &
-                            M1_diag(i)  = M1_diag(i)  - 1.0_dp*tmp1*int_edif_dfdy(i+1)/zetamult(i)
-                    !IF(Cbar(i)/zetamult(i)>=Cbar(i+1)/zetamult(i+1)) &
-                    IF(bed(i)<=bed(i+1)) &
-                            M1_upper(i)  = M1_upper(i)  - 1.0_dp*tmp1*int_edif_dfdy(i+1)/zetamult(i+1)
+                    IF(bed(i)>bed(i+1)) THEN
+                        M1_diag(i)  = M1_diag(i)  - 1.0_dp*tmp1*int_edif_dfdy(i+1)/zetamult(i)
+                        !RHS(i) = RHS(i) + 0.5*tmp1*int_edif_dfdy(i+1)/zetamult(i)*Cbar(i)
+ 
+                    ELSE
+                        M1_upper(i) = M1_upper(i)  - 1.0_dp*tmp1*int_edif_dfdy(i+1)/zetamult(i+1)
+                        !RHS(i)      = RHS(i)  + 0.5_dp*tmp1*int_edif_dfdy(i+1)/zetamult(i+1)*Cbar(i+1)
+       
+                    END IF
                 !ELSE
                     ! Here we must use the 'a'th point for cb
                 !            M1_diag(i)  = M1_diag(i)  - 1.0_dp*tmp1*int_edif_dfdy(i+1)/zetamult(i)
@@ -452,16 +461,14 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
         
                     ! Experimenting with this approach to try to avoid negative
                     ! Cbar values.
-                    !IF(Cbar(i)/zetamult(i)<Cbar(i-1)/zetamult(i-1)) &
-                    IF(bed(i)>bed(i-1)) &
-                             M1_diag(i)   = M1_diag(i)   + 1.0_dp*tmp1*int_edif_dfdy(i)/zetamult(i)  ! Note that 1/zetamult(i)*Cbar = cb
-                    !IF(Cbar(i)/zetamult(i)>=Cbar(i-1)/zetamult(i-1)) & 
-                    IF(bed(i)<=bed(i-1)) &
-                             M1_lower(i)   = M1_lower(i)   + 1.0_dp*tmp1*int_edif_dfdy(i)/zetamult(i-1)  ! Note that 1/zetamult(i)*Cbar = cb
+                    IF(bed(i)>bed(i-1)) THEN
+                        M1_diag(i)   = M1_diag(i)   + 1.0_dp*tmp1*int_edif_dfdy(i)/zetamult(i)  ! Note that 1/zetamult(i)*Cbar = cb
+                        !RHS(i)  = RHS(i) - 0.5_dp*tmp1*int_edif_dfdy(i)/zetamult(i)*Cbar(i)    
+                    ELSE
+                        M1_lower(i)  = M1_lower(i)  + 1.0_dp*tmp1*int_edif_dfdy(i)/zetamult(i-1)  ! Note that 1/zetamult(i)*Cbar = cb
+                        !RHS(i)  = RHS(i) - 0.5_dp*tmp1*int_edif_dfdy(i)/zetamult(i-1)*Cbar(i-1)
+                    END IF
 
-                !ELSE
-                    ! Here we must use the point at i=1 for cb
-                !             M1_diag(i)   = M1_diag(i)   + 1.0_dp*tmp1*int_edif_dfdy(i)/zetamult(i)  ! Note that 1/zetamult(i)*Cbar = cb
 
                 END IF
             !END IF 
