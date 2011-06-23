@@ -467,9 +467,9 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
         IF(isnan(M1_diag(i))) print*, 'M1_diag(', i,') is NaN, c', M1_diag(i)   
         IF(isnan(M1_lower(i))) print*, 'M1_lower(', i,') is NaN, c' , M1_lower(i), int_edif_dfdy(i), zetamult(i)  
         IF(isnan(M1_upper(i))) print*, 'M1_upper(', i,') is NaN, c' , M1_upper(i), int_edif_dfdy(i+1), zetamult(i+1)   
-        IF(i==a) print*, maxval(zetamult), minval(zetamult), maxval(int_edif_dfdy), &
-                    minval(int_edif_dfdy), maxval(int_edif_f), minval(int_edif_f), &
-                    maxval(int_edif_dfdy/zetamult(1:a+1)), minval(int_edif_dfdy/zetamult(1:a+1))
+        !IF(i==a) print*, maxval(zetamult), minval(zetamult), maxval(int_edif_dfdy), &
+        !            minval(int_edif_dfdy), maxval(int_edif_f), minval(int_edif_f), &
+        !            maxval(int_edif_dfdy/zetamult(1:a+1)), minval(int_edif_dfdy/zetamult(1:a+1))
     END DO
 
     ! Erosion and deposition

@@ -259,7 +259,7 @@ DO Q_loop= 1, no_discharges!15
         ! Print out to console/check if converged
         22222 IF( mod(j-1,writfreq).eq.0 ) THEN 
                 PRINT*, j, l,u, Q/Area, t, ((Q/Area)*abs(Q/Area)*rmult),&
-                     DT1, ys(u)-ys(l)+wdthx, maxval(C), &
+                     DT1, ys(u)-ys(l)+wdthx, maxval(C), C(nos/2),&
                     rmult*(Area)/(ys(u)-ys(l)+wdthx), f(nos/2)
               END IF
 
@@ -643,7 +643,7 @@ DO Q_loop= 1, no_discharges!15
                 write(11,*) qby
                 write(12,*) a_ref
                 write(13,*) j, l,u, Q/Area, t-DT1, ((Q/Area)*abs(Q/Area)*rmult),&
-                            DT1, ys(u)-ys(l)+wdthx, maxval(C), &
+                            DT1, ys(u)-ys(l)+wdthx, maxval(C),C(nos/2), &
                             rmult*(Area)/(ys(u)-ys(l)+wdthx), f(nos/2)
                 write(14,*) lat_sus_flux
                 !write(12,*) taucrit_dep_ys
