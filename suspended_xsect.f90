@@ -387,91 +387,74 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
                 call int_edify_f(edify_model, sus_vert_prof, a, ys, bed, ysl, ysu,&
                                  bedl, bedu, water, sqrt(abs(tau)/rho), wset,a_ref,&
                                  int_edif_f, int_edif_dfdy) !, 205)
+                !print*, sum(int_edif_f), maxval(int_edif_dfdy)
                 !int_edif_f   =0.0_dp
                 !int_edif_dfdy=0.0_dp
                 !if(counter.eq.1) print*, 'WARNING: int_edif_f and dfdy set to 0'
+                !print*, sum(zetamult)/(1.0_dp*a), minval(zetamult)
             END IF
             
             ! d/dy [ dcb/dy*(int(eddif_y*f) dz) ]
             tmp1 = 1.0_dp/dy_outer
             tmp2 = 1.0_dp/(ys_temp(i+1)-ys_temp(i))
             
-            !IF((depth(i)<10.0_dp*depth(i+1)).and.(depth(i)<10.0_dp*depth(i-1)).and. &
-            !  (depth(i+1)<10.0_dp*depth(i)).and.(depth(i-1)<10.0_dp*depth(i))) THEN
-                ! When the depth changes rapidly, this term can induce negative
-                ! values of Cbar. 
-            !IF((depth(i+1)/depth(i)<10.0_dp).and.(depth(i)/depth(i+1)<10.0_dp)) THEN
-                IF(i<a) THEN
-                    ! 2 point derivative approx -- note cb = Cbar/zetamult
-                    M1_upper(i) = M1_upper(i) - 1.0_dp*tmp1*tmp2*int_edif_f(i+1)/zetamult(i+1)
-                    M1_diag(i)  = M1_diag(i)  + 1.0_dp*tmp1*tmp2*int_edif_f(i+1)/zetamult(i)
-            
-                    !RHS(i)      = RHS(i) + 0.5_dp*tmp1*tmp2*int_edif_f(i+1)/zetamult(i+1)*Cbar(i+1)
-                    !RHS(i)      = RHS(i) - 0.5_dp*tmp1*tmp2*int_edif_f(i+1)/zetamult(i)*Cbar(i)
-                !ELSE
-                !    M1_diag(i)  = M1_diag(i)  + tmp1*tmp2*int_edif_f(i+1)/zetamult(i)
-                END IF
-            !END IF
+            IF(i<a) THEN
+                ! 2 point derivative approx -- note cb = Cbar/zetamult
+                M1_upper(i) = M1_upper(i) - 1.0_dp*tmp1*tmp2*int_edif_f(i+1)/zetamult(i+1)
+                M1_diag(i)  = M1_diag(i)  + 1.0_dp*tmp1*tmp2*int_edif_f(i+1)/zetamult(i)
+        
+                !RHS(i)      = RHS(i) + 0.5_dp*tmp1*tmp2*int_edif_f(i+1)/zetamult(i+1)*Cbar(i+1)
+                !RHS(i)      = RHS(i) - 0.5_dp*tmp1*tmp2*int_edif_f(i+1)/zetamult(i)*Cbar(i)
+            END IF
 
-                tmp2 = 1.0_dp/(ys_temp(i)-ys_temp(i-1))
-            !IF((depth(i)/depth(i-1)<10.0_dp).and.(depth(i-1)/depth(i)<10.0_dp)) THEN
-                IF(i>1) THEN
-                    ! 2 point derivative approx
-                    M1_diag(i)  = M1_diag(i)  + 1.0_dp*tmp1*tmp2*int_edif_f(i)/zetamult(i)
-                    M1_lower(i) = M1_lower(i) - 1.0_dp*tmp1*tmp2*int_edif_f(i)/zetamult(i-1)
+            tmp2 = 1.0_dp/(ys_temp(i)-ys_temp(i-1))
+            IF(i>1) THEN
+                ! 2 point derivative approx
+                M1_diag(i)  = M1_diag(i)  + 1.0_dp*tmp1*tmp2*int_edif_f(i)/zetamult(i)
+                M1_lower(i) = M1_lower(i) - 1.0_dp*tmp1*tmp2*int_edif_f(i)/zetamult(i-1)
 
-                    !RHS(i) = RHS(i) - 0.5_dp*tmp1*tmp2*int_edif_f(i)/zetamult(i)*Cbar(i)
-                    !RHS(i) = RHS(i) + 0.5_dp*tmp1*tmp2*int_edif_f(i)/zetamult(i-1)*Cbar(i-1)
-                !ELSE
-                !    M1_diag(i)  = M1_diag(i)  + tmp1*tmp2*int_edif_f(i)/zetamult(i)
+                !RHS(i) = RHS(i) - 0.5_dp*tmp1*tmp2*int_edif_f(i)/zetamult(i)*Cbar(i)
+                !RHS(i) = RHS(i) + 0.5_dp*tmp1*tmp2*int_edif_f(i)/zetamult(i-1)*Cbar(i-1)
 
-                END IF
-            !END IF 
+            END IF
 
             
             !! d/dy ( cb*INT(edify*df/dy )dz  )
-            !IF((depth(i+1)/depth(i)<10.0_dp).and.(depth(i)/depth(i+1)<10.0_dp)) THEN
-                IF(i<a) THEN
-                    !M1_upper(i) = M1_upper(i) - 0.5_dp*tmp1*int_edif_dfdy(i+1)/zetamult(i+1)  ! Note that 1/zetamult(i)*Cbar = cb
-                    !M1_diag(i)  = M1_diag(i)  - 0.5_dp*tmp1*int_edif_dfdy(i+1)/zetamult(i)
-                    
-                    ! Experimenting with this approach to try to avoid negative
-                    ! Cbar values
-                    IF(bed(i)>bed(i+1)) THEN
-                        M1_diag(i)  = M1_diag(i)  - 1.0_dp*tmp1*int_edif_dfdy(i+1)/zetamult(i)
-                        !RHS(i) = RHS(i) + 0.5*tmp1*int_edif_dfdy(i+1)/zetamult(i)*Cbar(i)
- 
-                    ELSE
-                        M1_upper(i) = M1_upper(i)  - 1.0_dp*tmp1*int_edif_dfdy(i+1)/zetamult(i+1)
-                        !RHS(i)      = RHS(i)  + 0.5_dp*tmp1*int_edif_dfdy(i+1)/zetamult(i+1)*Cbar(i+1)
-       
-                    END IF
-                !ELSE
-                    ! Here we must use the 'a'th point for cb
-                !            M1_diag(i)  = M1_diag(i)  - 1.0_dp*tmp1*int_edif_dfdy(i+1)/zetamult(i)
+            IF(i<a) THEN
+                !M1_upper(i) = M1_upper(i) - 0.5_dp*tmp1*int_edif_dfdy(i+1)/zetamult(i+1)  ! Note that 1/zetamult(i)*Cbar = cb
+                !M1_diag(i)  = M1_diag(i)  - 0.5_dp*tmp1*int_edif_dfdy(i+1)/zetamult(i)
+                
+                ! Experimenting with this approach to try to avoid negative
+                ! Cbar values
+                IF(bed(i)>bed(i+1)) THEN
+                    M1_diag(i)  = M1_diag(i)  - 1.0_dp*tmp1*int_edif_dfdy(i+1)/zetamult(i)
+                    !RHS(i) = RHS(i) + 0.5*tmp1*int_edif_dfdy(i+1)/zetamult(i)*Cbar(i)
 
-
+                ELSE
+                    M1_upper(i) = M1_upper(i)  - 1.0_dp*tmp1*int_edif_dfdy(i+1)/zetamult(i+1)
+                    !RHS(i)      = RHS(i)  + 0.5_dp*tmp1*int_edif_dfdy(i+1)/zetamult(i+1)*Cbar(i+1)
+   
                 END IF
-            !END IF
+
+
+            END IF
     
-            !IF((depth(i)/depth(i-1)<10.0_dp).and.(depth(i-1)/depth(i)<10.0_dp)) THEN
-                IF(i>1) THEN
-                    !M1_diag(i)   = M1_diag(i)   + 0.5_dp*tmp1*int_edif_dfdy(i)/zetamult(i)  ! Note that 1/zetamult(i)*Cbar = cb
-                    !M1_lower(i)  = M1_lower(i)  + 0.5_dp*tmp1*int_edif_dfdy(i)/zetamult(i-1)
-        
-                    ! Experimenting with this approach to try to avoid negative
-                    ! Cbar values.
-                    IF(bed(i)>bed(i-1)) THEN
-                        M1_diag(i)   = M1_diag(i)   + 1.0_dp*tmp1*int_edif_dfdy(i)/zetamult(i)  ! Note that 1/zetamult(i)*Cbar = cb
-                        !RHS(i)  = RHS(i) - 0.5_dp*tmp1*int_edif_dfdy(i)/zetamult(i)*Cbar(i)    
-                    ELSE
-                        M1_lower(i)  = M1_lower(i)  + 1.0_dp*tmp1*int_edif_dfdy(i)/zetamult(i-1)  ! Note that 1/zetamult(i)*Cbar = cb
-                        !RHS(i)  = RHS(i) - 0.5_dp*tmp1*int_edif_dfdy(i)/zetamult(i-1)*Cbar(i-1)
-                    END IF
-
-
+            IF(i>1) THEN
+                !M1_diag(i)   = M1_diag(i)   + 0.5_dp*tmp1*int_edif_dfdy(i)/zetamult(i)  ! Note that 1/zetamult(i)*Cbar = cb
+                !M1_lower(i)  = M1_lower(i)  + 0.5_dp*tmp1*int_edif_dfdy(i)/zetamult(i-1)
+    
+                ! Experimenting with this approach to try to avoid negative
+                ! Cbar values.
+                IF(bed(i)>bed(i-1)) THEN
+                    M1_diag(i)   = M1_diag(i)   + 1.0_dp*tmp1*int_edif_dfdy(i)/zetamult(i)  ! Note that 1/zetamult(i)*Cbar = cb
+                    !RHS(i)  = RHS(i) - 0.5_dp*tmp1*int_edif_dfdy(i)/zetamult(i)*Cbar(i)    
+                ELSE
+                    M1_lower(i)  = M1_lower(i)  + 1.0_dp*tmp1*int_edif_dfdy(i)/zetamult(i-1)  ! Note that 1/zetamult(i)*Cbar = cb
+                    !RHS(i)  = RHS(i) - 0.5_dp*tmp1*int_edif_dfdy(i)/zetamult(i-1)*Cbar(i-1)
                 END IF
-            !END IF 
+
+
+            END IF
         END IF
     END DO
 
@@ -562,50 +545,50 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     ! amount of suspended sediment from the neighbouring point -- equivalent to
     ! assuming that the flux 'stopped' when the sediment ran out during the last
     ! time step.
-    DO i = 1,a
-        IF((Cbar(i)*depth(i)<0.0).and.(.FALSE.)) THEN
-            ! Clip negligably small Cbar values
-            !IF(abs(Cbar(i))<1.0e-10) THEN
-            !    Cbar(i) = 0._dp
-            !    !goto 21121            
-            !    CYCLE
-            !END IF
-            ! Look at neighbouring points
-            IF((i>1).and.(i<a)) THEN
-                IF(depth(i-1)>depth(i+1)) THEN
-                    Cbar(i-1) =(Cbar(i-1)*depth(i-1)+Cbar(i)*depth(i))/depth(i-1)
-                    Cbar(i) = 0._dp
-                ELSE IF(depth(i+1)>depth(i-1)) THEN
-                    Cbar(i+1) =(Cbar(i+1)*depth(i+1)+Cbar(i)*depth(i))/depth(i+1)
-                    Cbar(i) = 0._dp
-                ELSE IF((depth(i-1)==0._dp).and.(depth(i+1)==0._dp)) THEN
-                    ! Isolated point
-                    Cbar(i) = 1.e-012_dp
-                END IF
+    !DO i = 1,a
+    !    IF((Cbar(i)*depth(i)<0.0).and.(.FALSE.)) THEN
+    !        ! Clip negligably small Cbar values
+    !        !IF(abs(Cbar(i))<1.0e-10) THEN
+    !        !    Cbar(i) = 0._dp
+    !        !    !goto 21121            
+    !        !    CYCLE
+    !        !END IF
+    !        ! Look at neighbouring points
+    !        IF((i>1).and.(i<a)) THEN
+    !            IF(depth(i-1)>depth(i+1)) THEN
+    !                Cbar(i-1) =(Cbar(i-1)*depth(i-1)+Cbar(i)*depth(i))/depth(i-1)
+    !                Cbar(i) = 0._dp
+    !            ELSE IF(depth(i+1)>depth(i-1)) THEN
+    !                Cbar(i+1) =(Cbar(i+1)*depth(i+1)+Cbar(i)*depth(i))/depth(i+1)
+    !                Cbar(i) = 0._dp
+    !            ELSE IF((depth(i-1)==0._dp).and.(depth(i+1)==0._dp)) THEN
+    !                ! Isolated point
+    !                Cbar(i) = 1.e-012_dp
+    !            END IF
 
-            ELSE
-                ! Treat boundary values
-                IF(i==1) THEN
-                    IF(depth(i+1)>0._dp) THEN
-                        Cbar(i+1) =(Cbar(i+1)*depth(i+1)+Cbar(i)*depth(i))/depth(i+1)
-                        Cbar(i) = 1.0e-012_dp
-                    ELSE
-                        ! Isolated point
-                        Cbar(i) = 1.e-012_dp
-                    END IF 
-                ELSE IF(i==a) THEN
-                    IF(depth(i-1)>0._dp) THEN
-                        Cbar(i-1) =(Cbar(i-1)*depth(i-1)+Cbar(i)*depth(i))/depth(i-1)
-                        Cbar(i) = 1.0e-012_dp
-                    ELSE
-                        Cbar(i)=1.e-12_dp
-                    END IF
-                END IF
+    !        ELSE
+    !            ! Treat boundary values
+    !            IF(i==1) THEN
+    !                IF(depth(i+1)>0._dp) THEN
+    !                    Cbar(i+1) =(Cbar(i+1)*depth(i+1)+Cbar(i)*depth(i))/depth(i+1)
+    !                    Cbar(i) = 1.0e-012_dp
+    !                ELSE
+    !                    ! Isolated point
+    !                    Cbar(i) = 1.e-012_dp
+    !                END IF 
+    !            ELSE IF(i==a) THEN
+    !                IF(depth(i-1)>0._dp) THEN
+    !                    Cbar(i-1) =(Cbar(i-1)*depth(i-1)+Cbar(i)*depth(i))/depth(i-1)
+    !                    Cbar(i) = 1.0e-012_dp
+    !                ELSE
+    !                    Cbar(i)=1.e-12_dp
+    !                END IF
+    !            END IF
 
-            END IF
-    21121 CONTINUE
-        END IF
-    END DO
+    !        END IF
+    !21121 CONTINUE
+    !    END IF
+    !END DO
     
     DO i=1,a
         IF(Cbar(i)<0.0_dp) THEN
@@ -613,15 +596,6 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
             Cbar(i) = 0.0e-12_dp
         END IF
     END DO
-    !IF((.TRUE.).and.(minval(Cbar)<0._dp)) THEN
-    !    print*, 'Cbar clip', minval(Cbar), minval(Cbar)*depth(minloc(Cbar))
-    !    Cbar = max(Cbar, 0._dp)
-    !    IF(counter.eq.1) print*, 'WARNING: Negative Cbar values are being clipped &
-    !                            to zero'
-    !    ! IDEA -- try approaching this with an approach along the lines of the
-    !    ! one in that paper that Steve Roberts pointed you to.
-    !END IF 
-
    
  
     ! STORE the lateral flux of suspended load = -cb*int_edif_dfdy -
@@ -759,7 +733,7 @@ REAL(dp) FUNCTION rouse_int(z,d_aref)
             ! Here we compute J1 using a brute-force trapezoidal rule
             J1 = 0.0_dp
 
-            ! Trapezoidal Rule integration
+            ! Trapezoidal Rule integration -- FIXME: should really do Gauss quadrature.
             d_eps = ((1.0_dp-d_aref)/(num_trapz_pts*1._dp))
             DO i=1,num_trapz_pts
                 ! Evaluate the function at at (0.5, 1.5, 2.5, ...99.5) / 100 of the
