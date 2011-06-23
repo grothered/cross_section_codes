@@ -167,6 +167,7 @@ DO Q_loop= 1, no_discharges!15
             ! Bed elevation
             !bed(i)= 1.11_dp -8.01_dp*(abs(-1._dp+1._dp*((ys(i)-Width/2._dp))**6/(Width/2._dp)**6)) !-3.01 !+0.00002*(ys(i)-ys(1))*(ys(i)-nos*ys(1))
             !bed(i)= -4.1_dp -0.01_dp*(abs(-1._dp+1._dp*((ys(i)-Width/2._dp))**2/(Width/2._dp)**2)) !-3.01 !+0.00002*(ys(i)-ys(1))*(ys(i)-nos*ys(1))
+            !tmp = 40.0 !sqrt(discharges(Q_loop)/2.5_dp)
             tmp = sqrt(discharges(Q_loop)/2.5_dp)
             bed(i) =min( max(abs(ys(i)-Width/2._dp)-1.5_dp*tmp,-tmp ),&
                          0._dp)

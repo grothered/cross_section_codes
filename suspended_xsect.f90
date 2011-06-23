@@ -74,7 +74,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
 
 
     ! Calculate the value of 'zetamult', where:
-    ! zetamult*cbed = Cbar = depth integrated sediment concentration
+    ! zetamult*cbed = Cbar = depth averaged sediment concentration
     SELECT CASE(sus_vert_prof) 
 
         CASE('exp')
@@ -124,8 +124,10 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     ! Limit zetamult to a non-zero value to avoid division problems
     zetamult(0)   = 1.0_dp
     zetamult(a+1) = 1.0_dp
-    zetamult = max(zetamult, 1.0e-12)
-
+    zetamult = max(zetamult, 1.0e-12_dp)
+    !zetamult = max(zetamult, 1.0e-4_dp*depth)
+    !zetamult = max(zetamult, 1.0e-5_dp)
+    !zetamult = min(zetamult, 1.0e+05_dp)
 
     !!! PUSH THE SUSPENDED FLUX TOWARDS THE DESIRED VALUE   
     ! Calculate total sediment flux at time = t.
@@ -462,10 +464,12 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     DO i = 1, a
     !    PRINT*, 'SANITY CHECK c'
         IF(isnan(vd(i))) print*, 'vd(', i,') is NAN, c'
-        IF(isnan(M1_diag(i))) print*, 'M1_diag(', i,') is NaN, c'    
-        IF(isnan(M1_lower(i))) print*, 'M1_upper(', i,') is NaN, c'    
-        IF(isnan(M1_upper(i))) print*, 'M1_upper(', i,') is NaN, c'    
-    
+        IF(isnan(M1_diag(i))) print*, 'M1_diag(', i,') is NaN, c', M1_diag(i)   
+        IF(isnan(M1_lower(i))) print*, 'M1_lower(', i,') is NaN, c' , M1_lower(i), int_edif_dfdy(i), zetamult(i)  
+        IF(isnan(M1_upper(i))) print*, 'M1_upper(', i,') is NaN, c' , M1_upper(i), int_edif_dfdy(i+1), zetamult(i+1)   
+        IF(i==a) print*, maxval(zetamult), minval(zetamult), maxval(int_edif_dfdy), &
+                    minval(int_edif_dfdy), maxval(int_edif_f), minval(int_edif_f), &
+                    maxval(int_edif_dfdy/zetamult(1:a+1)), minval(int_edif_dfdy/zetamult(1:a+1))
     END DO
 
     ! Erosion and deposition
@@ -628,9 +632,9 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     ! depth/dt*(Cbar_new -Cbar) + wset*(Cbar_new/zetamult) = Qe
     ! Cbar_new( depth/dt + wset/zetamult) = Qe + depth/dt*Cbar
     Cbar = 1.0_dp*(Qe*1.0_dp + depth(1:a)/delT*Cbar - 0.0_dp*wset/zetamult(1:a)*Cbar)/ &
-           (depth(1:a)/delT + 0.0_dp*wset/zetamult(1:a))
-    IF(counter==1) print*, 'WARNING: NO DEPOSITION, BUG FIX NEEDED HERE TO MAKE &
-                                     THINGS TIME-INDEPENDENT'
+           (depth(1:a)/delT + 1.0_dp*wset/zetamult(1:a))
+    !IF(counter==1) print*, 'WARNING: NO DEPOSITION, BUG FIX NEEDED HERE TO MAKE &
+    !                                 THINGS TIME-INDEPENDENT'
 
     !print*, Qe(a/2)
     
@@ -748,7 +752,7 @@ REAL(dp) FUNCTION rouse_int(z,d_aref)
         ! Compute the desired integration factor
         rouse_int=J1*db_const
 
-        IF((rouse_int<0.0_dp).or.(rouse_int>=1.0_dp)) THEN
+        IF((rouse_int<0.0_dp).or.(rouse_int>=1.0_dp).or.(rouse_int.ne.rouse_int)) THEN
             PRINT*, ' ERROR in rouse_int: unphysical rouse_int value ', rouse_int, d_aref, z
             stop
         END IF
@@ -895,7 +899,7 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
 
             CASE('Rouse')
                  
-                IF(d>arefh)THEN  !((d*0.3_dp>arefh)) THEN !.and.(us>wset)) THEN
+                IF((d>arefh).and.(wset/us<1.0e+3_dp)) THEN  !((d*0.3_dp>arefh)) THEN !.and.(us>wset)) THEN
                     !FIXME: d*0.3_dp > arefh --- this is to be consistent with
                     !the 'rouse_int' function, which only converges for
                     !d>2arefh (I apparently built in some safety after a bad
@@ -950,8 +954,16 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
                     ! Note f*log(f) --> 0 as f--> 0
                     !df_dus(1:(no_subints-1)) = -(f(1:(no_subints-1))/us)*log(f(1:(no_subints-1)))
                     !df_dus(no_subints)=0.0_dp
-                    df_dus = -(f/us)*log(f)
-                
+                    !df_dus = -(f/us)*log(f)
+                    ! Treat special case where f=0, which can go singular. But,
+                    ! f*log(f) --> 0 from below as f--> 0 
+                    DO j=1,64                    
+                        IF(f(j)>1.0e-32) THEN
+                            df_dus(j) = -(f(j)/us)*log(f(j))
+                        ELSE
+                            df_dus(j)=0.0_dp
+                        END IF
+                    END DO 
 
                     ! Step4: df_dy = df/dbedh*dbedh/dy + df/aref*daref/dy + df/dus*dus/dy
                     df_dy = df_dbedh*dbed_dy + df_darefh*daref_dy + df_dus*dus_dy
@@ -1029,6 +1041,11 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
         !int_edif_f(i) = wedint(no_subints, dz, edify*f)
         !int_edif_f(i) = newtcotes7(no_subints, dz, edify*f)
         int_edif_f(i) = sum(gauss_weights*edify*f)*(d-a_refh)/2.0_dp ! gaussian quadrature
+        
+        IF(isnan(int_edif_f(i))) THEN
+            print*, 'Error: int_edif_f(',i, ') is nan, '  
+            stop
+        END IF
      
         !Integral (edify*df/dy) dz
         !int_edif_dfdy(i) = sum(edify*df_dy)*dz
@@ -1038,6 +1055,10 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
         !int_edif_dfdy(i) = newtcotes7(no_subints, dz, edify*df_dy)
         int_edif_dfdy(i) = sum(gauss_weights*edify*df_dy)*(d-a_refh)/2.0_dp !Gaussian quadrature   
 
+        IF(isnan(int_edif_dfdy(i))) THEN
+            print*, 'Error: int_edif_dfdy(',i, ') is nan, ', us,'$$$$', f,'$$$$', df_dus
+            stop
+        END IF
         !print*,'#########', i, int_edif_f(i), int_edif_dfdy(i) 
         !print*, edify, df_dy
     END DO
