@@ -48,7 +48,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     REAL(dp):: M1_lower(a), M1_diag(a), M1_upper(a), M1_upper2(a), M1_lower2(a)
     REAL(dp):: RHS(a), dy_all(a)
     REAL(dp):: tmp1, dy, dy_outer, tmp2, Cref, z, cbed_tmp1, cbed_tmp2
-    REAL(dp):: dQdx, dhdt, Cbar_old(a), dUd_dx(0:a+1), sus_flux
+    REAL(dp):: dQdx, dhdt, Cbar_old(a), dUd_dx(0:a+1), sus_flux, impcon
     REAL(dp):: DLF(a), DF(a), DUF(a), DU2(a),rcond, ferr, berr, work(3*a), XXX(a, 1)
     REAL(dp):: bandmat(5,a), AFB(7,a), RRR(a), CCC(a), int_edif_f(a+1), int_edif_dfdy(a+1)
     INTEGER::  IPV(a), iwork(a)   
@@ -399,24 +399,30 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
             ! d/dy [ dcb/dy*(int(eddif_y*f) dz) ]
             tmp1 = 1.0_dp/dy_outer
             tmp2 = 1.0_dp/(ys_temp(i+1)-ys_temp(i))
-            
+           
+            IF((i>2).and.(i<a-1)) THEN 
+                impcon=1.0_dp ! Degree of implicitness 
+            ELSE
+                impcon=1.0_dp
+            END IF
+
             IF(i<a) THEN
                 ! 2 point derivative approx -- note cb = Cbar/zetamult
-                M1_upper(i) = M1_upper(i) - 1.0_dp*tmp1*tmp2*int_edif_f(i+1)/zetamult(i+1)
-                M1_diag(i)  = M1_diag(i)  + 1.0_dp*tmp1*tmp2*int_edif_f(i+1)/zetamult(i)
+                M1_upper(i) = M1_upper(i) - impcon*tmp1*tmp2*int_edif_f(i+1)/zetamult(i+1)
+                M1_diag(i)  = M1_diag(i)  + impcon*tmp1*tmp2*int_edif_f(i+1)/zetamult(i)
         
-                !RHS(i)      = RHS(i) + 0.5_dp*tmp1*tmp2*int_edif_f(i+1)/zetamult(i+1)*Cbar(i+1)
-                !RHS(i)      = RHS(i) - 0.5_dp*tmp1*tmp2*int_edif_f(i+1)/zetamult(i)*Cbar(i)
+                RHS(i)      = RHS(i) + (1.0_dp-impcon)*tmp1*tmp2*int_edif_f(i+1)/zetamult(i+1)*Cbar(i+1)
+                RHS(i)      = RHS(i) - (1.0_dp-impcon)*tmp1*tmp2*int_edif_f(i+1)/zetamult(i)*Cbar(i)
             END IF
 
             tmp2 = 1.0_dp/(ys_temp(i)-ys_temp(i-1))
             IF(i>1) THEN
                 ! 2 point derivative approx
-                M1_diag(i)  = M1_diag(i)  + 1.0_dp*tmp1*tmp2*int_edif_f(i)/zetamult(i)
-                M1_lower(i) = M1_lower(i) - 1.0_dp*tmp1*tmp2*int_edif_f(i)/zetamult(i-1)
+                M1_diag(i)  = M1_diag(i)  + impcon*tmp1*tmp2*int_edif_f(i)/zetamult(i)
+                M1_lower(i) = M1_lower(i) - impcon*tmp1*tmp2*int_edif_f(i)/zetamult(i-1)
 
-                !RHS(i) = RHS(i) - 0.5_dp*tmp1*tmp2*int_edif_f(i)/zetamult(i)*Cbar(i)
-                !RHS(i) = RHS(i) + 0.5_dp*tmp1*tmp2*int_edif_f(i)/zetamult(i-1)*Cbar(i-1)
+                RHS(i) = RHS(i) - (1.0_dp-impcon)*tmp1*tmp2*int_edif_f(i)/zetamult(i)*Cbar(i)
+                RHS(i) = RHS(i) + (1.0_dp-impcon)*tmp1*tmp2*int_edif_f(i)/zetamult(i-1)*Cbar(i-1)
 
             END IF
 
@@ -429,12 +435,12 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
                 ! Experimenting with this approach to try to avoid negative
                 ! Cbar values
                 IF(bed(i)>bed(i+1)) THEN
-                    M1_diag(i)  = M1_diag(i)  - 1.0_dp*tmp1*int_edif_dfdy(i+1)/zetamult(i)
-                    !RHS(i) = RHS(i) + 0.5*tmp1*int_edif_dfdy(i+1)/zetamult(i)*Cbar(i)
+                    M1_diag(i)  = M1_diag(i)  - impcon*tmp1*int_edif_dfdy(i+1)/zetamult(i)
+                    RHS(i) = RHS(i) + (1.0_dp-impcon)*tmp1*int_edif_dfdy(i+1)/zetamult(i)*Cbar(i)
 
                 ELSE
-                    M1_upper(i) = M1_upper(i)  - 1.0_dp*tmp1*int_edif_dfdy(i+1)/zetamult(i+1)
-                    !RHS(i)      = RHS(i)  + 0.5_dp*tmp1*int_edif_dfdy(i+1)/zetamult(i+1)*Cbar(i+1)
+                    M1_upper(i) = M1_upper(i)  - impcon*tmp1*int_edif_dfdy(i+1)/zetamult(i+1)
+                    RHS(i)      = RHS(i)  + (1.0_dp-impcon)*tmp1*int_edif_dfdy(i+1)/zetamult(i+1)*Cbar(i+1)
    
                 END IF
 
@@ -448,11 +454,11 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
                 ! Experimenting with this approach to try to avoid negative
                 ! Cbar values.
                 IF(bed(i)>bed(i-1)) THEN
-                    M1_diag(i)   = M1_diag(i)   + 1.0_dp*tmp1*int_edif_dfdy(i)/zetamult(i)  ! Note that 1/zetamult(i)*Cbar = cb
-                    !RHS(i)  = RHS(i) - 0.5_dp*tmp1*int_edif_dfdy(i)/zetamult(i)*Cbar(i)    
+                    M1_diag(i)   = M1_diag(i)   + impcon*tmp1*int_edif_dfdy(i)/zetamult(i)  ! Note that 1/zetamult(i)*Cbar = cb
+                    RHS(i)  = RHS(i) - (1.0_dp-impcon)*tmp1*int_edif_dfdy(i)/zetamult(i)*Cbar(i)    
                 ELSE
-                    M1_lower(i)  = M1_lower(i)  + 1.0_dp*tmp1*int_edif_dfdy(i)/zetamult(i-1)  ! Note that 1/zetamult(i)*Cbar = cb
-                    !RHS(i)  = RHS(i) - 0.5_dp*tmp1*int_edif_dfdy(i)/zetamult(i-1)*Cbar(i-1)
+                    M1_lower(i)  = M1_lower(i)  + impcon*tmp1*int_edif_dfdy(i)/zetamult(i-1)  ! Note that 1/zetamult(i)*Cbar = cb
+                    RHS(i)  = RHS(i) - (1.0_dp-impcon)*tmp1*int_edif_dfdy(i)/zetamult(i-1)*Cbar(i-1)
                 END IF
 
 
