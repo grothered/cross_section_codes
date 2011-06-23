@@ -387,8 +387,9 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
                 call int_edify_f(edify_model, sus_vert_prof, a, ys, bed, ysl, ysu,&
                                  bedl, bedu, water, sqrt(abs(tau)/rho), wset,a_ref,&
                                  int_edif_f, int_edif_dfdy) !, 205)
-                !int_edif_f=0._dp
-                !int_edif_dfdy=0._dp
+                !int_edif_f   =0.0_dp
+                !int_edif_dfdy=0.0_dp
+                !if(counter.eq.1) print*, 'WARNING: int_edif_f and dfdy set to 0'
             END IF
             
             ! d/dy [ dcb/dy*(int(eddif_y*f) dz) ]
@@ -648,7 +649,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     Cbar = 1.0_dp*(Qe*1.0_dp + depth(1:a)/delT*Cbar - 0.0_dp*wset/zetamult(1:a)*Cbar)/ &
            (depth(1:a)/delT + 0.0_dp*wset/zetamult(1:a))
     IF(counter==1) print*, 'WARNING: NO DEPOSITION, BUG FIX NEEDED HERE TO MAKE &
-                THINGS TIME-INDEPENDENT'
+                                     THINGS TIME-INDEPENDENT'
 
     !print*, Qe(a/2)
     

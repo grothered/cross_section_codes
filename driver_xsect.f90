@@ -334,9 +334,10 @@ DO Q_loop= 1, no_discharges!15
         ! 'Extra' wetted width associated with the corners of the domain -- do
         ! we really need/ want this?
         wdthx = 0.0
-        IF (u<nos) wdthx = wdthx+ (water-bed(u))/(bed(u+1)-bed(u))*(ys(u+1)-ys(u))
-        IF (l>1) wdthx = wdthx+ (water-bed(l))/(bed(l-1)-bed(l))*(ys(l)-ys(l-1))
-
+        IF(l>0) THEN
+            IF (u<nos) wdthx = wdthx+ (water-bed(u))/(bed(u+1)-bed(u))*(ys(u+1)-ys(u))
+            IF (l>1) wdthx = wdthx+ (water-bed(l))/(bed(l-1)-bed(l))*(ys(l)-ys(l-1))
+        END IF
         ! Cross sectional area
         Arealast=Area
         Area=0.0_dp
@@ -355,7 +356,7 @@ DO Q_loop= 1, no_discharges!15
             STOP
         END IF
 
-        IF ((Area<0.0002).OR.(maxval(water-bed(l:u))<.01)) THEN 
+        IF ( (Area<0.0002).OR.((l>0).and.(maxval(water-bed)<.01)) )THEN 
             !If we let the area go to zero, then the continuity model will allow
             !very very high velocities (since Q/A can be very large). This is
             !unrealistic because in practise the flat water slope assumption
@@ -513,7 +514,7 @@ DO Q_loop= 1, no_discharges!15
                 Clast=C  
                 lat_sus_flux = 0.0_dp ! Preset to zero
                 ! Evolve the suspended sediment concentration one timestep
-                ! (from i-1 to i), using Qe from on morphology 'i'
+                ! (from i-1 to i)
                 !print*, DT1
                 call dynamic_sus_dist(u-l+1, DT1, ys(l:u), bed(l:u), water, waterlast, Q, tau(l:u), vel(l:u), wset, & 
                                         0.5_dp*(Qe(l:u)+Qelast(l:u)), lambdacon, rho,rhos, g, d50, bedl,bedu, ysl, ysu, C(l:u),&
