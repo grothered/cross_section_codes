@@ -1054,5 +1054,21 @@ REAL(dp) FUNCTION newtcotes7( ntab, h, ftab)
  
   return
 end function newtcotes7
+!!!!!!!!!!!!!!!!!!!!
+REAL(dp) FUNCTION minmod(a,b)
+    REAL(dp) a, b    
+
+    IF(sign(1.0_dp,a).ne.sign(1.0_dp,b)) THEN
+        minmod=0.0_dp
+    ELSE
+        IF(abs(a)>abs(b)) THEN
+            minmod = b
+        ELSE
+            minmod = a
+        END IF
+    END IF
+        
+    return
+END FUNCTION minmod
 
 END MODULE util_various

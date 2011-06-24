@@ -69,8 +69,8 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
 
     ! y coordinate, including at zero depth boundaries (0 and a+1)
     ys_temp(1:a) = ys
-    ys_temp(0) = ys(1) - (ys(1) - ysl)*abs(water-bed(1))/(bedl-bed(1))!ysl
-    ys_temp(a+1) = ys(a) + (ysu-ys(a))*abs(water-bed(a))/(bedu-bed(a)) !ysu
+    ys_temp(0) = ys(1) - (ys(1) - ysl) !*abs(water-bed(1))/(bedl-bed(1))!ysl
+    ys_temp(a+1) = ys(a) + (ysu-ys(a)) !*abs(water-bed(a))/(bedu-bed(a)) !ysu
 
 
     ! Calculate the value of 'zetamult', where:
@@ -400,30 +400,55 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
             tmp1 = 1.0_dp/dy_outer
             tmp2 = 1.0_dp/(ys_temp(i+1)-ys_temp(i))
            
-            IF((i>2).and.(i<a-1)) THEN 
+            !IF((i>2).and.(i<a-1)) THEN 
                 impcon=1.0_dp ! Degree of implicitness 
-            ELSE
-                impcon=1.0_dp
-            END IF
+            !ELSE
+            !    impcon=1.0_dp
+            !END IF
 
 
             IF(i<a) THEN
                 ! 2 point derivative approx -- note cb = Cbar/zetamult
-                M1_upper(i) = M1_upper(i) - impcon*tmp1*tmp2*int_edif_f(i+1)/zetamult(i+1)
-                M1_diag(i)  = M1_diag(i)  + impcon*tmp1*tmp2*int_edif_f(i+1)/zetamult(i)
-        
-                RHS(i)      = RHS(i) + (1.0_dp-impcon)*tmp1*tmp2*int_edif_f(i+1)/zetamult(i+1)*Cbar(i+1)
-                RHS(i)      = RHS(i) - (1.0_dp-impcon)*tmp1*tmp2*int_edif_f(i+1)/zetamult(i)*Cbar(i)
+                !IF(i>0) THEN
+                !    M1_upper(i) = M1_upper(i) - impcon*tmp1*tmp2*&
+                !                    minmod(int_edif_f(i+1), 0.5_dp*(int_edif_f(i+1)+int_edif_f(i)))/zetamult(i+1)
+                !    M1_diag(i)  = M1_diag(i)  + impcon*tmp1*tmp2*&
+                !                    minmod(int_edif_f(i+1), 0.5_dp*(int_edif_f(i+1)+int_edif_f(i)))/zetamult(i)
+                !
+                !    RHS(i)      = RHS(i) + (1.0_dp-impcon)*tmp1*tmp2*int_edif_f(i+1)/zetamult(i+1)*Cbar(i+1)
+                !    RHS(i)      = RHS(i) - (1.0_dp-impcon)*tmp1*tmp2*int_edif_f(i+1)/zetamult(i)*Cbar(i)
+                !ELSE
+                    M1_upper(i) = M1_upper(i) - impcon*tmp1*tmp2*int_edif_f(i+1)/zetamult(i+1)
+                    M1_diag(i)  = M1_diag(i)  + impcon*tmp1*tmp2*int_edif_f(i+1)/zetamult(i)
+            
+                    RHS(i)      = RHS(i) + (1.0_dp-impcon)*tmp1*tmp2*int_edif_f(i+1)/zetamult(i+1)*Cbar(i+1)
+                    RHS(i)      = RHS(i) - (1.0_dp-impcon)*tmp1*tmp2*int_edif_f(i+1)/zetamult(i)*Cbar(i)
+                !END IF
+
             END IF
 
             tmp2 = 1.0_dp/(ys_temp(i)-ys_temp(i-1))
             IF(i>1) THEN
-                ! 2 point derivative approx
-                M1_diag(i)  = M1_diag(i)  + impcon*tmp1*tmp2*int_edif_f(i)/zetamult(i)
-                M1_lower(i) = M1_lower(i) - impcon*tmp1*tmp2*int_edif_f(i)/zetamult(i-1)
 
-                RHS(i) = RHS(i) - (1.0_dp-impcon)*tmp1*tmp2*int_edif_f(i)/zetamult(i)*Cbar(i)
-                RHS(i) = RHS(i) + (1.0_dp-impcon)*tmp1*tmp2*int_edif_f(i)/zetamult(i-1)*Cbar(i-1)
+                !IF(i<a+1) THEN
+                !    ! 2 point derivative approx
+                !    M1_diag(i)  = M1_diag(i)  + impcon*tmp1*tmp2*&
+                !                    minmod(int_edif_f(i),0.5_dp*(int_edif_f(i)+int_edif_f(i-1)))/zetamult(i)
+                !    M1_lower(i) = M1_lower(i) - impcon*tmp1*tmp2*&
+                !                    minmod(int_edif_f(i),0.5_dp*(int_edif_f(i)+int_edif_f(i-1)))/zetamult(i-1)
+                !
+                !    RHS(i) = RHS(i) - (1.0_dp-impcon)*tmp1*tmp2*int_edif_f(i)/zetamult(i)*Cbar(i)
+                !    RHS(i) = RHS(i) + (1.0_dp-impcon)*tmp1*tmp2*int_edif_f(i)/zetamult(i-1)*Cbar(i-1)
+                !
+                !
+                !ELSE
+                    ! 2 point derivative approx
+                    M1_diag(i)  = M1_diag(i)  + impcon*tmp1*tmp2*int_edif_f(i)/zetamult(i)
+                    M1_lower(i) = M1_lower(i) - impcon*tmp1*tmp2*int_edif_f(i)/zetamult(i-1)
+
+                    RHS(i) = RHS(i) - (1.0_dp-impcon)*tmp1*tmp2*int_edif_f(i)/zetamult(i)*Cbar(i)
+                    RHS(i) = RHS(i) + (1.0_dp-impcon)*tmp1*tmp2*int_edif_f(i)/zetamult(i-1)*Cbar(i-1)
+                !END IF
 
             END IF
 
@@ -474,9 +499,6 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
         IF(isnan(M1_diag(i))) print*, 'M1_diag(', i,') is NaN, c', M1_diag(i)   
         IF(isnan(M1_lower(i))) print*, 'M1_lower(', i,') is NaN, c' , M1_lower(i), int_edif_dfdy(i), zetamult(i)  
         IF(isnan(M1_upper(i))) print*, 'M1_upper(', i,') is NaN, c' , M1_upper(i), int_edif_dfdy(i+1), zetamult(i+1)   
-        !IF(i==a) print*, maxval(zetamult), minval(zetamult), maxval(int_edif_dfdy), &
-        !            minval(int_edif_dfdy), maxval(int_edif_f), minval(int_edif_f), &
-        !            maxval(int_edif_dfdy/zetamult(1:a+1)), minval(int_edif_dfdy/zetamult(1:a+1))
     END DO
 
     ! Erosion and deposition
@@ -642,9 +664,6 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
            (depth(1:a)/delT + 1.0_dp*wset/zetamult(1:a))
     !IF(counter==1) print*, 'WARNING: NO DEPOSITION, BUG FIX NEEDED HERE TO MAKE &
     !                                 THINGS TIME-INDEPENDENT'
-
-    !print*, Qe(a/2)
-    
 
     ! Convert back to kg/m^3
     Cbar = Cbar*rhos
