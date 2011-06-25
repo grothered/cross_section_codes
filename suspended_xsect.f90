@@ -170,7 +170,9 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
 
     END IF
 
-    IF(mod(counter,1000).eq.1) print*, 'sus_flux is:', sus_flux, ' desired flux is:', sconc*tmp1
+    IF(mod(counter,1).eq.0) print*, 'sus_flux is:', sus_flux, ' desired flux is:', sconc*tmp1, &
+                            'zetamult max = ', maxval(zetamult), 'zetamult mean =', sum(zetamult)/(1.0_dp*(a+2)), &
+                            'tau max = ', maxval(tau)
 
     ! Here, we try to add a constant to cb across the channel, such that the 
     ! sus_flux is as desired
@@ -188,9 +190,17 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     ! Now we add the term U*d*dCbar/dx using an operator splitting technique
     ! depth*dCbar/dT + depth*vel*dCbar/dx = 0.0
     ! Implicit 
-    Cbar = Cbar*(1.0_dp - 0.5_dp*delT*vel*(1._dp-tmp2)/x_len_scale)/ &
-           (1.0_dp + 0.5_dp*delT*vel*(1.0_dp-sed_lag_scale)/x_len_scale)
+    IF(maxval(Cbar)>0.0_dp) THEN
+        Cbar = Cbar*(1.0_dp - 0.0_dp*delT*vel*(1._dp-tmp2)/x_len_scale)/ &
+               (1.0_dp + 1.0_dp*delT*vel*(1.0_dp-sed_lag_scale)/x_len_scale)
+    ELSE
+        print*, 'Max Cbar = 0', counter
+        
+        stop
+        !Cbar = Cbar*(1.0_dp - 0.5_dp*delT*vel*(1._dp-tmp2)/x_len_scale)/ &
+        !       (1.0_dp + 0.5_dp*delT*vel*(1.0_dp-sed_lag_scale)/x_len_scale)
 
+    END IF
     ! Solve initially for the depth - averaged suspended sediment concentration
     ! depth d (Cbar) / dt + U*depth*dCbar/dx +
     ! V*depth* d(Cbar)/dy - d/dy( Fl ) -
@@ -211,7 +221,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
 
     ! depth*d(Cbar)/dt
     DO i = 1, a
-        M1_diag(i) = M1_diag(i) + depth(i)*delT
+        M1_diag(i) = M1_diag(i) + depth(i)/delT
         RHS(i)     = RHS(i)     + Cbar(i)*depth(i)/delT
     END DO
         
@@ -403,9 +413,9 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
                                  bedl, bedu, water, sqrt(abs(tau)/rho), wset,a_ref,&
                                  int_edif_f, int_edif_dfdy) !, 205)
                 !print*, sum(int_edif_f), maxval(int_edif_dfdy)
-                !int_edif_f   =0.0_dp
-                !int_edif_dfdy=0.0_dp
-                !if(counter.eq.1) print*, 'WARNING: int_edif_f and dfdy set to 0'
+                int_edif_f   =0.0_dp
+                int_edif_dfdy=0.0_dp
+                if(counter.eq.1) print*, 'WARNING: int_edif_f and dfdy set to 0'
                 !print*, sum(zetamult)/(1.0_dp*a), minval(zetamult)
             END IF
             
