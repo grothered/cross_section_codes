@@ -3,7 +3,7 @@ MODULE suspended_xsect
 !File of global parameters
 use global_defs
 use util_various
-
+IMPLICIT NONE
 contains
 
 
@@ -861,7 +861,7 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
                 eps_z, ys_tmp(0:a+1), dbed_dy, depsz_dy, aref_tmp(0:a+1),&
                 arefh, daref_dy, dus_dy, df_dbedh(64), df_darefh(64), df_dus(64), &
                 z2ratio(64), dz, dyinv, d_on_aref_les1_inv, z2bed_inv(64), arefh_inv, &
-                parabola(64)
+                parabola(64), rouseno
                 !z2surf(64), z2bed(64)
 
     ! Note -- we assume 64 point gaussian quadrature is the method. Experiments

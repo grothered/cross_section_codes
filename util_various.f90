@@ -3,7 +3,7 @@ MODULE util_various
 
 ! Global parameters
 USE global_defs
-
+IMPLICIT NONE
 contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!
 !

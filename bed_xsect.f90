@@ -4,7 +4,7 @@ MODULE bed_xsect
 
 ! Module with global parameters
 USE global_defs
-
+IMPLICIT NONE
 contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -955,6 +955,7 @@ SUBROUTINE critical_slope_wasting(dT, nos,ys,bed,failure_slope, rate)
     REAL(dp), INTENT(IN OUT):: bed(nos)
 
     ! Local variables
+    INTEGER:: i
     REAL(dp):: flux(nos), slope, bed_pred(nos), flux_cor(nos)
 
     ! Determine rate of mass failure at i+1/2
