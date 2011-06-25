@@ -13,7 +13,7 @@ contains
 SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wset, Qe,lambdacon, &
                                 rho,rhos, g, d50, bedl,bedu, ysl, ysu, cb, Cbar, Qbed, &
                                 sed_lag_scale, counter, high_order_Cflux, a_ref, sus_vert_prof, edify_model, &
-                                x_len_scale, sconc, lat_sus_flux)
+                                x_len_scale, sconc, lat_sus_flux, bedlast)
     ! Calculate the cross-sectional distribution of suspended sediment using
     ! some ideas from /home/gareth/Documents/H_drive_Gareth/Gareth_and_colab
     ! s/Thesis/Hydraulic_morpho_model/channel_cross_section/paper/idea_for_
@@ -32,21 +32,21 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     
     INTEGER, INTENT(IN)::a, counter
     REAL(dp), INTENT(IN):: delT, ys, bed, water, waterlast, tau, vel, wset, Qe, lambdacon, rho, rhos,g, & 
-                                d50, bedl, bedu,ysl,ysu, Q, Qbed, a_ref, x_len_scale, sconc
+                                d50, bedl, bedu,ysl,ysu, Q, Qbed, a_ref, x_len_scale, sconc, bedlast
     REAL(dp), INTENT(OUT):: sed_lag_scale, lat_sus_flux  ! sed_lag_scale = used to estimate derivative terms, e.g. dCbar/dx
     ! cb = Near bed suspended sediment concentration, 
     ! Cbar = Depth averaged suspended sediment concentration
     REAL(dp), INTENT(IN OUT):: cb, Cbar
     CHARACTER(20), INTENT(IN):: sus_vert_prof, edify_model
     LOGICAL, INTENT(IN):: high_order_Cflux
-    DIMENSION ys(a), bed(a), tau(a),vel(a), Qe(a), cb(a), Cbar(a),Qbed(a), a_ref(a), lat_sus_flux(a+1)
+    DIMENSION ys(a), bed(a), tau(a),vel(a), Qe(a), cb(a), Cbar(a),Qbed(a), a_ref(a), lat_sus_flux(a+1), bedlast(a)
 
     ! LOCAL VARIABLES
     INTEGER:: i, info, j
     LOGICAL:: halt
     REAL(dp):: depth(0:a+1), eddif_y(0:a+1), eddif_z(a), zetamult(0:a+1), vd(0:a+1), ys_temp(0:a+1)
     REAL(dp):: M1_lower(a), M1_diag(a), M1_upper(a), M1_upper2(a), M1_lower2(a)
-    REAL(dp):: RHS(a), dy_all(a)
+    REAL(dp):: RHS(a), dy_all(a), depthlast(0:a+1)
     REAL(dp):: tmp1, dy, dy_outer, tmp2, Cref, z, cbed_tmp1, cbed_tmp2
     REAL(dp):: dQdx, dhdt, Cbar_old(a), dUd_dx(0:a+1), sus_flux, impcon
     REAL(dp):: DLF(a), DF(a), DUF(a), DU2(a),rcond, ferr, berr, work(3*a), XXX(a, 1)
@@ -66,6 +66,10 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     depth(1:a) = max(water -bed, 0._dp)
     depth(0) = 0._dp
     depth(a+1) = 0._dp
+
+    depthlast(1:a) = max(waterlast-bedlast,0.0_dp)
+    depthlast(0)=0._dp
+    depthlast(a+1) = 0._dp
 
     ! y coordinate, including at zero depth boundaries (0 and a+1)
     ys_temp(1:a) = ys
@@ -145,6 +149,9 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
               ( ( (/ ys(2:a), ysu /) - (/ ysl, ys(1:a-1) /) )*0.5_dp) &  ! dy
                   )
 
+    ! Store sed_lag_scale to use below
+    tmp2 = sed_lag_scale
+
     IF(sus_flux > 1.0e-12_dp) THEN
         sed_lag_scale = 1.0_dp*((sconc*tmp1)/sus_flux) !Desired flux / actual flux
 
@@ -175,8 +182,8 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     ! Now we add the term U*d*dCbar/dx using an operator splitting technique
     ! depth*dCbar/dT + depth*vel*dCbar/dx = 0.0
     ! Implicit 
-    Cbar = Cbar*(1.0_dp - 0.0_dp*delT*vel*(1._dp-sed_lag_scale)/x_len_scale)/ &
-           (1.0_dp + 1.0_dp*delT*vel*(1.0_dp-sed_lag_scale)/x_len_scale)
+    Cbar = Cbar*(1.0_dp - 0.5_dp*delT*vel*(1._dp-tmp2)/x_len_scale)/ &
+           (1.0_dp + 0.5_dp*delT*vel*(1.0_dp-sed_lag_scale)/x_len_scale)
 
     ! Solve initially for the depth - averaged suspended sediment concentration
     ! depth d (Cbar) / dt + U*depth*dCbar/dx +
@@ -198,7 +205,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
 
     ! depth*d(Cbar)/dt
     DO i = 1, a
-        M1_diag(i) = M1_diag(i) + depth(i)/delT
+        M1_diag(i) = M1_diag(i) + depth(i)*delT
         RHS(i)     = RHS(i)     + Cbar(i)*depth(i)/delT
     END DO
         

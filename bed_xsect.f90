@@ -955,7 +955,7 @@ SUBROUTINE critical_slope_wasting(dT, nos,ys,bed,failure_slope, rate)
     REAL(dp), INTENT(IN OUT):: bed(nos)
 
     ! Local variables
-    REAL(dp):: flux(nos), slope
+    REAL(dp):: flux(nos), slope, bed_pred(nos), flux_cor(nos)
 
     ! Determine rate of mass failure at i+1/2
     DO i=1,nos-1
@@ -963,6 +963,21 @@ SUBROUTINE critical_slope_wasting(dT, nos,ys,bed,failure_slope, rate)
         slope = (bed(i+1)-bed(i))/(ys(i+1)-ys(i))
         flux(i) = -rate*max( abs(slope) - failure_slope,0.0_dp)*sign(1.0_dp, slope)
     END DO
+    ! d(bed)/dT = -d(flux)/dy
+    bed_pred(2:nos-1) = bed(2:nos-1) - dT*(flux(2:nos-1) - flux(1:nos-2))/(0.5_dp*(ys(3:nos)-ys(1:nos-2)))
+    bed_pred(1) = bed(1)             - dT*(flux(1)                      )/(ys(2)-ys(1))
+    bed_pred(nos) = bed(nos)         - dT*(              - flux(nos-1)  )/(ys(nos)-ys(nos-1))
+
+    ! Re-calculate the flux using the predictor value of the bed
+    DO i=1,nos-1
+        ! flux = -rate*max(abs(slope)-failure_slope,0.0)*sign(1.0,slope)
+        slope = (bed_pred(i+1)-bed_pred(i))/(ys(i+1)-ys(i))
+        flux_cor(i) = -rate*max( abs(slope) - failure_slope,0.0_dp)*sign(1.0_dp, slope)
+    END DO
+
+    ! New value of the flux = 0.5*(predictor + corrector)
+    flux = 0.5_dp*(flux + flux_cor) 
+    
     ! d(bed)/dT = -d(flux)/dy
     bed(2:nos-1) = bed(2:nos-1) - dT*(flux(2:nos-1) - flux(1:nos-2))/(0.5_dp*(ys(3:nos)-ys(1:nos-2)))
     bed(1) = bed(1)             - dT*(flux(1)                      )/(ys(2)-ys(1))
