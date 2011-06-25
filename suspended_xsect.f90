@@ -1100,7 +1100,7 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
         !int_edif_f(i) = simpson_integrate(no_subints, dz, edify*f)
         !int_edif_f(i) = wedint(no_subints, dz, edify*f)
         !int_edif_f(i) = newtcotes7(no_subints, dz, edify*f)
-        int_edif_f(i) = sum(gauss_weights*edify*f)*(d-a_refh)/2.0_dp ! gaussian quadrature
+        int_edif_f(i) = sum(gauss_weights*edify*f)*(d-arefh)/2.0_dp ! gaussian quadrature
         
         IF(isnan(int_edif_f(i))) THEN
             print*, 'Error: int_edif_f(',i, ') is nan, '  
@@ -1113,7 +1113,7 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
         !int_edif_dfdy(i) = simpson_integrate(no_subints, dz, edify*df_dy)
         !int_edif_dfdy(i) = wedint(no_subints, dz, edify*df_dy)
         !int_edif_dfdy(i) = newtcotes7(no_subints, dz, edify*df_dy)
-        int_edif_dfdy(i) = sum(gauss_weights*edify*df_dy)*(d-a_refh)/2.0_dp !Gaussian quadrature   
+        int_edif_dfdy(i) = sum(gauss_weights*edify*df_dy)*(d-arefh)/2.0_dp !Gaussian quadrature   
 
         IF(isnan(int_edif_dfdy(i))) THEN
             print*, 'Error: int_edif_dfdy(',i, ') is nan, ', us,'$$$$', f,'$$$$', df_dus
