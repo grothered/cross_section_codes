@@ -128,7 +128,9 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     ! Limit zetamult to a non-zero value to avoid division problems
     zetamult(0)   = 1.0_dp
     zetamult(a+1) = 1.0_dp
-    zetamult = max(zetamult, 1.0e-12_dp)
+    !FIXME: MIGHT WANT TO REVISIT THIS -- can cause very large cb values.  
+    !zetamult = max(zetamult, 1.0e-12_dp)
+    zetamult(1:a) = max(zetamult(1:a), Cbar/(150.0_dp/rhos), 1.0e-012_dp) ! Should limit cb to ~ 150g/L
     !zetamult = max(zetamult, 1.0e-4_dp*depth)
     !zetamult = max(zetamult, 1.0e-5_dp)
     !zetamult = min(zetamult, 1.0e+05_dp)
@@ -170,7 +172,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
 
     END IF
 
-    IF(mod(counter,1).eq.0) print*, 'sus_flux is:', sus_flux, ' desired flux is:', sconc*tmp1, &
+    IF(mod(counter,1000).eq.1) print*, 'sus_flux is:', sus_flux, ' desired flux is:', sconc*tmp1, &
                             'zetamult max = ', maxval(zetamult), 'zetamult mean =', sum(zetamult)/(1.0_dp*(a+2)), &
                             'tau max = ', maxval(tau)
 
@@ -190,17 +192,17 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     ! Now we add the term U*d*dCbar/dx using an operator splitting technique
     ! depth*dCbar/dT + depth*vel*dCbar/dx = 0.0
     ! Implicit 
-    IF(maxval(Cbar)>0.0_dp) THEN
+    !IF(maxval(Cbar)>0.0_dp) THEN
         Cbar = Cbar*(1.0_dp - 0.0_dp*delT*vel*(1._dp-tmp2)/x_len_scale)/ &
                (1.0_dp + 1.0_dp*delT*vel*(1.0_dp-sed_lag_scale)/x_len_scale)
-    ELSE
-        print*, 'Max Cbar = 0', counter
+    !ELSE
+    !    print*, 'Max Cbar = 0', counter
         
-        stop
+    !    stop
         !Cbar = Cbar*(1.0_dp - 0.5_dp*delT*vel*(1._dp-tmp2)/x_len_scale)/ &
         !       (1.0_dp + 0.5_dp*delT*vel*(1.0_dp-sed_lag_scale)/x_len_scale)
 
-    END IF
+    !END IF
     ! Solve initially for the depth - averaged suspended sediment concentration
     ! depth d (Cbar) / dt + U*depth*dCbar/dx +
     ! V*depth* d(Cbar)/dy - d/dy( Fl ) -
