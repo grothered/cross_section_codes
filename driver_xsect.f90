@@ -518,7 +518,7 @@ DO Q_loop= 1, no_discharges!15
                 ! (from i-1 to i)
                 !print*, DT1
                 call dynamic_sus_dist(u-l+1, DT1, ys(l:u), bed(l:u), water, waterlast, Q, tau(l:u), vel(l:u), wset, & 
-                                        0.5_dp*(Qe(l:u)+Qe(l:u)), lambdacon, rho,rhos, g, d50, bedl,bedu, ysl, ysu, C(l:u),&
+                                        0.5_dp*(Qe(l:u)+Qelast(l:u)), lambdacon, rho,rhos, g, d50, bedl,bedu, ysl, ysu, C(l:u),&
                                         Cbar(l:u), Qbed(l:u), sed_lag_scale, j, high_order_Cflux, a_ref(l:u), sus_vert_prof,&
                                         edify_model, x_len_scale, sconc, lat_sus_flux(l:u+1), bedlast(l:u))
 

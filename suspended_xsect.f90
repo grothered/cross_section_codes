@@ -667,10 +667,18 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     ! depth*dCbar/dt +wset*Cbed =  Qe 
     ! depth/dt*(Cbar_new -Cbar) + wset*(Cbar_new/zetamult) = Qe
     ! Cbar_new( depth/dt + wset/zetamult) = Qe + depth/dt*Cbar
-    Cbar = 1.0_dp*(Qe*1.0_dp + depth(1:a)/delT*Cbar - 0.0_dp*wset/zetamult(1:a)*Cbar)/ &
-           (depth(1:a)/delT + 1.0_dp*wset/zetamult(1:a))
+    !Cbar = 1.0_dp*(Qe*1.0_dp + depth(1:a)/delT*Cbar - 0.5_dp*wset/zetamult(1:a)*Cbar)/ &
+    !       (depth(1:a)/delT + 0.5_dp*wset/zetamult(1:a))
+    Cbar = 1.0_dp*(Qe*1.0_dp + depth(1:a)/delT*Cbar - 0.5_dp*wset*cb)/ &
+           (depth(1:a)/delT + 0.5_dp*wset/zetamult(1:a))
     !IF(counter==1) print*, 'WARNING: NO DEPOSITION, BUG FIX NEEDED HERE TO MAKE &
     !                                 THINGS TIME-INDEPENDENT'
+    DO i=1,a
+        IF(Cbar(i)<0.0_dp) THEN
+            IF(Cbar(i)< -1.0e-012_dp) print*, 'Cbar clip', i, Cbar(i), Cbar_old(i), depth(i)
+            Cbar(i) = 0.0e-12_dp
+        END IF
+    END DO
 
     ! Convert back to kg/m^3
     Cbar = Cbar*rhos
