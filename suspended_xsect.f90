@@ -415,9 +415,9 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
                                  bedl, bedu, water, sqrt(abs(tau)/rho), wset,a_ref,&
                                  int_edif_f, int_edif_dfdy) !, 205)
                 !print*, sum(int_edif_f), maxval(int_edif_dfdy)
-                int_edif_f   =0.0_dp
-                int_edif_dfdy=0.0_dp
-                if(counter.eq.1) print*, 'WARNING: int_edif_f and dfdy set to 0'
+                !int_edif_f   =0.0_dp
+                !int_edif_dfdy=0.0_dp
+                !if(counter.eq.1) print*, 'WARNING: int_edif_f and dfdy set to 0'
                 !print*, sum(zetamult)/(1.0_dp*a), minval(zetamult)
             END IF
             
@@ -922,11 +922,11 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
     DO i=1,a+1
 
         ! Define depth, ustar, bed, aref, epsz, at i-1/2
-        d = max(water - 0.5_dp*(bed_tmp(i)+bed_tmp(i-1)), 0.0_dp) 
+        !d = 0.5_dp*(max( (water - bed_tmp(i)), 0.0_dp) + max( (water - bed_tmp(i-1)), 0.0_dp))
         us= 0.5_dp*(ustar_tmp(i)+ustar_tmp(i-1))
         bedh = 0.5_dp*(bed_tmp(i)+bed_tmp(i-1))
         arefh = 0.5_dp*(aref_tmp(i)+aref_tmp(i-1))
-
+        d = max(water - bedh, 0.0_dp)
         ! Define daref/dy and dbed/dy, dustar/dy at i-1/2
         dyinv = 1.0_dp/(ys_tmp(i)-ys_tmp(i-1)) 
         daref_dy = (aref_tmp(i) - aref_tmp(i-1))*dyinv
