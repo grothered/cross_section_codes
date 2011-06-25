@@ -160,7 +160,13 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
         IF(mod(counter,1000).eq.1) PRINT*, 'sed_lag_scale = ', sed_lag_scale
 
     ELSE
-        sed_lag_scale = 1.0_dp
+        IF(sconc*tmp1<sus_flux) THEN
+            sed_lag_scale = 0.666_dp
+        ELSEIF(sconc*tmp1==sus_flux) THEN
+            sed_lag_scale = 1.0_dp
+        ELSE
+            sed_lag_scale = 1.5_dp
+        END IF
 
     END IF
 
@@ -669,10 +675,11 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     ! Cbar_new( depth/dt + wset/zetamult) = Qe + depth/dt*Cbar
     !Cbar = 1.0_dp*(Qe*1.0_dp + depth(1:a)/delT*Cbar - 0.5_dp*wset/zetamult(1:a)*Cbar)/ &
     !       (depth(1:a)/delT + 0.5_dp*wset/zetamult(1:a))
-    Cbar = 1.0_dp*(Qe*1.0_dp + depth(1:a)/delT*Cbar - 0.5_dp*wset*cb)/ &
-           (depth(1:a)/delT + 0.5_dp*wset/zetamult(1:a))
-    !IF(counter==1) print*, 'WARNING: NO DEPOSITION, BUG FIX NEEDED HERE TO MAKE &
-    !                                 THINGS TIME-INDEPENDENT'
+    
+    !Cbar = 1.0_dp*(Qe*1.0_dp + depth(1:a)/delT*Cbar - 0.5_dp*wset*cb)/ &
+    !       (depth(1:a)/delT + 0.5_dp*wset/zetamult(1:a))
+    IF(counter==1) print*, 'WARNING: NO EROSION OR DEPOSITION, BUG FIX NEEDED HERE TO MAKE &
+                                     THINGS TIME-INDEPENDENT'
     DO i=1,a
         IF(Cbar(i)<0.0_dp) THEN
             IF(Cbar(i)< -1.0e-012_dp) print*, 'Cbar clip', i, Cbar(i), Cbar_old(i), depth(i)
