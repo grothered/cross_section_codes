@@ -426,9 +426,9 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
             tmp2 = 1.0_dp/(ys_temp(i+1)-ys_temp(i))
            
             !IF((i>2).and.(i<a-1)) THEN 
-                impcon=1.0_dp ! Degree of implicitness 
+            !    impcon=0.5_dp ! Degree of implicitness 
             !ELSE
-            !    impcon=1.0_dp
+                impcon=1.0_dp
             !END IF
 
 
@@ -443,11 +443,11 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
                 !    RHS(i)      = RHS(i) + (1.0_dp-impcon)*tmp1*tmp2*int_edif_f(i+1)/zetamult(i+1)*Cbar(i+1)
                 !    RHS(i)      = RHS(i) - (1.0_dp-impcon)*tmp1*tmp2*int_edif_f(i+1)/zetamult(i)*Cbar(i)
                 !ELSE
-                    M1_upper(i) = M1_upper(i) - impcon*tmp1*tmp2*int_edif_f(i+1)/zetamult(i+1)
-                    M1_diag(i)  = M1_diag(i)  + impcon*tmp1*tmp2*int_edif_f(i+1)/zetamult(i)
-            
-                    RHS(i)      = RHS(i) + (1.0_dp-impcon)*tmp1*tmp2*int_edif_f(i+1)*cb(i+1)
-                    RHS(i)      = RHS(i) - (1.0_dp-impcon)*tmp1*tmp2*int_edif_f(i+1)*cb(i)
+                M1_upper(i) = M1_upper(i) - impcon*tmp1*tmp2*int_edif_f(i+1)/zetamult(i+1)
+                M1_diag(i)  = M1_diag(i)  + impcon*tmp1*tmp2*int_edif_f(i+1)/zetamult(i)
+        
+                RHS(i)      = RHS(i) + (1.0_dp-impcon)*tmp1*tmp2*int_edif_f(i+1)*cb(i+1)
+                RHS(i)      = RHS(i) - (1.0_dp-impcon)*tmp1*tmp2*int_edif_f(i+1)*cb(i)
                 !END IF
 
             END IF
@@ -467,12 +467,12 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
                 !
                 !
                 !ELSE
-                    ! 2 point derivative approx
-                    M1_diag(i)  = M1_diag(i)  + impcon*tmp1*tmp2*int_edif_f(i)/zetamult(i)
-                    M1_lower(i) = M1_lower(i) - impcon*tmp1*tmp2*int_edif_f(i)/zetamult(i-1)
+                ! 2 point derivative approx
+                M1_diag(i)  = M1_diag(i)  + impcon*tmp1*tmp2*int_edif_f(i)/zetamult(i)
+                M1_lower(i) = M1_lower(i) - impcon*tmp1*tmp2*int_edif_f(i)/zetamult(i-1)
 
-                    RHS(i) = RHS(i) - (1.0_dp-impcon)*tmp1*tmp2*int_edif_f(i)*cb(i)
-                    RHS(i) = RHS(i) + (1.0_dp-impcon)*tmp1*tmp2*int_edif_f(i)*cb(i)
+                RHS(i) = RHS(i) - (1.0_dp-impcon)*tmp1*tmp2*int_edif_f(i)*cb(i)
+                RHS(i) = RHS(i) + (1.0_dp-impcon)*tmp1*tmp2*int_edif_f(i)*cb(i-1)
                 !END IF
 
             END IF
