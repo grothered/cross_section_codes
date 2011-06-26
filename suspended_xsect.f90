@@ -446,8 +446,8 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
                     M1_upper(i) = M1_upper(i) - impcon*tmp1*tmp2*int_edif_f(i+1)/zetamult(i+1)
                     M1_diag(i)  = M1_diag(i)  + impcon*tmp1*tmp2*int_edif_f(i+1)/zetamult(i)
             
-                    RHS(i)      = RHS(i) + (1.0_dp-impcon)*tmp1*tmp2*int_edif_f(i+1)/zetamult(i+1)*Cbar(i+1)
-                    RHS(i)      = RHS(i) - (1.0_dp-impcon)*tmp1*tmp2*int_edif_f(i+1)/zetamult(i)*Cbar(i)
+                    RHS(i)      = RHS(i) + (1.0_dp-impcon)*tmp1*tmp2*int_edif_f(i+1)*cb(i+1)
+                    RHS(i)      = RHS(i) - (1.0_dp-impcon)*tmp1*tmp2*int_edif_f(i+1)*cb(i)
                 !END IF
 
             END IF
@@ -471,8 +471,8 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
                     M1_diag(i)  = M1_diag(i)  + impcon*tmp1*tmp2*int_edif_f(i)/zetamult(i)
                     M1_lower(i) = M1_lower(i) - impcon*tmp1*tmp2*int_edif_f(i)/zetamult(i-1)
 
-                    RHS(i) = RHS(i) - (1.0_dp-impcon)*tmp1*tmp2*int_edif_f(i)/zetamult(i)*Cbar(i)
-                    RHS(i) = RHS(i) + (1.0_dp-impcon)*tmp1*tmp2*int_edif_f(i)/zetamult(i-1)*Cbar(i-1)
+                    RHS(i) = RHS(i) - (1.0_dp-impcon)*tmp1*tmp2*int_edif_f(i)*cb(i)
+                    RHS(i) = RHS(i) + (1.0_dp-impcon)*tmp1*tmp2*int_edif_f(i)*cb(i)
                 !END IF
 
             END IF
@@ -487,11 +487,11 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
                 ! Cbar values
                 IF(bed(i)>bed(i+1)) THEN
                     M1_diag(i)  = M1_diag(i)  - impcon*tmp1*int_edif_dfdy(i+1)/zetamult(i)
-                    RHS(i) = RHS(i) + (1.0_dp-impcon)*tmp1*int_edif_dfdy(i+1)/zetamult(i)*Cbar(i)
+                    RHS(i) = RHS(i) + (1.0_dp-impcon)*tmp1*int_edif_dfdy(i+1)*cb(i)
 
                 ELSE
                     M1_upper(i) = M1_upper(i)  - impcon*tmp1*int_edif_dfdy(i+1)/zetamult(i+1)
-                    RHS(i)      = RHS(i)  + (1.0_dp-impcon)*tmp1*int_edif_dfdy(i+1)/zetamult(i+1)*Cbar(i+1)
+                    RHS(i)      = RHS(i)  + (1.0_dp-impcon)*tmp1*int_edif_dfdy(i+1)*cb(i+1)
    
                 END IF
 
@@ -506,10 +506,10 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
                 ! Cbar values.
                 IF(bed(i)>bed(i-1)) THEN
                     M1_diag(i)   = M1_diag(i)   + impcon*tmp1*int_edif_dfdy(i)/zetamult(i)  ! Note that 1/zetamult(i)*Cbar = cb
-                    RHS(i)  = RHS(i) - (1.0_dp-impcon)*tmp1*int_edif_dfdy(i)/zetamult(i)*Cbar(i)    
+                    RHS(i)  = RHS(i) - (1.0_dp-impcon)*tmp1*int_edif_dfdy(i)*cb(i)   
                 ELSE
                     M1_lower(i)  = M1_lower(i)  + impcon*tmp1*int_edif_dfdy(i)/zetamult(i-1)  ! Note that 1/zetamult(i)*Cbar = cb
-                    RHS(i)  = RHS(i) - (1.0_dp-impcon)*tmp1*int_edif_dfdy(i)/zetamult(i-1)*Cbar(i-1)
+                    RHS(i)  = RHS(i) - (1.0_dp-impcon)*tmp1*int_edif_dfdy(i)*cb(i-1)
                 END IF
 
 
@@ -688,10 +688,10 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     !Cbar = 1.0_dp*(Qe*1.0_dp + depth(1:a)/delT*Cbar - 0.5_dp*wset/zetamult(1:a)*Cbar)/ &
     !       (depth(1:a)/delT + 0.5_dp*wset/zetamult(1:a))
     
-    !Cbar = 1.0_dp*(Qe*1.0_dp + depth(1:a)/delT*Cbar - 0.5_dp*wset*cb)/ &
-    !       (depth(1:a)/delT + 0.5_dp*wset/zetamult(1:a))
-    IF(counter==1) print*, 'WARNING: NO EROSION OR DEPOSITION, BUG FIX NEEDED HERE TO MAKE &
-                                     THINGS TIME-INDEPENDENT'
+    Cbar = 1.0_dp*(Qe*1.0_dp + depth(1:a)/delT*Cbar - 0.5_dp*wset*cb)/ &
+           (depth(1:a)/delT + 0.5_dp*wset/zetamult(1:a))
+    !IF(counter==1) print*, 'WARNING: NO EROSION OR DEPOSITION, BUG FIX NEEDED HERE TO MAKE &
+    !                                 THINGS TIME-INDEPENDENT'
     DO i=1,a
         IF(Cbar(i)<0.0_dp) THEN
             IF(Cbar(i)< -1.0e-012_dp) print*, 'Cbar clip', i, Cbar(i), Cbar_old(i), depth(i)
