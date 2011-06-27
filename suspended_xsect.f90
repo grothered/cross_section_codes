@@ -537,7 +537,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     IF(.TRUE.) THEN
         DO i = 1, a
 
-            RHS(i) = RHS(i) +Qe(i) + 0.5_dp*wset*cb(i)
+            RHS(i) = RHS(i) +Qe(i) - 0.5_dp*wset*cb(i)
             M1_diag(i) = M1_diag(i) + 0.5_dp*wset/zetamult(i)  ! Note that 1/zetamult(i)*Cbar = cb
 
 
