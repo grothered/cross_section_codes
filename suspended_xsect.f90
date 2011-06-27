@@ -77,8 +77,8 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
 
     ! y coordinate, including at zero depth boundaries (0 and a+1)
     ys_temp(1:a) = ys
-    ys_temp(0) = ys(1) - (ys(1) - ysl) !*abs(water-bed(1))/(bedl-bed(1))!ysl
-    ys_temp(a+1) = ys(a) + (ysu-ys(a)) !*abs(water-bed(a))/(bedu-bed(a)) !ysu
+    ys_temp(0) = ys(1) - (ys(1) - ysl)*abs(water-bed(1))/(bedl-bed(1))!ysl
+    ys_temp(a+1) = ys(a) + (ysu-ys(a))*abs(water-bed(a))/(bedu-bed(a)) !ysu
 
 
     ! Calculate the value of 'zetamult', where:
@@ -413,8 +413,11 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
             IF(i==1) THEN
                 ! Calculate important integration factors int_edif_dfdy and
                 ! int_edif_f
-                call int_edify_f(edify_model, sus_vert_prof, a, ys, bed, ysl, ysu,&
-                                 bedl, bedu, water, sqrt(abs(tau)/rho), wset,a_ref,&
+                !call int_edify_f(edify_model, sus_vert_prof, a, ys, bed, ysl, ysu,&
+                !                 bedl, bedu, water, sqrt(abs(tau)/rho), wset,a_ref,&
+                !                 int_edif_f, int_edif_dfdy) !, 205)
+                call int_edify_f(edify_model, sus_vert_prof, a, ys, bed, ys_temp(0), ys_temp(a+1),&
+                                 water, water, water, sqrt(abs(tau)/rho), wset,a_ref,&
                                  int_edif_f, int_edif_dfdy) !, 205)
                 !print*, sum(int_edif_f), maxval(int_edif_dfdy)
                 !int_edif_f   =0.0_dp
@@ -482,7 +485,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
             END IF
 
             
-            !! d/dy ( cb*INT(edify*df/dy )dz  )
+            !! d/dy ( cb*INT(edify*df/dy )dz )
             IF(i<a) THEN
                 !M1_upper(i) = M1_upper(i) - 0.5_dp*tmp1*int_edif_dfdy(i+1)/zetamult(i+1)  ! Note that 1/zetamult(i)*Cbar = cb
                 !M1_diag(i)  = M1_diag(i)  - 0.5_dp*tmp1*int_edif_dfdy(i+1)/zetamult(i)
@@ -531,15 +534,15 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     END DO
 
     ! Erosion and deposition
-    !IF(.TRUE.) THEN
-    !    DO i = 1, a
+    IF(.TRUE.) THEN
+        DO i = 1, a
 
-    !        RHS(i) = RHS(i) +Qe(i)
-    !        !M1_diag(i) = M1_diag(i) + wset/zetamult(i)  ! Note that 1/zetamult(i)*Cbar = cb
+            RHS(i) = RHS(i) +Qe(i) + 0.5_dp*wset*cb(i)
+            M1_diag(i) = M1_diag(i) + 0.5_dp*wset/zetamult(i)  ! Note that 1/zetamult(i)*Cbar = cb
 
 
-    !    END DO
-    !END IF
+        END DO
+    END IF
 
     !Sanity-check
     DO i = 1, a
@@ -692,8 +695,8 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     !Cbar = 1.0_dp*(Qe*1.0_dp + depth(1:a)/delT*Cbar - 0.5_dp*wset/zetamult(1:a)*Cbar)/ &
     !       (depth(1:a)/delT + 0.5_dp*wset/zetamult(1:a))
     
-    Cbar = 1.0_dp*(Qe*1.0_dp + depth(1:a)/delT*Cbar - 0.5_dp*wset*cb)/ &
-           (depth(1:a)/delT + 0.5_dp*wset/zetamult(1:a))
+    !Cbar = 1.0_dp*(Qe*1.0_dp + depth(1:a)/delT*Cbar - 0.5_dp*wset*cb)/ &
+    !       (depth(1:a)/delT + 0.5_dp*wset/zetamult(1:a))
     !IF(counter==1) print*, 'WARNING: NO EROSION OR DEPOSITION, BUG FIX NEEDED HERE TO MAKE &
     !                                 THINGS TIME-INDEPENDENT'
     DO i=1,a
@@ -755,7 +758,7 @@ REAL(dp) FUNCTION rouse_int(z,d_aref)
     REAL(dp), INTENT(IN):: z, d_aref
 
     ! num_trapz_pts = number of points used in trapezoidal integration
-    INTEGER:: i, num_trapz_pts=100 
+    INTEGER:: i, num_trapz_pts=400 
     REAL(dp):: db_const, F1, J1, j, E2, z2, perturb = 1.0e-05_dp, eps, d_eps
    
     IF((z>20.0_dp).or.(d_aref>1.0_dp)) THEN
@@ -915,12 +918,12 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
     ys_tmp(a+1) = ysu
 
     ustar_tmp(1:a) = ustar
-    ustar_tmp(0)   = ustar(1)
-    ustar_tmp(a+1) = ustar(a)
+    ustar_tmp(0)   = max(0.0_dp, 2.0_dp*ustar(1)-ustar(2)) !ustar(1)
+    ustar_tmp(a+1) = max(0.0_dp, 2.0_dp*ustar(a)-ustar(a-1)) !ustar(a)
     
     aref_tmp(1:a) = a_ref(1:a)
-    aref_tmp(0)   = a_ref(1)
-    aref_tmp(a+1) = a_ref(a)
+    aref_tmp(0)   = max(0.0_dp, 2.0_dp*a_ref(1)-a_ref(2)) !a_ref(1)
+    aref_tmp(a+1) = max(0.0_dp, 2.0_dp*a_ref(a)-a_ref(a-1)) !a_ref(a)
 
     ! Loop through (0.5, 1.5, ... a+0.5) to compute integrals
     DO i=1,a+1
