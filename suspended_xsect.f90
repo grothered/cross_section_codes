@@ -13,7 +13,7 @@ contains
 SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wset, Qe,lambdacon, &
                                 rho,rhos, g, d50, bedl,bedu, ysl, ysu, cb, Cbar, Qbed, &
                                 sed_lag_scale, counter, high_order_Cflux, a_ref, sus_vert_prof, edify_model, &
-                                x_len_scale, sconc, lat_sus_flux, bedlast)
+                                x_len_scale, sconc, lat_sus_flux, bedlast, int_edif_f, int_edif_dfdy)
     ! Calculate the cross-sectional distribution of suspended sediment using
     ! some ideas from /home/gareth/Documents/H_drive_Gareth/Gareth_and_colab
     ! s/Thesis/Hydraulic_morpho_model/channel_cross_section/paper/idea_for_
@@ -33,13 +33,15 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     INTEGER, INTENT(IN)::a, counter
     REAL(dp), INTENT(IN):: delT, ys, bed, water, waterlast, tau, vel, wset, Qe, lambdacon, rho, rhos,g, & 
                                 d50, bedl, bedu,ysl,ysu, Q, Qbed, a_ref, x_len_scale, sconc, bedlast
-    REAL(dp), INTENT(OUT):: sed_lag_scale, lat_sus_flux  ! sed_lag_scale = used to estimate derivative terms, e.g. dCbar/dx
+    REAL(dp), INTENT(OUT):: sed_lag_scale, lat_sus_flux ! sed_lag_scale = used to estimate derivative terms, e.g. dCbar/dx
+    REAL(dp), INTENT(INOUT):: int_edif_f, int_edif_dfdy ! 2 integrals that appear in the lateral diffusive flux
     ! cb = Near bed suspended sediment concentration, 
     ! Cbar = Depth averaged suspended sediment concentration
     REAL(dp), INTENT(IN OUT):: cb, Cbar
     CHARACTER(20), INTENT(IN):: sus_vert_prof, edify_model
     LOGICAL, INTENT(IN):: high_order_Cflux
-    DIMENSION ys(a), bed(a), tau(a),vel(a), Qe(a), cb(a), Cbar(a),Qbed(a), a_ref(a), lat_sus_flux(a+1), bedlast(a)
+    DIMENSION ys(a), bed(a), tau(a),vel(a), Qe(a), cb(a), Cbar(a),Qbed(a), a_ref(a), lat_sus_flux(a+1), bedlast(a), &
+              int_edif_f(a+1), int_edif_dfdy(a+1)
 
     ! LOCAL VARIABLES
     INTEGER:: i, info, j
@@ -50,7 +52,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     REAL(dp):: tmp1, dy, dy_outer, tmp2, Cref, z, cbed_tmp1, cbed_tmp2
     REAL(dp):: dQdx, dhdt, Cbar_old(a), dUd_dx(0:a+1), sus_flux, impcon
     REAL(dp):: DLF(a), DF(a), DUF(a), DU2(a),rcond, ferr, berr, work(3*a), XXX(a, 1)
-    REAL(dp):: bandmat(5,a), AFB(7,a), RRR(a), CCC(a), int_edif_f(a+1), int_edif_dfdy(a+1)
+    REAL(dp):: bandmat(5,a), AFB(7,a), RRR(a), CCC(a), int_edif_f_old(a+1), int_edif_dfdy_old(a+1)
     INTEGER::  IPV(a), iwork(a)   
     CHARACTER(1):: EQUED
 
@@ -61,6 +63,8 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     Cbar = Cbar/rhos 
 
     Cbar_old = Cbar
+    int_edif_f_old = int_edif_f
+    int_edif_dfdy_old = int_edif_dfdy
 
     ! Depth, including at zero-depth boundaries ( 0 and a+1 )
     depth(1:a) = max(water -bed, 0._dp)
@@ -128,14 +132,12 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     ! Limit zetamult to a non-zero value to avoid division problems
     zetamult(0)   = 1.0_dp
     zetamult(a+1) = 1.0_dp
-    !FIXME: MIGHT WANT TO REVISIT THIS -- can cause very large cb values.  
-    !zetamult = max(zetamult, 1.0e-12_dp)
-    zetamult(1:a) = max(zetamult(1:a), Cbar/(150.0_dp/rhos), 1.0e-012_dp) ! Should limit cb to ~ 150g/L
-    !zetamult = max(zetamult, 1.0e-4_dp*depth)
-    !zetamult = max(zetamult, 1.0e-5_dp)
-    !zetamult = min(zetamult, 1.0e+05_dp)
+    
+    ! Should limit cb to ~ 150g/L, and make sure we dont divide by zero
+    zetamult(1:a) = max(zetamult(1:a), Cbar/(150.0_dp/rhos), 1.0e-012_dp) 
+    
 
-    !!! PUSH THE SUSPENDED FLUX TOWARDS THE DESIRED VALUE   
+    ! PUSH THE SUSPENDED FLUX TOWARDS THE DESIRED VALUE   
     ! Calculate total sediment flux at time = t.
     ! We will use this to 'correct' the sediment flux towards the desired value 
     sus_flux = sum( & 
@@ -146,12 +148,12 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     ! FIXME: Note that this method of computing the discharge is not 100%
     ! consistent with the method in hydro_xsect, because it uses the ysu, ysl
     ! boundaries, instead of the linearly interpolated approximations of the
-    ! boundaries. The differences is very minor though. 
+    ! boundaries. The difference is very minor though. 
     tmp1 = sum( abs(vel)*max(water-bed,0.0_dp)*& 
               ( ( (/ ys(2:a), ysu /) - (/ ysl, ys(1:a-1) /) )*0.5_dp) &  ! dy
                   )
 
-    ! Store sed_lag_scale to use below
+    ! Store old value of sed_lag_scale, to use below
     tmp2 = sed_lag_scale
 
     IF(sus_flux > 1.0e-12_dp) THEN
@@ -426,9 +428,9 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
             tmp2 = 1.0_dp/(ys_temp(i+1)-ys_temp(i))
            
             !IF((i>2).and.(i<a-1)) THEN 
-            !    impcon=0.5_dp ! Degree of implicitness 
+                impcon=0.5_dp ! Degree of implicitness 
             !ELSE
-                impcon=1.0_dp
+            !    impcon=1.0_dp
             !END IF
 
 
@@ -445,9 +447,11 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
                 !ELSE
                 M1_upper(i) = M1_upper(i) - impcon*tmp1*tmp2*int_edif_f(i+1)/zetamult(i+1)
                 M1_diag(i)  = M1_diag(i)  + impcon*tmp1*tmp2*int_edif_f(i+1)/zetamult(i)
+                ! FIXME: FOR CRANK-NICHOLSON VERSION, NEED TO SAVE THE OLD VALUE
+                ! OF INT_EDIF_F AND INT_EDIF_DFDY
         
-                RHS(i)      = RHS(i) + (1.0_dp-impcon)*tmp1*tmp2*int_edif_f(i+1)*cb(i+1)
-                RHS(i)      = RHS(i) - (1.0_dp-impcon)*tmp1*tmp2*int_edif_f(i+1)*cb(i)
+                RHS(i)      = RHS(i) + (1.0_dp-impcon)*tmp1*tmp2*int_edif_f_old(i+1)*cb(i+1)
+                RHS(i)      = RHS(i) - (1.0_dp-impcon)*tmp1*tmp2*int_edif_f_old(i+1)*cb(i)
                 !END IF
 
             END IF
@@ -471,8 +475,8 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
                 M1_diag(i)  = M1_diag(i)  + impcon*tmp1*tmp2*int_edif_f(i)/zetamult(i)
                 M1_lower(i) = M1_lower(i) - impcon*tmp1*tmp2*int_edif_f(i)/zetamult(i-1)
 
-                RHS(i) = RHS(i) - (1.0_dp-impcon)*tmp1*tmp2*int_edif_f(i)*cb(i)
-                RHS(i) = RHS(i) + (1.0_dp-impcon)*tmp1*tmp2*int_edif_f(i)*cb(i-1)
+                RHS(i) = RHS(i) - (1.0_dp-impcon)*tmp1*tmp2*int_edif_f_old(i)*cb(i)
+                RHS(i) = RHS(i) + (1.0_dp-impcon)*tmp1*tmp2*int_edif_f_old(i)*cb(i-1)
                 !END IF
 
             END IF
@@ -487,11 +491,11 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
                 ! Cbar values
                 IF(bed(i)>bed(i+1)) THEN
                     M1_diag(i)  = M1_diag(i)  - impcon*tmp1*int_edif_dfdy(i+1)/zetamult(i)
-                    RHS(i) = RHS(i) + (1.0_dp-impcon)*tmp1*int_edif_dfdy(i+1)*cb(i)
+                    RHS(i) = RHS(i) + (1.0_dp-impcon)*tmp1*int_edif_dfdy_old(i+1)*cb(i)
 
                 ELSE
                     M1_upper(i) = M1_upper(i)  - impcon*tmp1*int_edif_dfdy(i+1)/zetamult(i+1)
-                    RHS(i)      = RHS(i)  + (1.0_dp-impcon)*tmp1*int_edif_dfdy(i+1)*cb(i+1)
+                    RHS(i)      = RHS(i)  + (1.0_dp-impcon)*tmp1*int_edif_dfdy_old(i+1)*cb(i+1)
    
                 END IF
 
@@ -506,10 +510,10 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
                 ! Cbar values.
                 IF(bed(i)>bed(i-1)) THEN
                     M1_diag(i)   = M1_diag(i)   + impcon*tmp1*int_edif_dfdy(i)/zetamult(i)  ! Note that 1/zetamult(i)*Cbar = cb
-                    RHS(i)  = RHS(i) - (1.0_dp-impcon)*tmp1*int_edif_dfdy(i)*cb(i)   
+                    RHS(i)  = RHS(i) - (1.0_dp-impcon)*tmp1*int_edif_dfdy_old(i)*cb(i)   
                 ELSE
                     M1_lower(i)  = M1_lower(i)  + impcon*tmp1*int_edif_dfdy(i)/zetamult(i-1)  ! Note that 1/zetamult(i)*Cbar = cb
-                    RHS(i)  = RHS(i) - (1.0_dp-impcon)*tmp1*int_edif_dfdy(i)*cb(i-1)
+                    RHS(i)  = RHS(i) - (1.0_dp-impcon)*tmp1*int_edif_dfdy_old(i)*cb(i-1)
                 END IF
 
 

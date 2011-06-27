@@ -26,7 +26,7 @@ REAL(dp):: wslope, ar, Q, t, &
             dsand, d50, g, kvis, lambdacon, alpha, &
             ysl,ysu,bedl, bedu, wdthx, TR, storer(9), tmp, tmp2, a_ref, &
             failure_slope, x_len_scale, sus_flux, sed_lag_scale, Clast, &
-            lat_sus_flux
+            lat_sus_flux, int_edif_f, int_edif_dfdy
 INTEGER::  remesh_freq, no_discharges
 REAL(dp):: discharges(1000), susconcs(1000)
 LOGICAL::  flag, susdist, sus2d, readin, geo, remesh, norm, vertical, & 
@@ -55,7 +55,7 @@ ALLOCATABLE ys(:), bed(:), dists(:), tau(:),ks(:),tbst(:),&
             taucrit_dep_ys(:) ,dst(:,:), taucrit(:,:), slpmx(:,:), &
             vegdrag(:), ysold(:), dqbeddx(:), sllength(:), vel(:), &
             tau_g(:),f_g(:), Cbar(:), a_ref(:), Clast(:), &
-            lat_sus_flux(:)
+            lat_sus_flux(:), int_edif_f(:), int_edif_dfdy(:)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! READ IN DATA
@@ -118,7 +118,8 @@ ALLOCATE(ys(nos),bed(nos),dists(nos),tau(nos),ks(nos),tbst(nos),&
          taucrit(nos, 0:layers), slpmx(nos,0:(layers+1)), vegdrag(nos),&
          ysold(nos) ,  Qbed(nos), dqbeddx(nos),sllength(nos), &
          vel(nos), tau_g(nos), f_g(nos), Cbar(nos), bedold(nos), a_ref(nos),&
-         Clast(nos), lat_sus_flux(nos+1) ) 
+         Clast(nos), lat_sus_flux(nos+1), int_edif_f(nos+1), &
+         int_edif_dfdy(nos+1) ) 
 
 
 
@@ -230,6 +231,8 @@ DO Q_loop= 1, no_discharges!15
     a_ref=0.0_dp !Reference level of vanrijn
     Qe = 0.0_dp
     Qelast=0.0_dp
+    int_edif_f=0.0_dp
+    int_edif_dfdy=0.0_dp
     !!!Calculate area
     IF(l>0) THEN
         DO i= 1,nos-1
@@ -520,7 +523,8 @@ DO Q_loop= 1, no_discharges!15
                 call dynamic_sus_dist(u-l+1, DT1, ys(l:u), bed(l:u), water, waterlast, Q, tau(l:u), vel(l:u), wset, & 
                                         0.5_dp*(Qe(l:u)+Qelast(l:u)), lambdacon, rho,rhos, g, d50, bedl,bedu, ysl, ysu, C(l:u),&
                                         Cbar(l:u), Qbed(l:u), sed_lag_scale, j, high_order_Cflux, a_ref(l:u), sus_vert_prof,&
-                                        edify_model, x_len_scale, sconc, lat_sus_flux(l:u+1), bedlast(l:u))
+                                        edify_model, x_len_scale, sconc, lat_sus_flux(l:u+1), bedlast(l:u), int_edif_f(l:u+1), &
+                                        int_edif_dfdy(l:u+1))
 
                 ! Set C in dry parts of the channel to zero
                 ! This is not done earlier, because we needed to store the old
@@ -528,6 +532,13 @@ DO Q_loop= 1, no_discharges!15
                 IF(l>1) THEN
                     Cbar(1:(l-1)) = 0._dp
                     C(1:(l-1)) = 0._dp
+                    ! Set the integral terms in the lateral diffusive flux of
+                    ! suspended sediment to zero in dry regions.
+                    int_edif_f(1:max(l-1,1))=0.0_dp
+                    int_edif_f(min(u+2,nos):nos)=0.0_dp
+                    int_edif_dfdy(1:max(l-1,1))=0.0_dp
+                    int_edif_dfdy(min(u+2,nos):nos)=0.0_dp
+                    
                 END IF
                 
                 IF(u<nos) THEN
