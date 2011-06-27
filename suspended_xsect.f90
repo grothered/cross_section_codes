@@ -430,11 +430,12 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
             tmp1 = 1.0_dp/dy_outer
             tmp2 = 1.0_dp/(ys_temp(i+1)-ys_temp(i))
            
-            !IF((i>2).and.(i<a-1)) THEN 
+            IF((i>2).and.(i<a-1)) THEN 
                 impcon=0.5_dp ! Degree of implicitness 
-            !ELSE
-            !    impcon=1.0_dp
-            !END IF
+            ELSE
+                impcon=1.0_dp 
+                ! I found that doing this made it less common to have negative C values near the banks -- a good thing.
+            END IF
 
 
             IF(i<a) THEN
@@ -537,8 +538,8 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     IF(.TRUE.) THEN
         DO i = 1, a
 
-            RHS(i) = RHS(i) +Qe(i) - 0.5_dp*wset*cb(i)
-            M1_diag(i) = M1_diag(i) + 0.5_dp*wset/zetamult(i)  ! Note that 1/zetamult(i)*Cbar = cb
+            RHS(i) = RHS(i) +Qe(i) - (1.0_dp-impcon)*wset*cb(i)
+            M1_diag(i) = M1_diag(i) + impcon*wset/zetamult(i)  ! Note that 1/zetamult(i)*Cbar = cb
 
 
         END DO
