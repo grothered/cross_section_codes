@@ -974,7 +974,7 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
         ! derivative to zero in this case.
         IF((i>2).and.(i<a-1)) THEN
             IF( ((aref_tmp(i)-aref_tmp(i-1))*(aref_tmp(i+1)-aref_tmp(i))<0.0_dp)&
-              .or.((aref_tmp(i)-aref_tmp(i-1))*(aref_tmp(i+1)-aref_tmp(i))<0.0_dp) ) THEN
+              .or.((aref_tmp(i)-aref_tmp(i-1))*(aref_tmp(i)-aref_tmp(i-1))<0.0_dp) ) THEN
                 daref_dy = 0.0_dp                
             END IF
         END IF
