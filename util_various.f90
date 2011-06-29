@@ -1070,5 +1070,22 @@ REAL(dp) FUNCTION minmod(a,b)
         
     return
 END FUNCTION minmod
+!!!!!!!!!!!!!!!!!!!
+REAL(dp) FUNCTION maxmod(a,b)
+    REAL(dp) a, b    
+
+    IF(sign(1.0_dp,a).ne.sign(1.0_dp,b)) THEN
+        maxmod=0.0_dp
+    ELSE
+        IF(abs(a)>abs(b)) THEN
+            maxmod = a
+        ELSE
+            maxmod = b
+        END IF
+    END IF
+        
+    return
+END FUNCTION maxmod
+!!!!!!!!!!!!!!!!!!!
 
 END MODULE util_various

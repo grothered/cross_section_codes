@@ -535,15 +535,16 @@ DO Q_loop= 1, no_discharges!15
                     ! Set the integral terms in the lateral diffusive flux of
                     ! suspended sediment to zero in dry regions.
                     int_edif_f(1:max(l-1,1))=0.0_dp
-                    int_edif_f(min(u+2,nos):nos)=0.0_dp
                     int_edif_dfdy(1:max(l-1,1))=0.0_dp
-                    int_edif_dfdy(min(u+2,nos):nos)=0.0_dp
                     
                 END IF
                 
                 IF(u<nos) THEN
                     Cbar((u+1):nos) = 0._dp
                     C((u+1):nos) = 0._dp
+                    
+                    int_edif_f(min(u+2,nos):nos)=0.0_dp
+                    int_edif_dfdy(min(u+2,nos):nos)=0.0_dp
                 END IF
         
 

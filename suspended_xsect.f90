@@ -49,7 +49,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     REAL(dp):: depth(0:a+1), eddif_y(0:a+1), eddif_z(a), zetamult(0:a+1), vd(0:a+1), ys_temp(0:a+1)
     REAL(dp):: M1_lower(a), M1_diag(a), M1_upper(a), M1_upper2(a), M1_lower2(a)
     REAL(dp):: RHS(a), dy_all(a), depthlast(0:a+1)
-    REAL(dp):: tmp1, dy, dy_outer, tmp2, Cref, z, cbed_tmp1, cbed_tmp2
+    REAL(dp):: tmp1, dy, dy_outer, tmp2, Cref, z, cbed_tmp1, cbed_tmp2, tmp3
     REAL(dp):: dQdx, dhdt, Cbar_old(a), dUd_dx(0:a+1), sus_flux, impcon
     REAL(dp):: DLF(a), DF(a), DUF(a), DU2(a),rcond, ferr, berr, work(3*a), XXX(a, 1)
     REAL(dp):: bandmat(5,a), AFB(7,a), RRR(a), CCC(a), int_edif_f_old(a+1), int_edif_dfdy_old(a+1)
@@ -61,6 +61,10 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     ! the routine
     cb = cb/rhos
     Cbar = Cbar/rhos 
+
+
+    ! Degree of implicitness of the lateral diffusive flux
+    impcon=1.0_dp
 
     Cbar_old = Cbar
     int_edif_f_old = int_edif_f
@@ -174,9 +178,9 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
 
     END IF
 
-    IF(mod(counter,1000).eq.1) print*, 'sus_flux is:', sus_flux, ' desired flux is:', sconc*tmp1, &
-                            'zetamult max = ', maxval(zetamult), 'zetamult mean =', sum(zetamult)/(1.0_dp*(a+2)), &
-                            'tau max = ', maxval(tau)
+    IF(mod(counter,1000).eq.1) print*, 'sus_flux is:', sus_flux, ' desired flux is:', sconc*tmp1!, &
+                            !'zetamult max = ', maxval(zetamult), 'zetamult mean =', sum(zetamult)/(1.0_dp*(a+2)), &
+                            !'tau max = ', maxval(tau)
 
     ! Here, we try to add a constant to cb across the channel, such that the 
     ! sus_flux is as desired
@@ -205,6 +209,9 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
         !       (1.0_dp + 0.5_dp*delT*vel*(1.0_dp-sed_lag_scale)/x_len_scale)
 
     !END IF
+    
+    
+
     ! Solve initially for the depth - averaged suspended sediment concentration
     ! depth d (Cbar) / dt + U*depth*dCbar/dx +
     ! V*depth* d(Cbar)/dy - d/dy( Fl ) -
@@ -416,9 +423,9 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
                 !call int_edify_f(edify_model, sus_vert_prof, a, ys, bed, ysl, ysu,&
                 !                 bedl, bedu, water, sqrt(abs(tau)/rho), wset,a_ref,&
                 !                 int_edif_f, int_edif_dfdy) !, 205)
-                call int_edify_f(edify_model, sus_vert_prof, a, ys, bed, ys_temp(0), ys_temp(a+1),&
-                                 water, water, water, sqrt(abs(tau)/rho), wset,a_ref,&
-                                 int_edif_f, int_edif_dfdy) !, 205)
+                call int_edify_f(edify_model, sus_vert_prof, a, ys, bed, ys_temp(0), &
+                                 ys_temp(a+1), water, water, water, sqrt(abs(tau)/rho),&
+                                 wset,a_ref, int_edif_f, int_edif_dfdy) !, 205)
                 !print*, sum(int_edif_f), maxval(int_edif_dfdy)
                 !int_edif_f   =0.0_dp
                 !int_edif_dfdy=0.0_dp
@@ -430,12 +437,6 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
             tmp1 = 1.0_dp/dy_outer
             tmp2 = 1.0_dp/(ys_temp(i+1)-ys_temp(i))
            
-            IF((i>2).and.(i<a-1)) THEN 
-                impcon=0.5_dp ! Degree of implicitness 
-            ELSE
-                impcon=1.0_dp 
-                ! I found that doing this made it less common to have negative C values near the banks -- a good thing.
-            END IF
 
 
             IF(i<a) THEN
@@ -449,13 +450,19 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
                 !    RHS(i)      = RHS(i) + (1.0_dp-impcon)*tmp1*tmp2*int_edif_f(i+1)/zetamult(i+1)*Cbar(i+1)
                 !    RHS(i)      = RHS(i) - (1.0_dp-impcon)*tmp1*tmp2*int_edif_f(i+1)/zetamult(i)*Cbar(i)
                 !ELSE
-                M1_upper(i) = M1_upper(i) - impcon*tmp1*tmp2*int_edif_f(i+1)/zetamult(i+1)
-                M1_diag(i)  = M1_diag(i)  + impcon*tmp1*tmp2*int_edif_f(i+1)/zetamult(i)
-                ! FIXME: FOR CRANK-NICHOLSON VERSION, NEED TO SAVE THE OLD VALUE
-                ! OF INT_EDIF_F AND INT_EDIF_DFDY
-        
-                RHS(i)      = RHS(i) + (1.0_dp-impcon)*tmp1*tmp2*int_edif_f_old(i+1)*cb(i+1)
-                RHS(i)      = RHS(i) - (1.0_dp-impcon)*tmp1*tmp2*int_edif_f_old(i+1)*cb(i)
+                !IF((i>1).and.(i<a-1)) THEN
+                    M1_upper(i) = M1_upper(i) - impcon*tmp1*tmp2*int_edif_f(i+1)/zetamult(i+1)
+                    M1_diag(i)  = M1_diag(i)  + impcon*tmp1*tmp2*int_edif_f(i+1)/zetamult(i)
+            
+                    RHS(i)      = RHS(i) + (1.0_dp-impcon)*tmp1*tmp2*int_edif_f_old(i+1)*cb(i+1)
+                    RHS(i)      = RHS(i) - (1.0_dp-impcon)*tmp1*tmp2*int_edif_f_old(i+1)*cb(i)
+                !ELSE
+                !    M1_upper(i) = M1_upper(i) - 0.5_dp*impcon*tmp1*tmp2*int_edif_f(i+1)/zetamult(i+1)
+                !    M1_diag(i)  = M1_diag(i)  + 0.5_dp*impcon*tmp1*tmp2*int_edif_f(i+1)/zetamult(i)
+            
+                !    RHS(i)      = RHS(i) + 0.5_dp*(1.0_dp-impcon)*tmp1*tmp2*int_edif_f_old(i+1)*cb(i+1)
+                !    RHS(i)      = RHS(i) - 0.5_dp*(1.0_dp-impcon)*tmp1*tmp2*int_edif_f_old(i+1)*cb(i)
+
                 !END IF
 
             END IF
@@ -476,11 +483,21 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
                 !
                 !ELSE
                 ! 2 point derivative approx
-                M1_diag(i)  = M1_diag(i)  + impcon*tmp1*tmp2*int_edif_f(i)/zetamult(i)
-                M1_lower(i) = M1_lower(i) - impcon*tmp1*tmp2*int_edif_f(i)/zetamult(i-1)
+                !IF((i<a).and.(i>2)) THEN
+                    M1_diag(i)  = M1_diag(i)  + impcon*tmp1*tmp2*int_edif_f(i)/zetamult(i)
+                    M1_lower(i) = M1_lower(i) - impcon*tmp1*tmp2*int_edif_f(i)/zetamult(i-1)
 
-                RHS(i) = RHS(i) - (1.0_dp-impcon)*tmp1*tmp2*int_edif_f_old(i)*cb(i)
-                RHS(i) = RHS(i) + (1.0_dp-impcon)*tmp1*tmp2*int_edif_f_old(i)*cb(i-1)
+                    RHS(i) = RHS(i) - (1.0_dp-impcon)*tmp1*tmp2*int_edif_f_old(i)*cb(i)
+                    RHS(i) = RHS(i) + (1.0_dp-impcon)*tmp1*tmp2*int_edif_f_old(i)*cb(i-1)
+                    
+                !ELSE
+                !    M1_diag(i)  = M1_diag(i)  + 0.5_dp*impcon*tmp1*tmp2*int_edif_f(i)/zetamult(i)
+                !    ! Assume Cbar = 0 at lower_lower edge
+                !    !M1_lower(i) = M1_lower(i) - 0.5_dp*impcon*tmp1*tmp2*int_edif_f(i)/zetamult(i-1)
+
+                !    RHS(i) = RHS(i) - 0.5_dp*(1.0_dp-impcon)*tmp1*tmp2*int_edif_f_old(i)*cb(i)
+                !    !RHS(i) = RHS(i) + 0.5_dp*(1.0_dp-impcon)*tmp1*tmp2*int_edif_f_old(i)*cb(i-1)
+                !
                 !END IF
 
             END IF
@@ -535,12 +552,13 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     END DO
 
     ! Erosion and deposition
-    IF(.TRUE.) THEN
+    ! FIXME: I think doing this along with lateral diffusion produces
+    ! convergence problems.
+    IF(.FALSE.) THEN
         DO i = 1, a
 
             RHS(i) = RHS(i) +Qe(i) - (1.0_dp-impcon)*wset*cb(i)
             M1_diag(i) = M1_diag(i) + impcon*wset/zetamult(i)  ! Note that 1/zetamult(i)*Cbar = cb
-
 
         END DO
     END IF
@@ -693,11 +711,14 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     ! depth*dCbar/dt +wset*Cbed =  Qe 
     ! depth/dt*(Cbar_new -Cbar) + wset*(Cbar_new/zetamult) = Qe
     ! Cbar_new( depth/dt + wset/zetamult) = Qe + depth/dt*Cbar
-    !Cbar = 1.0_dp*(Qe*1.0_dp + depth(1:a)/delT*Cbar - 0.5_dp*wset/zetamult(1:a)*Cbar)/ &
-    !       (depth(1:a)/delT + 0.5_dp*wset/zetamult(1:a))
+    !FIXME: Doing this separate to lateral diffusion leads to negative Cbar
+    !values, except with a fully implicit approach (impcon =1.0_dp)
+    !Cbar = 1.0_dp*(Qe*1.0_dp + depth(1:a)/delT*Cbar - 0.0_dp*wset/zetamult(1:a)*Cbar)/ &
+    !       (depth(1:a)/delT + 1.0_dp*wset/zetamult(1:a))
+    Cbar = 1.0_dp*(Qe*1.0_dp + depth(1:a)/delT*Cbar - 0.5_dp*wset*cb)/ &
+           (depth(1:a)/delT + 0.5_dp*wset/zetamult(1:a))
     
-    !Cbar = 1.0_dp*(Qe*1.0_dp + depth(1:a)/delT*Cbar - 0.5_dp*wset*cb)/ &
-    !       (depth(1:a)/delT + 0.5_dp*wset/zetamult(1:a))
+
     !IF(counter==1) print*, 'WARNING: NO EROSION OR DEPOSITION, BUG FIX NEEDED HERE TO MAKE &
     !                                 THINGS TIME-INDEPENDENT'
     DO i=1,a
@@ -869,7 +890,7 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
                 eps_z, ys_tmp(0:a+1), dbed_dy, depsz_dy, aref_tmp(0:a+1),&
                 arefh, daref_dy, dus_dy, df_dbedh(64), df_darefh(64), df_dus(64), &
                 z2ratio(64), dz, dyinv, d_on_aref_les1_inv, z2bed_inv(64), arefh_inv, &
-                parabola(64), rouseno
+                parabola(64), rouseno, tmp1(a+1), tmp2(a+1)
                 !z2surf(64), z2bed(64)
 
     ! Note -- we assume 64 point gaussian quadrature is the method. Experiments
@@ -1130,7 +1151,20 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
         !print*,'#########', i, int_edif_f(i), int_edif_dfdy(i) 
         !print*, edify, df_dy
     END DO
-   
+
+    ! EXPERIMENTAL LIMITING 
+    !DO i=2,a
+    !    tmp1(i) = 0.5_dp*maxmod( (int_edif_f(i)+int_edif_f(i-1)), (int_edif_f(i)+int_edif_f(i+1)) )
+    !    tmp2(i) = 0.5_dp*maxmod( (int_edif_dfdy(i)+int_edif_dfdy(i-1)), (int_edif_dfdy(i)+int_edif_dfdy(i+1)) )
+    !END DO 
+    !    tmp1(1) = 0.5_dp*(int_edif_f(1) + int_edif_f(2))
+    !    tmp1(a+1) = 0.5_dp*(int_edif_f(a)+int_edif_f(a+1))
+    !    tmp2(1) = 0.5_dp*(int_edif_dfdy(1) + int_edif_dfdy(2))
+    !    tmp2(a+1) = 0.5_dp*(int_edif_dfdy(a) + int_edif_dfdy(a+1))
+
+    !int_edif_f=tmp1
+    !int_edif_dfdy=tmp2
+    ! END EXPERIMENTAL LIMITING
 
 END SUBROUTINE int_edify_f
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!
