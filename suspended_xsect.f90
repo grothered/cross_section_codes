@@ -505,37 +505,45 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
             
             !! d/dy ( cb*INT(edify*df/dy )dz )
             IF(i<a) THEN
-                !M1_upper(i) = M1_upper(i) - 0.5_dp*tmp1*int_edif_dfdy(i+1)/zetamult(i+1)  ! Note that 1/zetamult(i)*Cbar = cb
-                !M1_diag(i)  = M1_diag(i)  - 0.5_dp*tmp1*int_edif_dfdy(i+1)/zetamult(i)
+                ! Try weighting cb (i+1/2) based on the depths at i and i+1 ---
+                ! a potenial compromise between the centred approach, and just
+                ! picking the one with the smallest depth.
+                tmp3 = (water-bed(i+1))/((water-bed(i+1))+(water-bed(i)))
+                M1_upper(i) = M1_upper(i) - (1.0_dp-tmp3)*tmp1*int_edif_dfdy(i+1)/zetamult(i+1)  ! Note that 1/zetamult(i)*Cbar = cb
+                M1_diag(i)  = M1_diag(i)  - tmp3*tmp1*int_edif_dfdy(i+1)/zetamult(i)
                 
                 ! Experimenting with this approach to try to avoid negative
                 ! Cbar values
-                IF(bed(i)>bed(i+1)) THEN
-                    M1_diag(i)  = M1_diag(i)  - impcon*tmp1*int_edif_dfdy(i+1)/zetamult(i)
-                    RHS(i) = RHS(i) + (1.0_dp-impcon)*tmp1*int_edif_dfdy_old(i+1)*cb(i)
+               ! IF(bed(i)>bed(i+1)) THEN
+               !     M1_diag(i)  = M1_diag(i)  - impcon*tmp1*int_edif_dfdy(i+1)/zetamult(i)
+               !     RHS(i) = RHS(i) + (1.0_dp-impcon)*tmp1*int_edif_dfdy_old(i+1)*cb(i)
 
-                ELSE
-                    M1_upper(i) = M1_upper(i)  - impcon*tmp1*int_edif_dfdy(i+1)/zetamult(i+1)
-                    RHS(i)      = RHS(i)  + (1.0_dp-impcon)*tmp1*int_edif_dfdy_old(i+1)*cb(i+1)
+               ! ELSE
+               !     M1_upper(i) = M1_upper(i)  - impcon*tmp1*int_edif_dfdy(i+1)/zetamult(i+1)
+               !     RHS(i)      = RHS(i)  + (1.0_dp-impcon)*tmp1*int_edif_dfdy_old(i+1)*cb(i+1)
    
-                END IF
+               ! END IF
 
 
             END IF
     
             IF(i>1) THEN
-                !M1_diag(i)   = M1_diag(i)   + 0.5_dp*tmp1*int_edif_dfdy(i)/zetamult(i)  ! Note that 1/zetamult(i)*Cbar = cb
-                !M1_lower(i)  = M1_lower(i)  + 0.5_dp*tmp1*int_edif_dfdy(i)/zetamult(i-1)
+                ! Try weighting cb (i-1/2) based on the depths at i and i-1 ---
+                ! a potenial compromise between the centred approach, and just
+                ! picking the one with the smallest depth.
+                tmp3 = (water-bed(i))/( (water-bed(i))+(water-bed(i-1)))
+                M1_diag(i)   = M1_diag(i)   + (1.0_dp-tmp3)*tmp1*int_edif_dfdy(i)/zetamult(i)  ! Note that 1/zetamult(i)*Cbar = cb
+                M1_lower(i)  = M1_lower(i)  + tmp3*tmp1*int_edif_dfdy(i)/zetamult(i-1)
     
                 ! Experimenting with this approach to try to avoid negative
                 ! Cbar values.
-                IF(bed(i)>bed(i-1)) THEN
-                    M1_diag(i)   = M1_diag(i)   + impcon*tmp1*int_edif_dfdy(i)/zetamult(i)  ! Note that 1/zetamult(i)*Cbar = cb
-                    RHS(i)  = RHS(i) - (1.0_dp-impcon)*tmp1*int_edif_dfdy_old(i)*cb(i)   
-                ELSE
-                    M1_lower(i)  = M1_lower(i)  + impcon*tmp1*int_edif_dfdy(i)/zetamult(i-1)  ! Note that 1/zetamult(i)*Cbar = cb
-                    RHS(i)  = RHS(i) - (1.0_dp-impcon)*tmp1*int_edif_dfdy_old(i)*cb(i-1)
-                END IF
+                !IF(bed(i)>bed(i-1)) THEN
+                !    M1_diag(i)   = M1_diag(i)   + impcon*tmp1*int_edif_dfdy(i)/zetamult(i)  ! Note that 1/zetamult(i)*Cbar = cb
+                !    RHS(i)  = RHS(i) - (1.0_dp-impcon)*tmp1*int_edif_dfdy_old(i)*cb(i)   
+                !ELSE
+                !    M1_lower(i)  = M1_lower(i)  + impcon*tmp1*int_edif_dfdy(i)/zetamult(i-1)  ! Note that 1/zetamult(i)*Cbar = cb
+                !    RHS(i)  = RHS(i) - (1.0_dp-impcon)*tmp1*int_edif_dfdy_old(i)*cb(i-1)
+                !END IF
 
 
             END IF
@@ -783,8 +791,8 @@ REAL(dp) FUNCTION rouse_int(z,d_aref)
     INTEGER:: i, num_trapz_pts=400 
     REAL(dp):: db_const, F1, J1, j, E2, z2, perturb = 1.0e-05_dp, eps, d_eps
    
-    IF((z>20.0_dp).or.(d_aref>1.0_dp)) THEN
-        ! If z is large, or aref is larger than the depth, there is no suspended load, make a quick exit
+    IF((d_aref>1.0_dp)) THEN
+        ! If aref is larger than the depth, there is no suspended load, make a quick exit
         rouse_int = 0.0_dp 
         
     ELSE
