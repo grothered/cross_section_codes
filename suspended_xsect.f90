@@ -969,7 +969,15 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
         daref_dy = (aref_tmp(i) - aref_tmp(i-1))*dyinv
         dbed_dy = (bed_tmp(i) - bed_tmp(i-1))*dyinv
         dus_dy = (ustar_tmp(i) - ustar_tmp(i-1))*dyinv 
-        
+       
+        ! I think there is a problem if aref changes sign -- try setting the
+        ! derivative to zero in this case.
+        IF((i>2).and.(i<a-1)) THEN
+            IF( ((aref_tmp(i)-aref_tmp(i-1))*(aref_tmp(i+1)-aref_tmp(i))<0.0_dp)&
+              .or.((aref_tmp(i)-aref_tmp(i-1))*(aref_tmp(i+1)-aref_tmp(i))<0.0_dp) ) THEN
+                daref_dy = 0.0_dp                
+            END IF
+        END IF
 
         ! Create vertical suspended sediment profile
         SELECT CASE(sus_vert_prof) 
