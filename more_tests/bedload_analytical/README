@@ -1,0 +1,8 @@
+NOTE -- to work, the code needs to be edited here, as the analytical solution is
+based on a different resuspension relation to the one I had been using.
+
+The changes are:
+1) Qe is calculated using the same relation from my thesis
+2) tau_g = tau
+
+
