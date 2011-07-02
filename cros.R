@@ -80,9 +80,9 @@ anim2<-function(lengths,bed, sleeper=0, ...){
         if(sleeper>0){
             slptime=paste('sleep', sleeper)
             system(slptime)
-                }
-	               }
-		}
+        }
+	 }
+}
 
 danim2<-function(lengths1,bed1,lengths2,bed2,sleeper=0,...){
 	f=range(bed1,na.rm=TRUE)
@@ -94,10 +94,10 @@ danim2<-function(lengths1,bed1,lengths2,bed2,sleeper=0,...){
         if(sleeper>0){
             slptime=paste('sleep', sleeper)
             system(slptime)
-                }
+        }
 		
-	               }
-		}
+   }
+}
 
 
 
