@@ -660,8 +660,8 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     imax=10
     DO i=1,imax
         ! Take 'imax' small time-steps, which in total sum to delT
-        Cbar = 1.0_dp*(Qe*1.0_dp + depth(1:a)/(delT/(1.0*imax))*Cbar - 0.0_dp*wset*cb)/ &
-               (depth(1:a)/(delT/(1.0*imax)) + 1.0_dp*wset/zetamult(1:a))
+        Cbar = 1.0_dp*(Qe*1.0_dp + depth(1:a)/(delT/(1.0*imax))*Cbar - 0.5_dp*wset/zetamult(1:a)*Cbar)/ &
+               (depth(1:a)/(delT/(1.0*imax)) + 0.5_dp*wset/zetamult(1:a))
     
         ! PUSH THE SUSPENDED FLUX TOWARDS THE DESIRED VALUE   
         ! Calculate total sediment flux at time = t.
