@@ -66,7 +66,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
 
 
     ! Degree of implicitness of the lateral diffusive flux
-    impcon=1.0_dp
+    impcon=1.00_dp
 
     Cbar_old = Cbar
     int_edif_f_old = int_edif_f
@@ -442,10 +442,13 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
                 ! Try weighting cb (i+1/2) based on the depths at i and i+1 ---
                 ! a potenial compromise between the centred approach, and just
                 ! picking the one with the smallest depth.
-                tmp3 = (water-bed(i+1))**2/((water-bed(i+1))**2+(water-bed(i))**2)
-                M1_upper(i) = M1_upper(i) - (1.0_dp-tmp3)*tmp1*int_edif_dfdy(i+1)/zetamult(i+1)  ! Note that 1/zetamult(i)*Cbar = cb
-                M1_diag(i)  = M1_diag(i)  - tmp3*tmp1*int_edif_dfdy(i+1)/zetamult(i)
-                
+                tmp3 = (water-bed(i+1))**4/((water-bed(i+1))**4+(water-bed(i))**4)
+                M1_upper(i) = M1_upper(i) - impcon*(1.0_dp-tmp3)*tmp1*int_edif_dfdy(i+1)/zetamult(i+1)  ! Note that 1/zetamult(i)*Cbar = cb
+                M1_diag(i)  = M1_diag(i)  - impcon*tmp3*tmp1*int_edif_dfdy(i+1)/zetamult(i)
+               
+                RHS(i) = RHS(i) +  (1.0_dp-impcon)*(1.0_dp-tmp3)*tmp1*int_edif_dfdy(i+1)*cb(i+1)
+                RHS(i) = RHS(i) +  (1.0_dp-impcon)*tmp3*tmp1*int_edif_dfdy(i+1)*cb(i)
+ 
                 ! Experimenting with this approach to try to avoid negative
                 ! Cbar values
                ! IF(bed(i)>bed(i+1)) THEN
@@ -465,10 +468,12 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
                 ! Try weighting cb (i-1/2) based on the depths at i and i-1 ---
                 ! a potenial compromise between the centred approach, and just
                 ! picking the one with the smallest depth.
-                tmp3 = (water-bed(i))**2/( (water-bed(i))**2+(water-bed(i-1))**2)
-                M1_diag(i)   = M1_diag(i)   + (1.0_dp-tmp3)*tmp1*int_edif_dfdy(i)/zetamult(i)  ! Note that 1/zetamult(i)*Cbar = cb
-                M1_lower(i)  = M1_lower(i)  + tmp3*tmp1*int_edif_dfdy(i)/zetamult(i-1)
+                tmp3 = (water-bed(i))**4/( (water-bed(i))**4+(water-bed(i-1))**4)
+                M1_diag(i)   = M1_diag(i)   + impcon*(1.0_dp-tmp3)*tmp1*int_edif_dfdy(i)/zetamult(i)  ! Note that 1/zetamult(i)*Cbar = cb
+                M1_lower(i)  = M1_lower(i)  + impcon*tmp3*tmp1*int_edif_dfdy(i)/zetamult(i-1)
     
+                RHS(i) = RHS(i) -  (1.0_dp-impcon)*(1.0_dp-tmp3)*tmp1*int_edif_dfdy(i)*cb(i)
+                RHS(i) = RHS(i) -  (1.0_dp-impcon)*tmp3*tmp1*int_edif_dfdy(i)*cb(i-1)
                 ! Experimenting with this approach to try to avoid negative
                 ! Cbar values.
                 !IF(bed(i)>bed(i-1)) THEN
@@ -496,7 +501,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     ! Erosion and deposition
     ! FIXME: I think doing this along with lateral diffusion produces
     ! convergence problems.
-    IF(.FALSE.) THEN
+    IF(.TRUE.) THEN
         DO i = 1, a
 
             RHS(i) = RHS(i) +Qe(i) - (1.0_dp-impcon)*wset*cb(i)
@@ -660,8 +665,8 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     imax=10
     DO i=1,imax
         ! Take 'imax' small time-steps, which in total sum to delT
-        Cbar = 1.0_dp*(Qe*1.0_dp + depth(1:a)/(delT/(1.0*imax))*Cbar - 0.5_dp*wset/zetamult(1:a)*Cbar)/ &
-               (depth(1:a)/(delT/(1.0*imax)) + 0.5_dp*wset/zetamult(1:a))
+        !Cbar = 1.0_dp*(Qe*1.0_dp + depth(1:a)/(delT/(1.0*imax))*Cbar - 0.5_dp*wset/zetamult(1:a)*Cbar)/ &
+        !       (depth(1:a)/(delT/(1.0*imax)) + 0.5_dp*wset/zetamult(1:a))
     
         ! PUSH THE SUSPENDED FLUX TOWARDS THE DESIRED VALUE   
         ! Calculate total sediment flux at time = t.
@@ -701,7 +706,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
         END IF
         !print*, tmp2, sed_lag_scale
 
-        IF(mod(counter,1000).eq.1) print*, 'sus_flux is:', sus_flux, ' desired flux is:', sconc*tmp1!, &
+        !IF(mod(counter,1000).eq.1) print*, 'sus_flux is:', sus_flux, ' desired flux is:', sconc*tmp1!, &
                                 !'zetamult max = ', maxval(zetamult), 'zetamult mean =', sum(zetamult)/(1.0_dp*(a+2)), &
                                 !'tau max = ', maxval(tau)
 
