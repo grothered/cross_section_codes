@@ -21,7 +21,7 @@ REAL(dp):: wslope, ar, Q, t, &
             DT1,DT1_old, tau_g, f_g, Cbar, &
             taucrit_dep, hlim, mor, Arealast, taucrit_dep_ys, &
             ht,vlast, dst, taucrit, mu, & 
-            tauinc, erconst, lifttodrag, vegdrag, sconc, rho, ysold, &
+            erconst, lifttodrag, vegdrag, sconc, rho, ysold, &
             lincrem, wset, voidf, smax, rough_coef, man_nveg, veg_ht,rhos,&
             dsand, d50, g, kvis, lambdacon, alpha, &
             ysl,ysu,bedl, bedu, wdthx, TR, storer(9), tmp, tmp2, a_ref, &
@@ -35,7 +35,7 @@ LOGICAL::  flag, susdist, sus2d, readin, geo, remesh, norm, vertical, &
             high_order_Cflux, taucrit_slope_reduction
 CHARACTER(LEN=20):: friction_type, grain_friction_type, resus_type, &
                     bedload_type, sus_vert_prof, edify_model
-NAMELIST /inputdata/ nos,writfreq,jmax, layers, hlim, mor, mu, tauinc,&
+NAMELIST /inputdata/ nos,writfreq,jmax, layers, hlim, mor, mu, &
                 erconst,lifttodrag,sconc,rho,lincrem,wset, voidf, t, dt, &
                 susdist,readin, geo, waterM, width, smax, rough_coef, &
                 man_nveg, veg_ht, remesh, remesh_freq, rhos, dsand, d50,&

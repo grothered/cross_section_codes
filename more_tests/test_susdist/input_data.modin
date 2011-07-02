@@ -46,7 +46,6 @@ tbston=.true. !When true (false) this term switches on (off) the sqrt(1+slopes^2
 layers=1 !The number of bed layers
 lincrem = 1000.031 ! The distance between bed layers (m). Set it to a very high number to avoid the multi bed layers having any influence.
 mu = 10000.60 !Angle of repose - this can be used to influence the critical shear stress if the code is adjusted
-tauinc = 0.00 ! A DEFUNCT constant (Pa)
 erconst = 0.178  ! The constant determining the min critical shear and the critical shear increment
 wset = 0.0139 ! Settling velocity of sediment in m/s
 voidf = 0.4 ! Void fraction (non sediment fraction) of bed = porosity

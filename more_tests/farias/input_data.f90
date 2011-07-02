@@ -47,7 +47,6 @@ layers=1 !The number of bed layers
 lincrem = 1000.031 ! The distance between bed layers (m). Set it to a very high number to avoid the multi bed layers having any influence.
 mu = 0.60 !Angle of repose - this can be used to influence the critical shear stress if taucrit_slope_reduction=.true.
 failure_slope = 0.58 ! Slope at which mass failure occurs
-tauinc = 0.00 ! A DEFUNCT constant (Pa)
 erconst = 0.13  ! The constant determining the min critical shear and the critical shear increment
 taucrit_slope_reduction=.TRUE. ! Does taucrit reduce on a slope
 wset = 0.014 ! Settling velocity of sediment in m/s
