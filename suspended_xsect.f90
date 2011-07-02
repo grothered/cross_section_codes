@@ -33,8 +33,10 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     INTEGER, INTENT(IN)::a, counter
     REAL(dp), INTENT(IN):: delT, ys, bed, water, waterlast, tau, vel, wset, Qe, lambdacon, rho, rhos,g, & 
                                 d50, bedl, bedu,ysl,ysu, Q, Qbed, a_ref, x_len_scale, sconc, bedlast
-    REAL(dp), INTENT(OUT):: sed_lag_scale, lat_sus_flux ! sed_lag_scale = used to estimate derivative terms, e.g. dCbar/dx
-    REAL(dp), INTENT(INOUT):: int_edif_f, int_edif_dfdy ! 2 integrals that appear in the lateral diffusive flux
+    REAL(dp), INTENT(OUT):: lat_sus_flux 
+    REAL(dp), INTENT(INOUT):: int_edif_f, int_edif_dfdy, sed_lag_scale 
+    ! int_edif_f, int_edif_dfdy = 2 integrals that appear in the lateral diffusive flux
+    ! sed_lag_scale = used to estimate derivative terms, e.g. dCbar/dx
     ! cb = Near bed suspended sediment concentration, 
     ! Cbar = Depth averaged suspended sediment concentration
     REAL(dp), INTENT(IN OUT):: cb, Cbar
@@ -53,7 +55,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     REAL(dp):: dQdx, dhdt, Cbar_old(a), dUd_dx(0:a+1), sus_flux, impcon
     REAL(dp):: DLF(a), DF(a), DUF(a), DU2(a),rcond, ferr, berr, work(3*a), XXX(a, 1)
     REAL(dp):: bandmat(5,a), AFB(7,a), RRR(a), CCC(a), int_edif_f_old(a+1), int_edif_dfdy_old(a+1)
-    INTEGER::  IPV(a), iwork(a)   
+    INTEGER::  IPV(a), iwork(a), imax   
     CHARACTER(1):: EQUED
 
     ! This routine calculates cb, Cbar in units m^3/m^3 --- however, elsewhere
@@ -141,74 +143,6 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     zetamult(1:a) = max(zetamult(1:a), Cbar/(150.0_dp/rhos), 1.0e-012_dp) 
     
 
-    ! PUSH THE SUSPENDED FLUX TOWARDS THE DESIRED VALUE   
-    ! Calculate total sediment flux at time = t.
-    ! We will use this to 'correct' the sediment flux towards the desired value 
-    sus_flux = sum( & 
-            (Qbed+Cbar*abs(vel)*max(water-bed,0._dp) )*& ! Total load
-            ( ( (/ ys(2:a), ysu /) - (/ ysl, ys(1:a-1) /) )*0.5_dp) &  ! dy
-                  )
-    ! Compute the discharge using the same approach
-    ! FIXME: Note that this method of computing the discharge is not 100%
-    ! consistent with the method in hydro_xsect, because it uses the ysu, ysl
-    ! boundaries, instead of the linearly interpolated approximations of the
-    ! boundaries. The difference is very minor though. 
-    tmp1 = sum( abs(vel)*max(water-bed,0.0_dp)*& 
-              ( ( (/ ys(2:a), ysu /) - (/ ysl, ys(1:a-1) /) )*0.5_dp) &  ! dy
-                  )
-
-    ! Store old value of sed_lag_scale, to use below
-    tmp2 = sed_lag_scale
-
-    IF(sus_flux > 1.0e-12_dp) THEN
-        sed_lag_scale = 1.0_dp*((sconc*tmp1)/sus_flux) !Desired flux / actual flux
-
-        ! Prevent very high or low values
-        sed_lag_scale = min(max(sed_lag_scale,0.666_dp),1.5_dp) 
-        IF(mod(counter,1000).eq.1) PRINT*, 'sed_lag_scale = ', sed_lag_scale
-
-    ELSE
-        IF(sconc*tmp1<sus_flux) THEN
-            sed_lag_scale = 0.666_dp
-        ELSEIF(sconc*tmp1==sus_flux) THEN
-            sed_lag_scale = 1.0_dp
-        ELSE
-            sed_lag_scale = 1.5_dp
-        END IF
-
-    END IF
-
-    IF(mod(counter,1000).eq.1) print*, 'sus_flux is:', sus_flux, ' desired flux is:', sconc*tmp1!, &
-                            !'zetamult max = ', maxval(zetamult), 'zetamult mean =', sum(zetamult)/(1.0_dp*(a+2)), &
-                            !'tau max = ', maxval(tau)
-
-    ! Here, we try to add a constant to cb across the channel, such that the 
-    ! sus_flux is as desired
-    ! If we do it by adjusting cb, then the idea is we will not affect Fl
-    !tmp1 = sum(1.0_dp*zetamult(1:a)*abs(vel)**max(water-bed,0._dp)*& 
-    !            ( ( (/ ys(2:a), ysu /) - (/ ysl, ys(1:a-1) /) )*0.5_dp) &  ! dy
-    !              )
-    ! Note that if k*tmp1  = desired_extra_flux, then k*zetamult represents the
-    ! extra Cbar that we need to add everywhere get the flux correct (and k is
-    ! the extra cbed, which is constant, as desired). Note that the
-    ! desired_extra_flux = sed_lag_scale*sus_flux - sus_flux  
-    !Cbar = Cbar + ( (sed_lag_scale*sus_flux-sus_flux)/tmp1)*zetamult(1:a) !Adding a constant
-
-
-    ! Now we add the term U*d*dCbar/dx using an operator splitting technique
-    ! depth*dCbar/dT + depth*vel*dCbar/dx = 0.0
-    ! Implicit 
-    !IF(maxval(Cbar)>0.0_dp) THEN
-        Cbar = Cbar*(1.0_dp - 0.0_dp*delT*vel*(1._dp-tmp2)/x_len_scale)/ &
-               (1.0_dp + 1.0_dp*delT*vel*(1.0_dp-sed_lag_scale)/x_len_scale)
-    !ELSE
-    !    print*, 'Max Cbar = 0', counter
-        
-    !    stop
-        !Cbar = Cbar*(1.0_dp - 0.5_dp*delT*vel*(1._dp-tmp2)/x_len_scale)/ &
-        !       (1.0_dp + 0.5_dp*delT*vel*(1.0_dp-sed_lag_scale)/x_len_scale)
-
-    !END IF
     
     
 
@@ -723,12 +657,86 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     !values, except with a fully implicit approach (impcon =1.0_dp)
     !Cbar = 1.0_dp*(Qe*1.0_dp + depth(1:a)/delT*Cbar - 0.0_dp*wset/zetamult(1:a)*Cbar)/ &
     !       (depth(1:a)/delT + 1.0_dp*wset/zetamult(1:a))
-    Cbar = 1.0_dp*(Qe*1.0_dp + depth(1:a)/delT*Cbar - 0.5_dp*wset*cb)/ &
-           (depth(1:a)/delT + 0.5_dp*wset/zetamult(1:a))
+    imax=10
+    DO i=1,imax
+        ! Take 'imax' small time-steps, which in total sum to delT
+        Cbar = 1.0_dp*(Qe*1.0_dp + depth(1:a)/(delT/(1.0*imax))*Cbar - 0.0_dp*wset*cb)/ &
+               (depth(1:a)/(delT/(1.0*imax)) + 1.0_dp*wset/zetamult(1:a))
     
+        ! PUSH THE SUSPENDED FLUX TOWARDS THE DESIRED VALUE   
+        ! Calculate total sediment flux at time = t.
+        ! We will use this to 'correct' the sediment flux towards the desired value 
+        sus_flux = sum( & 
+                (Qbed+Cbar*abs(vel)*max(water-bed,0._dp) )*& ! Total load
+                ( ( (/ ys(2:a), ysu /) - (/ ysl, ys(1:a-1) /) )*0.5_dp) &  ! dy
+                      )
+        ! Compute the discharge using the same approach
+        ! FIXME: Note that this method of computing the discharge is not 100%
+        ! consistent with the method in hydro_xsect, because it uses the ysu, ysl
+        ! boundaries, instead of the linearly interpolated approximations of the
+        ! boundaries. The difference is very minor though. 
+        tmp1 = sum( abs(vel)*max(water-bed,0.0_dp)*& 
+                  ( ( (/ ys(2:a), ysu /) - (/ ysl, ys(1:a-1) /) )*0.5_dp) &  ! dy
+                      )
 
+        ! Store old value of sed_lag_scale, to use below
+        tmp2 = sed_lag_scale
+
+        IF(sus_flux > 1.0e-12_dp) THEN
+            sed_lag_scale = 1.0_dp*((sconc*tmp1)/sus_flux) !Desired flux / actual flux
+
+            ! Prevent very high or low values
+            sed_lag_scale = min(max(sed_lag_scale,0.666_dp),1.5_dp) 
+            IF(mod(counter,1000).eq.1) PRINT*, 'sed_lag_scale = ', sed_lag_scale
+
+        ELSE
+            IF(sconc*tmp1<sus_flux) THEN
+                sed_lag_scale = 0.666_dp
+            ELSEIF(sconc*tmp1==sus_flux) THEN
+                sed_lag_scale = 1.0_dp
+            ELSE
+                sed_lag_scale = 1.5_dp
+            END IF
+
+        END IF
+        !print*, tmp2, sed_lag_scale
+
+        IF(mod(counter,1000).eq.1) print*, 'sus_flux is:', sus_flux, ' desired flux is:', sconc*tmp1!, &
+                                !'zetamult max = ', maxval(zetamult), 'zetamult mean =', sum(zetamult)/(1.0_dp*(a+2)), &
+                                !'tau max = ', maxval(tau)
+
+        ! Here, we try to add a constant to cb across the channel, such that the 
+        ! sus_flux is as desired
+        ! If we do it by adjusting cb, then the idea is we will not affect Fl
+        !tmp1 = sum(1.0_dp*zetamult(1:a)*abs(vel)**max(water-bed,0._dp)*& 
+        !            ( ( (/ ys(2:a), ysu /) - (/ ysl, ys(1:a-1) /) )*0.5_dp) &  ! dy
+        !              )
+        ! Note that if k*tmp1  = desired_extra_flux, then k*zetamult represents the
+        ! extra Cbar that we need to add everywhere get the flux correct (and k is
+        ! the extra cbed, which is constant, as desired). Note that the
+        ! desired_extra_flux = sed_lag_scale*sus_flux - sus_flux  
+        !Cbar = Cbar + ( (sed_lag_scale*sus_flux-sus_flux)/tmp1)*zetamult(1:a) !Adding a constant
+
+
+        ! Now we add the term U*d*dCbar/dx using an operator splitting technique
+        ! depth*dCbar/dT + depth*vel*dCbar/dx = 0.0
+        ! Implicit 
+        !IF(maxval(Cbar)>0.0_dp) THEN
+            Cbar = Cbar*(1.0_dp - 0.5_dp*(delT/(1.0_dp*imax))*vel*(1._dp-tmp2)/x_len_scale)/ &
+                   (1.0_dp + 0.5_dp*(delT/(1.0_dp*imax))*vel*(1.0_dp-sed_lag_scale)/x_len_scale)
+    END DO
+    !ELSE
+    !    print*, 'Max Cbar = 0', counter
+        
+    !    stop
+        !Cbar = Cbar*(1.0_dp - 0.5_dp*delT*vel*(1._dp-tmp2)/x_len_scale)/ &
+        !       (1.0_dp + 0.5_dp*delT*vel*(1.0_dp-sed_lag_scale)/x_len_scale)
+
+    !END IF
+ 
     !IF(counter==1) print*, 'WARNING: NO EROSION OR DEPOSITION, BUG FIX NEEDED HERE TO MAKE &
     !                                 THINGS TIME-INDEPENDENT'
+
     DO i=1,a
         IF(Cbar(i)<0.0_dp) THEN
             IF(Cbar(i)< -1.0e-012_dp) print*, 'Cbar clip', i, Cbar(i), Cbar_old(i), depth(i)
