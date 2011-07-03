@@ -52,7 +52,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     REAL(dp):: M1_lower(a), M1_diag(a), M1_upper(a), M1_upper2(a), M1_lower2(a)
     REAL(dp):: RHS(a), dy_all(a), depthlast(0:a+1)
     REAL(dp):: tmp1, dy, dy_outer, tmp2, Cref, z, cbed_tmp1, cbed_tmp2, tmp3
-    REAL(dp):: dQdx, dhdt, Cbar_old(a), dUd_dx(0:a+1), sus_flux, impcon
+    REAL(dp):: dQdx, dhdt, Cbar_old(a), dUd_dx(0:a+1), sus_flux, impcon, d1, d2
     REAL(dp):: DLF(a), DF(a), DUF(a), DU2(a),rcond, ferr, berr, work(3*a), XXX(a, 1)
     REAL(dp):: bandmat(5,a), AFB(7,a), RRR(a), CCC(a), int_edif_f_old(a+1), int_edif_dfdy_old(a+1)
     INTEGER::  IPV(a), iwork(a), imax   
@@ -442,7 +442,23 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
                 ! Try weighting cb (i+1/2) based on the depths at i and i+1 ---
                 ! a potenial compromise between the centred approach, and just
                 ! picking the one with the smallest depth.
-                tmp3 = (water-bed(i+1))**4/((water-bed(i+1))**4+(water-bed(i))**4)
+                !tmp3 = (water-bed(i+1))**4/((water-bed(i+1))**4+(water-bed(i))**4)
+                !d1 = water-bed(i)
+                !d2 = water-bed(i+1)
+                ! cb(i+1/2) = tmp3*(cb(i+1) ) + (1-tmp3)*cb(i)
+                ! To ensure the positivity of cb, we may need to set tmp3 to 0
+                ! or 1 where the depth changes rapidly, although where this is
+                ! not an issue we expect 0.5 to be more accurate. 
+                !IF((d1>1.5_dp*d2).or.(1.5_dp*d1<d2)) THEN
+                    IF(bed(i)>bed(i+1)) THEN
+                        tmp3 = 1.0_dp
+                    ELSE
+                        tmp3 = 0.0_dp
+                    END IF
+                !ELSE
+                !    tmp3 = 0.5_dp
+                !END IF                
+
                 M1_upper(i) = M1_upper(i) - impcon*(1.0_dp-tmp3)*tmp1*int_edif_dfdy(i+1)/zetamult(i+1)  ! Note that 1/zetamult(i)*Cbar = cb
                 M1_diag(i)  = M1_diag(i)  - impcon*tmp3*tmp1*int_edif_dfdy(i+1)/zetamult(i)
                
@@ -468,7 +484,20 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
                 ! Try weighting cb (i-1/2) based on the depths at i and i-1 ---
                 ! a potenial compromise between the centred approach, and just
                 ! picking the one with the smallest depth.
-                tmp3 = (water-bed(i))**4/( (water-bed(i))**4+(water-bed(i-1))**4)
+                !tmp3 = (water-bed(i))**4/( (water-bed(i))**4+(water-bed(i-1))**4)
+                !d1 = water-bed(i)
+                !d2 = water-bed(i-1)
+               
+                !IF((d1>1.5_dp*d2).or.(1.5_dp*d1<d2)) THEN
+                    IF(bed(i)<bed(i-1)) THEN
+                        tmp3 = 1.0_dp
+                    ELSE
+                        tmp3 = 0.0_dp
+                    END IF
+                !ELSE
+                !    tmp3 = 0.5_dp
+                !END IF
+
                 M1_diag(i)   = M1_diag(i)   + impcon*(1.0_dp-tmp3)*tmp1*int_edif_dfdy(i)/zetamult(i)  ! Note that 1/zetamult(i)*Cbar = cb
                 M1_lower(i)  = M1_lower(i)  + impcon*tmp3*tmp1*int_edif_dfdy(i)/zetamult(i-1)
     
