@@ -268,6 +268,7 @@ SUBROUTINE update_bed(a, dT, water, Q, bed,ys,Area, bottom, ff,recrd, E, D,C,rmu
         CASE(.FALSE.)
             ! When we do not use the fully 2D suspended load routine
             WHERE (bed<water)
+                !Qd=(min(wset, water-bed)/rhos)*C
                 Qd=(wset/rhos)*C
             ELSEWHERE
                 Qd = 0.0_dp

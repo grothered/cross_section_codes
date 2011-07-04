@@ -18,7 +18,7 @@ REAL(dp):: wslope, ar, Q, t, &
             qby,v, bedlast, hss, tss, ddd, hss2, handy, dqbeddx, &
             epsl,epsu, slopes, E, D, C, rmult,Area, inuc, NN,&
              Width,C0,waterlast, dt, slpmx,sllength, vel, &
-            DT1,DT1_old, tau_g, f_g, Cbar, &
+            DT1,DT1_old, tau_g, f_g, Cbar,water_tmp, &
             taucrit_dep, hlim, mor, Arealast, taucrit_dep_ys, &
             ht,vlast, dst, taucrit, mu, & 
             erconst, lifttodrag, vegdrag, sconc, rho, ysold, &
@@ -26,7 +26,7 @@ REAL(dp):: wslope, ar, Q, t, &
             dsand, d50, g, kvis, lambdacon, alpha, &
             ysl,ysu,bedl, bedu, wdthx, TR, storer(9), tmp, tmp2, a_ref, &
             failure_slope, x_len_scale, sus_flux, sed_lag_scale, Clast, &
-            lat_sus_flux, int_edif_f, int_edif_dfdy
+            lat_sus_flux, int_edif_f, int_edif_dfdy, zetamult
 INTEGER::  remesh_freq, no_discharges
 REAL(dp):: discharges(1000), susconcs(1000)
 LOGICAL::  flag, susdist, sus2d, readin, geo, remesh, norm, vertical, & 
@@ -56,7 +56,8 @@ ALLOCATABLE ys(:), bed(:), dists(:), tau(:),ks(:),tbst(:),&
             taucrit_dep_ys(:) ,dst(:,:), taucrit(:,:), slpmx(:,:), &
             vegdrag(:), ysold(:), dqbeddx(:), sllength(:), vel(:), &
             tau_g(:),f_g(:), Cbar(:), a_ref(:), Clast(:), &
-            lat_sus_flux(:), int_edif_f(:), int_edif_dfdy(:)
+            lat_sus_flux(:), int_edif_f(:), int_edif_dfdy(:), &
+            zetamult(:)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! READ IN DATA
@@ -120,7 +121,7 @@ ALLOCATE(ys(nos),bed(nos),dists(nos),tau(nos),ks(nos),tbst(nos),&
          ysold(nos) ,  Qbed(nos), dqbeddx(nos),sllength(nos), &
          vel(nos), tau_g(nos), f_g(nos), Cbar(nos), bedold(nos), a_ref(nos),&
          Clast(nos), lat_sus_flux(nos+1), int_edif_f(nos+1), &
-         int_edif_dfdy(nos+1) ) 
+         int_edif_dfdy(nos+1) , zetamult(0:nos+1)) 
 
 
 
@@ -235,6 +236,8 @@ DO Q_loop= 1, no_discharges!15
     int_edif_f=0.0_dp
     int_edif_dfdy=0.0_dp
     sed_lag_scale=1.0_dp
+    zetamult=1.0_dp
+
     !!!Calculate area
     IF(l>0) THEN
         DO i= 1,nos-1
@@ -533,11 +536,15 @@ DO Q_loop= 1, no_discharges!15
                 ! Evolve the suspended sediment concentration one timestep
                 ! (from i-1 to i)
                 !print*, DT1
-                call dynamic_sus_dist(u-l+1, DT1, ys(l:u), bed(l:u), water, waterlast, Q, tau(l:u), vel(l:u), wset, & 
-                                        0.5_dp*(Qe(l:u)+Qe(l:u)), lambdacon, rho,rhos, g, d50, bedl,bedu, ysl, ysu, C(l:u),&
+                !DO jj=1,1
+                !water_tmp  = waterlast+1.0*jj/(1.0)*(water-waterlast)
+
+                call dynamic_sus_dist(u-l+1, DT1/10.0_dp, ys(l:u), bed(l:u), water, waterlast, Q, tau(l:u), vel(l:u), wset, & 
+                                        0.5_dp*(Qe(l:u)+Qelast(l:u)), lambdacon, rho,rhos, g, d50, bedl,bedu, ysl, ysu, C(l:u),&
                                         Cbar(l:u), Qbed(l:u), sed_lag_scale, j, high_order_Cflux, a_ref(l:u), sus_vert_prof,&
                                         edify_model, x_len_scale, sconc, lat_sus_flux(l:u+1), bedlast(l:u), int_edif_f(l:u+1), &
-                                        int_edif_dfdy(l:u+1))
+                                    int_edif_dfdy(l:u+1), zetamult((l-1):(u+1)) )
+                !END DO
 
                 ! Set C in dry parts of the channel to zero
                 ! This is not done earlier, because we needed to store the old
@@ -697,14 +704,15 @@ DO Q_loop= 1, no_discharges!15
                 ! These methods change DT1 during the evolution of the
                 ! cross-section
                 
-                IF(j.eq.1) print*, ' Warning: Variable timestep is ONLY valid for &
-                        STEADY UNIFORM EQUILIBRIUM computations'
-
+                !IF(j.eq.1) print*, ' Warning: Variable timestep is ONLY valid for &
+                !        STEADY UNIFORM EQUILIBRIUM computations'
+                !DT1 = min(DT, minval(wset/(water-bed(l:u))))
+                
                 !IF(mod(j,10).eq.1) THEN
-                    tmp = min(max(maxval(abs(wset*C/rhos- Qe)), maxval(abs(qby(l-1:u)))), &
-                              maxval(abs(bed(l+1:u-1) - bedlast(l+1:u-1))) )
-                    tmp2 = minval(ys(2:nos) - ys(1:nos-1)) 
-                    DT1 = min(max(5.0e-03_dp*tmp2/max(tmp,1.0e-020_dp), 1.0e-01_dp, 0.9_dp*DT1), 100.0_dp*3600.0_dp, 1.1_dp*DT1)
+                !    tmp = min(max(maxval(abs(wset*C/rhos- Qe)), maxval(abs(qby(l-1:u)))), &
+                !              maxval(abs(bed(l+1:u-1) - bedlast(l+1:u-1))) )
+                !    tmp2 = minval(ys(2:nos) - ys(1:nos-1)) 
+                !    DT1 = min(max(5.0e-03_dp*tmp2/max(tmp,1.0e-020_dp), 1.0e-01_dp, 0.9_dp*DT1), 100.0_dp*3600.0_dp, 1.1_dp*DT1)
                 !END IF
             ELSE
                 DT1 = DT
