@@ -429,7 +429,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
             IF(i>1) THEN
 
                     !tmp4 = impcon*tmp1*tmp2*int_edif_f(i)
-                    IF(bed(i)<bed(i-1)) THEN
+                    IF(bed(i)<=bed(i-1)) THEN
                         tmp4 = impcon*tmp1*tmp2*0.5_dp*(int_edif_f(i+1)+int_edif_f(i))
                     ELSE
                         tmp4 = impcon*tmp1*tmp2*0.5_dp*(int_edif_f(i)+int_edif_f(i-1))
@@ -686,10 +686,12 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
             cbed_tmp1 = Cbar(i+1)/zetamult(i+1) - Cbar(i)/zetamult(i) ! diff(cbed)
             !cbed_tmp2 = cbed(i)
             !IF(Cbar_old(i)/zetamult(i)<Cbar_old(i+1)/zetamult(i+1)) THEN
-            IF(bed(i+1)<bed(i)) THEN
+            IF(bed(i+1)<=bed(i)) THEN
                 cbed_tmp2 = Cbar(i)/zetamult(i)
+                tmp1 = 0.5_dp*(int_edif_f(i+1)+int_edif_f(i))
             ELSE
                 cbed_tmp2 = Cbar(i+1)/zetamult(i+1)
+                tmp1 = 0.5_dp*(int_edif_f(i+1)+int_edif_f(i+2))
             END IF
         ELSE
             cbed_tmp1 = 0.0_dp
@@ -698,7 +700,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
         ! Compute lat sus flux at i+1/2
         ! e.g. lat_sus_flux(1) = flux at 1/2 
         !      lat_sus_flux(a+1) = flux at a+1/2
-        lat_sus_flux(i+1) = -int_edif_f(i+1)*(cbed_tmp1)/(ys_temp(i+1)-ys_temp(i))
+        lat_sus_flux(i+1) = -tmp1*(cbed_tmp1)/(ys_temp(i+1)-ys_temp(i))
         lat_sus_flux(i+1) = lat_sus_flux(i+1) -(cbed_tmp2)*int_edif_dfdy(i+1) 
     END DO 
 
