@@ -257,7 +257,7 @@ SUBROUTINE shear(nn,ys,bed,water,wslope,taus,ks, f,NNN,slopes, counter, Q, vegdr
     ! BOUNDARY CONDITIONS 
     ! Assume here that U^2 -> 0 as depth -> 0, and be careful to estimate the
     ! exact location of the waters edge. 
-    IF(.FALSE.) THEN
+    IF(.TRUE.) THEN
         ! Left boundary
         alpht(1)=  0._dp - 1._dp/(.5_dp*(dyf(1)+(ys(1)-ysl)*(bed(1)-water)/(bed(1)-bedl)))*( (Bf(1))*1._dp/dyf(1)) 
         alphb(1)= 0._dp
@@ -283,7 +283,7 @@ SUBROUTINE shear(nn,ys,bed,water,wslope,taus,ks, f,NNN,slopes, counter, Q, vegdr
     ! FIXME:(10/7/11)  A problem with this boundary condition has always been
     ! that it prevents the channel reaching  a steady state in the case of pure
     ! suspension of constant concentration -- so it is a bit of a worry. 
-    IF(.TRUE.) THEN
+    IF(.FALSE.) THEN
         ! Left boundary
         !alpht(1)=  0._dp - 1._dp/(.5_dp*(dyf(1)+(ys(1)-ysl)*(bed(1)-water)/(bed(1)-bedl)))*( (Bf(1))*1._dp/dyf(1)) 
         alpht(1)=  0._dp - 1._dp/(.5_dp*(dyf(1)+(ys(1)-ysl)))*( (Bf(1))*1._dp/dyf(1)) 
