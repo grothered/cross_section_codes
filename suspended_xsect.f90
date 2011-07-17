@@ -13,7 +13,8 @@ contains
 SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wset, Qe,lambdacon, &
                                 rho,rhos, g, d50, bedl,bedu, ysl, ysu, cb, Cbar, Qbed, &
                                 sed_lag_scale, counter, high_order_Cflux, a_ref, sus_vert_prof, edify_model, &
-                                x_len_scale, sconc, lat_sus_flux, bedlast, int_edif_f, int_edif_dfdy, zetamult)
+                                x_len_scale, sconc, lat_sus_flux, bedlast, int_edif_f, int_edif_dfdy, zetamult, &
+                                too_steep)
     ! Calculate the cross-sectional distribution of suspended sediment using
     ! some ideas from /home/gareth/Documents/H_drive_Gareth/Gareth_and_colab
     ! s/Thesis/Hydraulic_morpho_model/channel_cross_section/paper/idea_for_
@@ -30,7 +31,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     ! Numerically, we use (linear) implicit discretizations, except for the
     ! dCbar/dx term (explicit)
     
-    INTEGER, INTENT(IN)::a, counter
+    INTEGER, INTENT(IN)::a, counter, too_steep
     REAL(dp), INTENT(IN):: delT, ys, bed, water, waterlast, tau, vel, wset, Qe, lambdacon, rho, rhos,g, & 
                                 d50, bedl, bedu,ysl,ysu, Q, Qbed, a_ref, x_len_scale, sconc, bedlast
     REAL(dp), INTENT(OUT):: lat_sus_flux 
@@ -43,7 +44,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     CHARACTER(20), INTENT(IN):: sus_vert_prof, edify_model
     LOGICAL, INTENT(IN):: high_order_Cflux
     DIMENSION ys(a), bed(a), tau(a),vel(a), Qe(a), cb(a), Cbar(a),Qbed(a), a_ref(a), lat_sus_flux(a+1), bedlast(a), &
-              int_edif_f(a+1), int_edif_dfdy(a+1), zetamult(0:a+1)
+              int_edif_f(a+1), int_edif_dfdy(a+1), zetamult(0:a+1), too_steep(a)
 
     ! LOCAL VARIABLES
     INTEGER:: i, info, j
@@ -600,8 +601,8 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
 
             !RHS(i) = RHS(i) +Qe(i) - (1.0_dp-impcon)*min(wset/zetamult_old(i), depthlast(i)/delT)*Cbar(i)
             !M1_diag(i) = M1_diag(i) + impcon*min(wset/zetamult(i), depth(i)/delT)  ! Note that 1/zetamult(i)*Cbar = cb
-            RHS(i) = RHS(i) +Qe(i) - (1.0_dp-impcon)*wset/zetamult_old(i)*Cbar(i)
-            M1_diag(i) = M1_diag(i) + impcon*wset/zetamult(i)  ! Note that 1/zetamult(i)*Cbar = cb
+            RHS(i) = RHS(i) +Qe(i) - (1.0_dp-impcon)*wset*too_steep(i)/zetamult_old(i)*Cbar(i)
+            M1_diag(i) = M1_diag(i) + impcon*wset*too_steep(i)/zetamult(i)  ! Note that 1/zetamult(i)*Cbar = cb
 
         END DO
     END IF

@@ -213,17 +213,17 @@ END SUBROUTINE calc_resus_bedload
 SUBROUTINE update_bed(a, dT, water, Q, bed,ys,Area, bottom, ff,recrd, E, D,C,rmu,a2, inuc,tau,taug,NN, &
     counter,slopes, hlim,mor,taucrit_dep,layers, taucrit_dep_ys, nos, taucrit, vegdrag, susdist,rho, Qe, Qbed, & 
     wset,dqbeddx, rhos, voidf, d50, g, kvis, norm, vertical, lambdacon, tbston, Qbedon, normmov,sus2d,ysl, & 
-    ysu,bedl,bedu,iii, bedlast, talmon, high_order_bedload)
+    ysu,bedl,bedu,iii, bedlast, talmon, high_order_bedload, too_steep)
     ! Purpose: Solve the sediment continuity equation to update the channel bed.
 
-    INTEGER, INTENT(IN)::a,a2,counter,layers, nos, iii
+    INTEGER, INTENT(IN)::a,a2,counter,layers, nos, iii, too_steep
     REAL(dp), INTENT(IN)::water,Q, Area, bottom, ff, hlim,mor, vegdrag, dt, rho, Qbed, Qe, dqbeddx, &
         rhos, voidf, d50, g, kvis,wset, lambdacon, ysl,ysu, bedlast, taug,C !QbedI, dQbedI
     REAL(dp), INTENT(IN OUT):: bed, recrd, E, D,rmu,inuc,tau, NN, ys,taucrit_dep, taucrit_dep_ys, slopes, & 
         taucrit, bedu, bedl
     LOGICAL, INTENT(IN):: susdist, norm, vertical, tbston, Qbedon, normmov, sus2d, talmon, high_order_bedload
     DIMENSION bed(a),ys(a), ff(a),recrd(0:a),tau(a),taug(a), NN(a),slopes(a),taucrit_dep(nos,layers),C(a),&
-        taucrit_dep_ys(nos),taucrit(nos,0:layers), vegdrag(a), Qbed(a), Qe(a), dqbeddx(a), bedlast(a) ! 
+        taucrit_dep_ys(nos),taucrit(nos,0:layers), vegdrag(a), Qbed(a), Qe(a), dqbeddx(a), bedlast(a), too_steep(a) ! 
 
     INTEGER::i, j, bgwet, up, bfall, jj,dstspl, jjj, minX,maxX, storindex(a), info,ii, indd(a,layers), n(a), b(1)
     REAL(dp):: val, tmp1,dt_on_lambda 
@@ -269,7 +269,7 @@ SUBROUTINE update_bed(a, dT, water, Q, bed,ys,Area, bottom, ff,recrd, E, D,C,rmu
             ! When we do not use the fully 2D suspended load routine
             WHERE (bed<water)
                 !Qd=(min(wset, water-bed)/rhos)*C
-                Qd=(wset/rhos)*C
+                Qd=(wset*too_steep/rhos)*C
             ELSEWHERE
                 Qd = 0.0_dp
             END WHERE
@@ -277,13 +277,13 @@ SUBROUTINE update_bed(a, dT, water, Q, bed,ys,Area, bottom, ff,recrd, E, D,C,rmu
         CASE(.TRUE.)
             ! Where we do use the 2D (multiple cross-sections) suspended load routine
             WHERE((abs(tau)>0._dp).and.(wset>0._dp))
-                    Qd=(wset/rhos)*C*& 
+                    Qd=(wset*too_steep/rhos)*C*& 
                         min( &
                         (water-bed)/(.1_dp*sqrt(abs(tau)/rho)*(water-bed)/wset*& 
                         (1._dp-exp(-wset/(.1_dp*sqrt(abs(tau)/rho)*(water-bed))*(water-bed)))) &
                         , 20._dp) 
             ELSEWHERE
-                    Qd= (wset/rhos)*C*20._dp 
+                    Qd= (wset*too_steep/rhos)*C*20._dp 
                     !So in this case the shear is zero, and whatever deposits
                     !should deposit fast 
             END WHERE 

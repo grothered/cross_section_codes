@@ -27,7 +27,7 @@ REAL(dp):: wslope, ar, Q, t, &
             ysl,ysu,bedl, bedu, wdthx, TR, storer(9), tmp, tmp2, a_ref, &
             failure_slope, x_len_scale, sus_flux, sed_lag_scale, Clast, &
             lat_sus_flux, int_edif_f, int_edif_dfdy, zetamult
-INTEGER::  remesh_freq, no_discharges
+INTEGER::  remesh_freq, no_discharges, too_steep
 REAL(dp):: discharges(1000), susconcs(1000)
 LOGICAL::  flag, susdist, sus2d, readin, geo, remesh, norm, vertical, & 
             tbston, normmov, Qbedon, susQbal, talmon,&
@@ -57,7 +57,7 @@ ALLOCATABLE ys(:), bed(:), dists(:), tau(:),ks(:),tbst(:),&
             vegdrag(:), ysold(:), dqbeddx(:), sllength(:), vel(:), &
             tau_g(:),f_g(:), Cbar(:), a_ref(:), Clast(:), &
             lat_sus_flux(:), int_edif_f(:), int_edif_dfdy(:), &
-            zetamult(:)
+            zetamult(:), too_steep(:)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! READ IN DATA
@@ -121,7 +121,7 @@ ALLOCATE(ys(nos),bed(nos),dists(nos),tau(nos),ks(nos),tbst(nos),&
          ysold(nos) ,  Qbed(nos), dqbeddx(nos),sllength(nos), &
          vel(nos), tau_g(nos), f_g(nos), Cbar(nos), bedold(nos), a_ref(nos),&
          Clast(nos), lat_sus_flux(nos+1), int_edif_f(nos+1), &
-         int_edif_dfdy(nos+1) , zetamult(0:nos+1)) 
+         int_edif_dfdy(nos+1) , zetamult(0:nos+1), too_steep(nos)) 
 
 
 
@@ -333,6 +333,14 @@ DO Q_loop= 1, no_discharges!15
             slopes(nos)= (bed(nos)-bed(nos-1))/(ys(nos)-ys(nos-1))   
         END IF
 
+        ! Note where the slope is overly large, so we can prevent deposition
+        ! there
+        WHERE (abs(slopes)>failure_slope*0.9_dp)
+            too_steep=0
+        ELSEWHERE
+            too_steep=1
+        END WHERE
+
         ! Water elevation (free surface)
         waterlast=water
         water= waterM + (TR/2._dp+.0*sin(2._dp*pi*t/(12.4_dp*3600._dp*100._dp))+0.0_dp)*sin(2._dp*pi*t/(12.4_dp*3600._dp))  !1.+ 1.*sin(2.*pi*j/500.) 
@@ -543,7 +551,7 @@ DO Q_loop= 1, no_discharges!15
                                         0.5_dp*(Qe(l:u)+Qelast(l:u)), lambdacon, rho,rhos, g, d50, bedl,bedu, ysl, ysu, C(l:u),&
                                         Cbar(l:u), Qbed(l:u), sed_lag_scale, j, high_order_Cflux, a_ref(l:u), sus_vert_prof,&
                                         edify_model, x_len_scale, sconc, lat_sus_flux(l:u+1), bedlast(l:u), int_edif_f(l:u+1), &
-                                    int_edif_dfdy(l:u+1), zetamult((l-1):(u+1)) )
+                                        int_edif_dfdy(l:u+1), zetamult((l-1):(u+1)), too_steep(l:u))
                 !END DO
 
                 ! Set C in dry parts of the channel to zero
@@ -593,7 +601,7 @@ DO Q_loop= 1, no_discharges!15
                                 Qe(l:u), Qbed(l:u), wset, dqbeddx(l:u), rhos, voidf, d50, g, &
                                 kvis, norm, vertical, lambdacon, tbston,&
                                 Qbedon, normmov, sus2d, ysl, ysu, bedl,bedu, iii, bedlast(l:u), &
-                                talmon, high_order_bedload) 
+                                talmon, high_order_bedload, too_steep) 
 
                 ! Correct the banks. In the case that we allow bedload at l-1/2 and
                 ! u+1/2, this is very important to ensure mass conservation, because
