@@ -335,11 +335,20 @@ DO Q_loop= 1, no_discharges!15
 
         ! Note where the slope is overly large, so we can prevent deposition
         ! there
-        WHERE (abs(slopes)>failure_slope*0.9_dp)
-            too_steep=0
-        ELSEWHERE
-            too_steep=1
-        END WHERE
+        too_steep=1
+        ! Find where the slope > failure_slope, and prevent deposition on the
+        ! upper part of that slope.
+        DO i=2,nos-1
+            IF(bed(i)>bed(i-1)) THEN
+                IF( (bed(i)-bed(i-1)) > 0.99_dp*failure_slope*(ys(i)-ys(i-1))) THEN
+                    too_steep(i)=0
+                END IF
+            ELSEIF(bed(i)>bed(i+1)) THEN
+                IF( (bed(i)-bed(i+1)) > 0.99_dp*failure_slope*(ys(i+1)-ys(i))) THEN
+                    too_steep(i)=0
+                END IF
+            END IF
+        END DO
 
         ! Water elevation (free surface)
         waterlast=water
