@@ -277,12 +277,11 @@ SUBROUTINE shear(nn,ys,bed,water,wslope,taus,ks, f,NNN,slopes, counter, Q, vegdr
     ! BOUNDARY CONDITIONS 
     ! Assume here that the momentum flux at (i=1/2) is 0 (so the system is not
     ! losing any momentum), and same for (i=nn-1/2)
-    ! FIXME: I think this is still only momentum conservative if we have an even
-    ! grid? Because the 1/dy( F(i+1/2) - F(i-1/2)) is only conservative if dy
-    ! doesn't change?
     ! FIXME:(10/7/11)  A problem with this boundary condition has always been
     ! that it prevents the channel reaching  a steady state in the case of pure
-    ! suspension of constant concentration -- so it is a bit of a worry. 
+    ! suspension of constant concentration -- so it is a bit of a worry. The
+    ! extra momentum loss in the above condition is small as long as the depth
+    ! at the channel edge is small.
     IF(.FALSE.) THEN
         ! Left boundary
         !alpht(1)=  0._dp - 1._dp/(.5_dp*(dyf(1)+(ys(1)-ysl)*(bed(1)-water)/(bed(1)-bedl)))*( (Bf(1))*1._dp/dyf(1)) 

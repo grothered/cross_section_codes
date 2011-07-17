@@ -195,12 +195,23 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
 
         END IF
 
-        ! Now we add the term U*d*dCbar/dx using an operator splitting technique
-        ! depth*dCbar/dT + depth*vel*dCbar/dx = 0.0
+        ! NON-CONSERVATIVE VERSION
+        !! Now we add the term U*d*dCbar/dx using an operator splitting technique
+        !! depth*dCbar/dT + depth*vel*dCbar/dx = 0.0
+        !! Implicit 
+        !!IF(maxval(Cbar)>0.0_dp) THEN
+        !    Cbar = Cbar*(1.0_dp - (1.0_dp-impcon)*(delT/(2.0_dp*imax))*vel*(1._dp-tmp2)/x_len_scale)/ &
+        !          (1.0_dp + impcon*(delT/(2.0_dp*imax))*vel*(1.0_dp-sed_lag_scale)/x_len_scale)
+        
+        ! CONSERVATIVE VERSION
+        ! Now we add the term d(U*d*Cbar)/dx using an operator splitting technique
+        ! d(depth*Cbar)/dT + d(depth*vel*Cbar)/dx = 0.0
+        ! Here we are assuming that the spatially lagged value of depth*vel*Cbar 
+        !  = depth*vel*Cbar/(actual_flux)*desired_flux -- i.e. same shape, but
+        !  scaled so that the flux is exactly the desired flux.
         ! Implicit 
-        !IF(maxval(Cbar)>0.0_dp) THEN
-            Cbar = Cbar*(1.0_dp - (1.0_dp-impcon)*(delT/(2.0_dp*imax))*vel*(1._dp-tmp2)/x_len_scale)/ &
-                   (1.0_dp + impcon*(delT/(2.0_dp*imax))*vel*(1.0_dp-sed_lag_scale)/x_len_scale)
+         Cbar = (depthlast*Cbar_old)/ &
+                (depth + (vel*depth*delT/(2.0_dp*imax))*(1.0_dp-sed_lag_scale)/x_len_scale)
     END DO
     
     
@@ -225,8 +236,13 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
 
     ! depth*d(Cbar)/dt
     DO i = 1, a
+        ! Non-conservative version = depth*dCbar/dt
+        !M1_diag(i) = M1_diag(i) + depth(i)/delT
+        !RHS(i)     = RHS(i)     + Cbar_old(i)*depth(i)/delT
+        ! Conservative version = d/dt (depth*Cbar)
         M1_diag(i) = M1_diag(i) + depth(i)/delT
-        RHS(i)     = RHS(i)     + Cbar(i)*depth(i)/delT
+        RHS(i)     = RHS(i)     + Cbar_old(i)*depthlast(i)/delT
+        
     END DO
         
     DO i = 1, a
@@ -266,18 +282,32 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
         vd(i) = vd(i-1) - (ys_temp(i)-ys_temp(i-1))*(dhdt +0.5_dp*(dUd_dx(i)+dUd_dx(i-1)) )  
 
         IF(depth(i)==0._dp) vd(i) = 0._dp
+    END DO
 
+    DO i = 1,a
         ! Upwind discretization of the advective term -- fill out the matrices
         ! (FIXME -- consider making use of a higher order discretization)
         IF((i.ne.1).and.(i.ne.a)) THEN
+            ! NON-CONSERVATIVE VERSION
+            !IF(vd(i) < 0.0) THEN 
+            !    dy = ys_temp(i+1) - ys_temp(i)
+            !    M1_upper(i) = M1_upper(i) + vd(i)/dy
+            !    M1_diag(i)  = M1_diag(i)  - vd(i)/dy
+            !ELSE
+            !    dy = ys_temp(i) - ys_temp(i-1)
+            !    M1_diag(i)  = M1_diag(i)  + vd(i)/dy
+            !    M1_lower(i) = M1_lower(i) - vd(i)/dy
+            !END IF
+            
+            ! CONSERVATIVE VERSION
             IF(vd(i) < 0.0) THEN 
                 dy = ys_temp(i+1) - ys_temp(i)
-                M1_upper(i) = M1_upper(i) + vd(i)/dy
+                M1_upper(i) = M1_upper(i) + vd(i+1)/dy
                 M1_diag(i)  = M1_diag(i)  - vd(i)/dy
             ELSE
                 dy = ys_temp(i) - ys_temp(i-1)
                 M1_diag(i)  = M1_diag(i)  + vd(i)/dy
-                M1_lower(i) = M1_lower(i) - vd(i)/dy
+                M1_lower(i) = M1_lower(i) - vd(i-1)/dy
             END IF
         END IF
 
@@ -761,11 +791,22 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
 
         END IF
 
+        ! NON-CONSERVATIVE VERSION
         ! Now we add the term U*d*dCbar/dx using an operator splitting technique
         ! depth*dCbar/dT + depth*vel*dCbar/dx = 0.0
         ! Implicit 
-            Cbar = Cbar*(1.0_dp - (1.0_dp-impcon)*(delT/(2.0_dp*imax))*vel*(1._dp-tmp2)/x_len_scale)/ &
-                   (1.0_dp + impcon*(delT/(2.0_dp*imax))*vel*(1.0_dp-sed_lag_scale)/x_len_scale)
+        !    Cbar = Cbar*(1.0_dp - (1.0_dp-impcon)*(delT/(2.0_dp*imax))*vel*(1._dp-tmp2)/x_len_scale)/ &
+        !           (1.0_dp + impcon*(delT/(2.0_dp*imax))*vel*(1.0_dp-sed_lag_scale)/x_len_scale)
+
+        ! CONSERVATIVE VERSION
+        ! Now we add the term d(U*d*Cbar)/dx using an operator splitting technique
+        ! d(depth*Cbar)/dT + d(depth*vel*Cbar)/dx = 0.0
+        ! Here we are assuming that the spatially lagged value of depth*vel*Cbar 
+        !  = depth*vel*Cbar/(actual_flux)*desired_flux -- i.e. same shape, but
+        !  scaled so that the flux is exactly the desired flux.
+        ! Implicit 
+        Cbar = (depth*Cbar)/ &
+               (depth + (vel*depth*delT/(2.0_dp*imax))*(1.0_dp-sed_lag_scale)/x_len_scale)
     END DO
        
  
