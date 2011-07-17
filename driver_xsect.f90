@@ -339,11 +339,11 @@ DO Q_loop= 1, no_discharges!15
         ! Find where the slope > failure_slope, and prevent deposition on the
         ! upper part of that slope.
         DO i=1,nos
-            IF((i==nos).or.(bed(i)>bed(i-1))) THEN
+            IF((i==nos).or.(bed(i)>bed(max(i-1,1)))) THEN
                 IF( (bed(i)-bed(i-1)) > 0.99_dp*failure_slope*(ys(i)-ys(i-1))) THEN
                     too_steep(i)=0
                 END IF
-            ELSEIF((i==1).or.(bed(i)>bed(i+1))) THEN
+            ELSEIF((i==1).or.(bed(i)>bed(min(i+1,nos)))) THEN
                 IF( (bed(i)-bed(i+1)) > 0.99_dp*failure_slope*(ys(i+1)-ys(i))) THEN
                     too_steep(i)=0
                 END IF
