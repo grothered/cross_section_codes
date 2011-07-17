@@ -141,8 +141,9 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     zetamult(a+1) = 1.0_dp
     
     ! Should limit cb to ~ 150g/L, and make sure we dont divide by zero
-    zetamult(1:a) = max(zetamult(1:a), Cbar/(150.0_dp/rhos), 1.0e-012_dp) 
-    
+    zetamult(1:a) = max(zetamult(1:a), Cbar/(150.0_dp/rhos), 1.0e-010_dp) 
+    !zetamult_old(1:a) = max(zetamult_old(1:a), Cbar_old/(150.0_dp/rhos), 1.0e-010_dp) 
+
 
     ! Compute the discharge using the same approach as is used to compute
     ! sus_flux
@@ -209,11 +210,26 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
         ! Here we are assuming that the spatially lagged value of depth*vel*Cbar 
         !  = depth*vel*Cbar/(actual_flux)*desired_flux -- i.e. same shape, but
         !  scaled so that the flux is exactly the desired flux.
-        ! Implicit 
-         Cbar = (depthlast*Cbar_old)/ &
-                (depth + (vel*depth*delT/(2.0_dp*imax))*(1.0_dp-sed_lag_scale)/x_len_scale)
+        ! Implicit
+        WHERE(depth(1:a)>0.0_dp)        
+            Cbar = (depthlast(1:a)*Cbar_old)/ &
+                   (depth(1:a) + (vel*depth(1:a)*delT/(2.0_dp*imax))*(1.0_dp-sed_lag_scale)/x_len_scale)
+        ELSEWHERE
+            Cbar = 0.0_dp
+        END WHERE
+
     END DO
     
+    DO i=1,a
+        IF((isnan(Cbar(i)))) THEN
+            print*, 'Cbar is nan right after first d/dx operation', &
+                Cbar(i), depth(i), depthlast(i), Cbar_old(i), vel(i),sed_lag_scale, &
+                (depth(i) + (vel(i)*depth(i)*delT/(2.0_dp*imax))*(1.0_dp-sed_lag_scale)/x_len_scale), &
+                depthlast(i)*Cbar_old(i)
+
+            stop
+        END IF
+    END DO
     
 
     ! Solve initially for the depth - averaged suspended sediment concentration
@@ -250,6 +266,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
         IF(isnan(M1_diag(i))) print*, 'M1_diag(', i,') is NaN a'    
         IF(isnan(M1_lower(i))) print*, 'M1_upper(', i,') is NaN a'    
         IF(isnan(M1_upper(i))) print*, 'M1_upper(', i,') is NaN a'    
+        IF(isnan(RHS(i))) print*, 'RHS(', i,') is NaN a'    
     END DO
 
     ! Vd Advection term -- requires calculation of vd, using an
@@ -289,6 +306,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
         ! (FIXME -- consider making use of a higher order discretization)
         IF((i.ne.1).and.(i.ne.a)) THEN
             ! NON-CONSERVATIVE VERSION
+            ! v*depth*d/dy(Cbar)
             !IF(vd(i) < 0.0) THEN 
             !    dy = ys_temp(i+1) - ys_temp(i)
             !    M1_upper(i) = M1_upper(i) + vd(i)/dy
@@ -300,7 +318,8 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
             !END IF
             
             ! CONSERVATIVE VERSION
-            IF(vd(i) < 0.0) THEN 
+            ! d/dy (v*depth*Cbar)
+            IF(vd(i) < 0.0_dp) THEN 
                 dy = ys_temp(i+1) - ys_temp(i)
                 M1_upper(i) = M1_upper(i) + vd(i+1)/dy
                 M1_diag(i)  = M1_diag(i)  - vd(i)/dy
@@ -319,6 +338,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
         IF(isnan(M1_diag(i))) print*, 'M1_diag(', i,') is NaN b'    
         IF(isnan(M1_lower(i))) print*, 'M1_upper(', i,') is NaN b'    
         IF(isnan(M1_upper(i))) print*, 'M1_upper(', i,') is NaN b'    
+        IF(isnan(RHS(i))) print*, 'RHS(', i,') is NaN b'    
 
     END DO
 
@@ -569,6 +589,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
         IF(isnan(M1_diag(i))) print*, 'M1_diag(', i,') is NaN, c', M1_diag(i)   
         IF(isnan(M1_lower(i))) print*, 'M1_lower(', i,') is NaN, c' , M1_lower(i), int_edif_dfdy(i), zetamult(i)  
         IF(isnan(M1_upper(i))) print*, 'M1_upper(', i,') is NaN, c' , M1_upper(i), int_edif_dfdy(i+1), zetamult(i+1)   
+        IF(isnan(RHS(i))) print*, 'RHS(', i,') is NaN, c', RHS(i), Cbar(i),zetamult(i), Cbar_old(i),zetamult_old(i)   
     END DO
 
     ! Erosion and deposition
@@ -592,6 +613,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
         IF(isnan(M1_diag(i))) print*, 'M1_diag(', i,') is NaN d' , zetamult(i)   
         IF(isnan(M1_lower(i))) print*, 'M1_upper(', i,') is NaN d'    
         IF(isnan(M1_upper(i))) print*, 'M1_upper(', i,') is NaN d'    
+        IF(isnan(RHS(i))) print*, 'RHS(', i,') is NaN d'    
 
     END DO
 
@@ -633,6 +655,17 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
 
     ! New Cbar
     Cbar = XXX(1:a,1)
+
+    DO i=1,a
+        IF((isnan(Cbar(i)))) THEN
+            print*, 'Cbar', i, ' is nan right after matrix solve'
+            DO j=1,a
+                print*, j, M1_lower(j), M1_diag(j), M1_upper(j), RHS(j)
+            END DO        
+            stop
+        END IF
+    END DO
+    
 
     IF(info.ne.0) THEN
             print*, 'ERROR: info = ', info, ' in DGTSV, dynamic_sus_dist'
@@ -805,8 +838,12 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
         !  = depth*vel*Cbar/(actual_flux)*desired_flux -- i.e. same shape, but
         !  scaled so that the flux is exactly the desired flux.
         ! Implicit 
-        Cbar = (depth*Cbar)/ &
-               (depth + (vel*depth*delT/(2.0_dp*imax))*(1.0_dp-sed_lag_scale)/x_len_scale)
+        WHERE(depth(1:a)>0.0_dp)
+            Cbar = (depth(1:a)*Cbar)/ &
+                   (depth(1:a) + (vel*depth(1:a)*delT/(2.0_dp*imax))*(1.0_dp-sed_lag_scale)/x_len_scale)
+        ELSEWHERE
+            Cbar = 0.0_dp
+        END WHERE
     END DO
        
  
