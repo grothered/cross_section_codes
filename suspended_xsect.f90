@@ -752,10 +752,10 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
             !IF(Cbar_old(i)/zetamult(i)<Cbar_old(i+1)/zetamult(i+1)) THEN
             IF(bed(i+1)<=bed(i)) THEN
                 cbed_tmp2 = Cbar(i)/zetamult(i)
-                tmp1 = 0.5_dp*(int_edif_f(i+1)+int_edif_f(i))
+                tmp1 = 0.5_dp*(int_edif_f(i+1)+int_edif_f(i+2))
             ELSE
                 cbed_tmp2 = Cbar(i+1)/zetamult(i+1)
-                tmp1 = 0.5_dp*(int_edif_f(i+1)+int_edif_f(i+2))
+                tmp1 = 0.5_dp*(int_edif_f(i+1)+int_edif_f(i))
             END IF
         ELSE
             cbed_tmp1 = 0.0_dp
