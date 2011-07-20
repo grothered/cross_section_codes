@@ -370,7 +370,7 @@ test_susdist2<-function(bed, arefh, water,zs, wset, us,Cbed, dbed_dy, daref_dy, 
     df_dy = df_dbedh*dbed_dy + df_darefh*daref_dy + df_dus*dus_dy
 
     # dc/dy = d/dy(cbed*f) =
-    #df_dy*Cbed + dCbed_dy*f
-    f
+    df_dy*Cbed + dCbed_dy*f
+    #f
 
 }
