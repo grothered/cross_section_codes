@@ -207,7 +207,7 @@ test_susdist<-function(ys, bed, water, Cbed, Es, wset, qby, aref, ustar, num_z =
     # tmp = test_susdist( ys[a,],h[a,],0.0, Cbed[a,],Qe[a,], 0.016,Qby[a,],a_ref[a,], sqrt(tau[a,]/1026) )
 
     # Deposition rate    
-    Ds = wset*Cbed
+    #Ds = wset*Cbed
 
     # Compute:
     # F_l = int_{z = bed}^{z = water surface} (epsy*dc/dy) dz
@@ -225,7 +225,7 @@ test_susdist<-function(ys, bed, water, Cbed, Es, wset, qby, aref, ustar, num_z =
     # Represent c(z,y) as a matrix of the form c[zind,yind]. Note that zind,
     # yind correspond to particular z and y values, and z =0 at some arbitrary
     # datum (which is the same for every y)
-    c = matrix(NA,ncol=length(bed), nrow = num_z)
+    c3d = matrix(NA,ncol=length(bed), nrow = num_z)
     zs = seq(min(bed), water, len=num_z) # z coordinate
     f = zs*NA
     for (i in 1:length(ys)){
@@ -234,13 +234,13 @@ test_susdist<-function(ys, bed, water, Cbed, Es, wset, qby, aref, ustar, num_z =
             #print(c(i,j))
         f = Rouse(zs, bed[i], water, aref[i], wset, ustar[i])
         #}
-        c[, i] = Cbed[i]*f
+        c3d[, i] = Cbed[i]*f
 
     }
 
 
     # Calculate the lateral eddy viscosity, with a Parabolic model
-    epsy = c*NA
+    epsy = c3d*NA
     for (i in 1:length(ys)){
         parabola = pmax(zs-bed[i],0.0)*
                    pmin(water-zs,(water-bed[i]))/(0.25*(water-bed[i])^2)
@@ -252,11 +252,34 @@ test_susdist<-function(ys, bed, water, Cbed, Es, wset, qby, aref, ustar, num_z =
     dcdy_h = matrix(NA,ncol=length(bed)-1,nrow=num_z)
     epsy_h= dcdy_h
     for(i in 1:(length(bed)-1)){
-        dcdy_h[,i] = (c[,i+1] -c[,i])/(ys[i+1]-ys[i]) 
+        dcdy_h[,i] = (c3d[,i+1] -c3d[,i])/(ys[i+1]-ys[i]) 
         epsy_h[,i] = 0.5*(epsy[,i+1]+epsy[,i])
     }
 
-    # Finally, calculate integrated lateral flux
+
+    # Here, call another routine which computes dcdy_h, for comparison
+    dcdy_h2 = dcdy_h*NA
+    for(i in 1:(length(bed)-1)){
+        m = sum(zs>0.5*(bed[i]+bed[i+1])+0.5*(aref[i]+aref[i+1]))
+        
+        if(m>0){
+        dcdy_h2[(num_z-m+1):num_z,i]= test_susdist2(0.5*(bed[i]+bed[i+1]), 
+                          0.5*(aref[i]+aref[i+1]),
+                          water,
+                          m,
+                          wset, 
+                          0.5*(ustar[i]+ustar[i+1]),
+                          0.5*(Cbed[i]+Cbed[i+1]),
+                          (bed[i+1]-bed[i])/(ys[i+1]-ys[i]),
+                          (aref[i+1]-aref[i])/(ys[i+1]-ys[i]),
+                          (ustar[i+1]-ustar[i])/(ys[i+1]-ys[i]),
+                          (Cbed[i+1]-Cbed[i])/(ys[i+1]-ys[i])
+                          )
+        }
+
+    }
+
+    # Finally, calculate integrated lateral flux at i+1/2
     integrand = dcdy_h*epsy_h
     dz = zs[2]-zs[1]#diff(zs)
     Fl_h = dcdy_h[1,]*NA
@@ -267,7 +290,7 @@ test_susdist<-function(ys, bed, water, Cbed, Es, wset, qby, aref, ustar, num_z =
 
     # Output depends on c_return
     if(c_return){
-        c
+        c3d
     }else{
         Fl_h
     }     
@@ -295,7 +318,7 @@ Rouse<-function(z,bed, water,aref,wset,ustar){
 
         # f  
         f[inds] =( ( ( (water - bed) - (z[inds] - bed) )/(z[inds]-bed) )/
-                 ( ( (water - bed) - aref )/ (aref)  ) )^(zstar)
+                   ( ( (water - bed) - aref )/ (aref)  ) )^(zstar)
 
         if(any(is.na(f[inds]))){
 
@@ -311,3 +334,42 @@ Rouse<-function(z,bed, water,aref,wset,ustar){
     }
         
 
+test_susdist2<-function(bed, arefh, water,n, wset, us,Cbed, dbed_dy, daref_dy, dus_dy, dCbed_dy){
+    # Function to compute f and dfdy according to the fortran codes. Trying to
+    # catch bugs.
+
+    d = water - bed
+    #z_tmp = bedh+arefh+ (d-arefh)/(2.0_dp)*(gauss_abscissae +1.0_dp)
+    z_tmp = seq(bed+arefh, water, len = n)
+    #! Useful shorthand variables, which save computation
+    #! This routine is computationally demanding, so it is worth
+    #! making some effort.
+    #!z2surf= water-z_tmp ! Distance from z_tmp to the surface
+    #z2bed_inv = 1.0_dp/(z_tmp-bedh) ! Inverse of above, reuse below
+    z2bed_inv = 1.0/(z_tmp-bed) #! Inverse of above, reuse below
+    z2ratio = d*z2bed_inv #! A ratio that comes up a lot
+    #!z2ratio(no_subints)=1.0_dp ! Round-off can spoil this otherwise, and introduce singularities later.
+    rouseno = wset/(0.4*us) #! Rouse number
+    arefh_inv = 1.0/arefh
+    d_on_aref_les1_inv = 1.0/(d/arefh -1.0) #! Useful term
+    
+    #! Calculate vertical profile of suspended sediment
+    f = ((z2ratio-1.0)*(d_on_aref_les1_inv))**rouseno
+
+    # Now calc df_dh = df_dbed*dbed_dh + df_daref*daref_dh + df_dus*dus_dh
+    df_dbedh =rouseno*f*(d_on_aref_les1_inv*arefh_inv+z2bed_inv)
+    
+    df_darefh = rouseno*d*f*d_on_aref_les1_inv*arefh_inv**2
+
+    df_dus = - f/us*log(f)
+    # Treat case where f is very small -- f*log(f) --> 0 as f-->0
+    df_dus[f<1.0e-32] = 0.0
+
+    # Done
+    df_dy = df_dbedh*dbed_dy + df_darefh*daref_dy + df_dus*dus_dy
+
+    # dc/dy = d/dy(cbed*f) =
+    df_dy*Cbed + dCbed_dy*f
+    #f
+
+}
