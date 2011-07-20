@@ -260,13 +260,13 @@ test_susdist<-function(ys, bed, water, Cbed, Es, wset, qby, aref, ustar, num_z =
     # Here, call another routine which computes dcdy_h, for comparison
     dcdy_h2 = dcdy_h*NA
     for(i in 1:(length(bed)-1)){
-        m = sum(zs>0.5*(bed[i]+bed[i+1])+0.5*(aref[i]+aref[i+1]))
+        m = which(zs>0.5*(bed[i]+bed[i+1])+0.5*(aref[i]+aref[i+1]))
         
-        if(m>0){
-        dcdy_h2[(num_z-m+1):num_z,i]= test_susdist2(0.5*(bed[i]+bed[i+1]), 
+        if(length(m)>0){
+        dcdy_h2[m,i]= test_susdist2(0.5*(bed[i]+bed[i+1]), 
                           0.5*(aref[i]+aref[i+1]),
                           water,
-                          m,
+                          zs[m],
                           wset, 
                           0.5*(ustar[i]+ustar[i+1]),
                           0.5*(Cbed[i]+Cbed[i+1]),
@@ -334,13 +334,14 @@ Rouse<-function(z,bed, water,aref,wset,ustar){
     }
         
 
-test_susdist2<-function(bed, arefh, water,n, wset, us,Cbed, dbed_dy, daref_dy, dus_dy, dCbed_dy){
+test_susdist2<-function(bed, arefh, water,zs, wset, us,Cbed, dbed_dy, daref_dy, dus_dy, dCbed_dy){
     # Function to compute f and dfdy according to the fortran codes. Trying to
     # catch bugs.
 
     d = water - bed
     #z_tmp = bedh+arefh+ (d-arefh)/(2.0_dp)*(gauss_abscissae +1.0_dp)
-    z_tmp = seq(bed+arefh, water, len = n)
+    z_tmp = zs
+    #z_tmp = seq(bed+arefh, water, len = n)
     #! Useful shorthand variables, which save computation
     #! This routine is computationally demanding, so it is worth
     #! making some effort.
@@ -369,7 +370,7 @@ test_susdist2<-function(bed, arefh, water,n, wset, us,Cbed, dbed_dy, daref_dy, d
     df_dy = df_dbedh*dbed_dy + df_darefh*daref_dy + df_dus*dus_dy
 
     # dc/dy = d/dy(cbed*f) =
-    df_dy*Cbed + dCbed_dy*f
-    #f
+    #df_dy*Cbed + dCbed_dy*f
+    f
 
 }
