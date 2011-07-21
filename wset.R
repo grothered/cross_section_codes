@@ -260,11 +260,11 @@ test_susdist<-function(ys, bed, water, Cbed, Es, wset, qby, aref, ustar, num_z =
         # 'Fill in' gaps near the bed
         if((i!=1)&(i!=(length(bed)-1))){
             if(bed[i]>bed[i+1]){
-                z=which((zs<bed[i])&(zs>0.5*(bed[i+1]+bed[i])))
+                z=which((zs<bed[i]+aref[i])&(zs>0.5*(bed[i+1]+aref[i+1]+bed[i]+aref[i])))
                 dcdy_h[z,i] = (c3d[z,i+2] -c3d[z,i+1])/(ys[i+2]-ys[i+1])
                 epsy_h[z,i] = epsy[z,i+1]
             }else{
-                z=which((zs<bed[i+1])&(zs>0.5*(bed[i]+bed[i+1])))
+                z=which((zs<bed[i+1]+aref[i+1])&(zs>0.5*(bed[i]+aref[i]+bed[i+1]+aref[i+1])))
                 dcdy_h[z,i] = (c3d[z,i] -c3d[z,i-1])/(ys[i]-ys[i-1])
                 epsy_h[z,i] = epsy[z,i]
             }
