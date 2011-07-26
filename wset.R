@@ -168,7 +168,7 @@ einstein_j1<-function(z,E, n=10){
 
 
 test_susdist<-function(ys, bed, water, Cbed, Es, wset, qby, aref, ustar, num_z =
-        1000, c_return=FALSE ){
+        10000, c_return=FALSE ){
     # Function to calculate the lateral flux of suspended load Fl, as a check on
     # the fortran code
     
@@ -181,15 +181,15 @@ test_susdist<-function(ys, bed, water, Cbed, Es, wset, qby, aref, ustar, num_z =
 
     # This R code actually uses a method which is much less efficient than the
     # fortran code, such that to get the R code to agree well with the fortran
-    # version, you need a lot of points in the (fortran) input. Basically, this
-    # happens because in the R version we calculate the lateral flux by
-    # numerically differentiating the suspended sediment concentration for every
-    # value of z, and the integrating this * (eddy diffusivity) in the vertical.
-    # The problem is that when the bed increases or decreases, we cannot
-    # numerically evaluate dc/dy near the bed in the R version of the code. The
-    # fortran version of the code avoids this problem by using the chain rule to
-    # avoid having to numerically calculate dc/dy for all z -- which has the
-    # advantage of being much more accurate. 
+    # version, R needs a small spacing between cross-sectional points in the
+    # (fortran) input. Basically, this happens because in the R version we
+    # calculate the lateral flux by numerically differentiating the suspended
+    # sediment concentration for every value of z, and the integrating this *
+    # (eddy diffusivity) in the vertical.  The problem is that when the bed
+    # increases or decreases, we cannot numerically evaluate dc/dy near the bed
+    # in the R version of the code. The fortran version of the code avoids this
+    # problem by using the chain rule to avoid having to numerically calculate
+    # dc/dy for all z -- which has the advantage of being much more accurate. 
 
     # ys = y value
     # bed = bed elevation
@@ -203,6 +203,7 @@ test_susdist<-function(ys, bed, water, Cbed, Es, wset, qby, aref, ustar, num_z =
     #         coordinate.
 
 
+    # Example usage:
     # a = 2
     # tmp = test_susdist( ys[a,],h[a,],0.0, Cbed[a,],Qe[a,], 0.016,Qby[a,],a_ref[a,], sqrt(tau[a,]/1026) )
 
@@ -226,7 +227,10 @@ test_susdist<-function(ys, bed, water, Cbed, Es, wset, qby, aref, ustar, num_z =
     # yind correspond to particular z and y values, and z =0 at some arbitrary
     # datum (which is the same for every y)
     c3d = matrix(NA,ncol=length(bed), nrow = num_z)
-    zs = seq(min(bed), water, len=num_z) # z coordinate
+    # Create z coordinate
+    zs = seq(min(bed), water, len=num_z+1) 
+    zs = 0.5*(zs[1:num_z] + zs[2:(num_z+1)])
+
     f = zs*NA
     for (i in 1:length(ys)){
         #print(i)     
@@ -248,30 +252,61 @@ test_susdist<-function(ys, bed, water, Cbed, Es, wset, qby, aref, ustar, num_z =
     }
     
 
-    # Calculate dc/dy_(i+1/2)
-    dcdy_h = matrix(NA,ncol=length(bed)-1,nrow=num_z)
-    epsy_h= dcdy_h
-    for(i in 1:(length(bed)-1)){
-        # Compute dc/dy
-        dcdy_h[,i] = (c3d[,i+1] -c3d[,i])/(ys[i+1]-ys[i]) 
-        # Compute epsy
-        epsy_h[,i] = 0.5*(epsy[,i+1]+epsy[,i])
+    c3d_plus = c3d*NA
+    for (i in 1:(length(ys)-1)){
+        #print(i)     
+        #for(j in 1:num_z){
+            #print(c(i,j))
+        f = Rouse(zs, bed[i]+0.501*(bed[i+1]-bed[i]), water, 
+                      aref[i]+0.501*(aref[i+1]-aref[i]), wset, 
+                      ustar[i]+0.501*(ustar[i+1]-ustar[i]))
+        #}
+        c3d_plus[, i] = (Cbed[i]+0.501*(Cbed[i+1]-Cbed[i]))*f
 
-        # 'Fill in' gaps near the bed
-        if((i!=1)&(i!=(length(bed)-1))){
-            if(bed[i]>bed[i+1]){
-                z=which((zs<bed[i]+aref[i])&(zs>0.5*(bed[i+1]+aref[i+1]+bed[i]+aref[i])))
-                dcdy_h[z,i] = (c3d[z,i+2] -c3d[z,i+1])/(ys[i+2]-ys[i+1])
-                epsy_h[z,i] = epsy[z,i+1]
-            }else{
-                z=which((zs<bed[i+1]+aref[i+1])&(zs>0.5*(bed[i]+aref[i]+bed[i+1]+aref[i+1])))
-                dcdy_h[z,i] = (c3d[z,i] -c3d[z,i-1])/(ys[i]-ys[i-1])
-                epsy_h[z,i] = epsy[z,i]
-            }
-        }
     }
 
+    
+    c3d_minus = c3d*NA
+    for (i in 1:(length(ys)-1)){
+        #print(i)     
+        #for(j in 1:num_z){
+            #print(c(i,j))
+        f = Rouse(zs, bed[i]+0.499*(bed[i+1]-bed[i]), water, 
+                      aref[i]+0.499*(aref[i+1]-aref[i]), wset, 
+                      ustar[i]+0.499*(ustar[i+1]-ustar[i]))
+        #}
+        c3d_minus[, i] = (Cbed[i]+0.499*(Cbed[i+1]-Cbed[i]))*f
 
+    }
+
+    dcdy_h = c3d_plus[,1:(length(ys)-1)] - c3d_minus[,1:(length(ys)-1)] 
+    dcdy_h = dcdy_h/(0.002*(ys[2]-ys[1]))
+    epsy_h = 0.5*(epsy[,2:length(ys)] + epsy[,1:(length(ys)-1)])
+
+    ## Calculate dc/dy_(i+1/2)
+    #dcdy_h = matrix(NA,ncol=length(bed)-1,nrow=num_z)
+    #epsy_h= dcdy_h
+    #for(i in 1:(length(bed)-1)){
+    #    # Compute dc/dy
+    #    dcdy_h[,i] = (c3d[,i+1] -c3d[,i])/(ys[i+1]-ys[i]) 
+    #    # Compute epsy
+    #    epsy_h[,i] = 0.5*(epsy[,i+1]+epsy[,i])
+
+    #    # 'Fill in' gaps near the bed
+    #    if((i!=1)&(i!=(length(bed)-1))){
+    #        if(bed[i]+aref[i]>bed[i+1]+aref[i+1]){
+    #            z=which((zs<bed[i]+aref[i])&(zs>0.5*(bed[i+1]+aref[i+1]+bed[i]+aref[i])))
+    #            dcdy_h[z,i] = (c3d[z,i+2] -c3d[z,i+1])/(ys[i+2]-ys[i+1])
+    #            #epsy_h[z,i] = epsy[z,i+1]
+    #        }else if(bed[i]+aref[i]<bed[i+1]+aref[i+1]){
+    #            z=which((zs<bed[i+1]+aref[i+1])&(zs>0.5*(bed[i]+aref[i]+bed[i+1]+aref[i+1])))
+    #            dcdy_h[z,i] = (c3d[z,i] -c3d[z,i-1])/(ys[i]-ys[i-1])
+    #            #epsy_h[z,i] = epsy[z,i]
+    #        }
+    #    }
+    #}
+
+    
     # Here, call another routine which computes dcdy_h, for comparison
     dcdy_h2 = dcdy_h*NA
     for(i in 1:(length(bed)-1)){
@@ -300,7 +335,7 @@ test_susdist<-function(ys, bed, water, Cbed, Es, wset, qby, aref, ustar, num_z =
     Fl_h = dcdy_h[1,]*NA
     for(i in 1:(length(bed)-1)){
         Fl_h[i] =  # Trapezoidal integration
-            -0.5*sum((integrand[1:(num_z-1),i]*dz)+(integrand[2:(num_z),i]*dz), na.rm=T)
+            -sum((integrand[1:(num_z),i]*dz), na.rm=T)
     }
 
     # Output depends on c_return

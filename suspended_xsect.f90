@@ -68,6 +68,9 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
 
     ! Degree of implicitness of the lateral diffusive flux
     impcon=1.00_dp
+    IF(impcon .ne. 1.0_dp) THEN
+        print*, 'ERROR: impcon in dynamic_sus_dist is not supported for values other than 1.0_dp' 
+    END IF
 
     Cbar_old = Cbar
     int_edif_f_old = int_edif_f
@@ -1184,6 +1187,7 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
                     !df_dus(1:(no_subints-1)) = -(f(1:(no_subints-1))/us)*log(f(1:(no_subints-1)))
                     !df_dus(no_subints)=0.0_dp
                     !df_dus = -(f/us)*log(f)
+
                     ! Treat special case where f=0, which can go singular. But,
                     ! f*log(f) --> 0 from below as f--> 0 
                     DO j=1,64                    
