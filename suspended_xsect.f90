@@ -526,6 +526,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
                     ELSE
                         tmp3 = 0.0_dp
                     END IF
+                    tmp3=0.5_dp
                 !ELSE
                 !    tmp3 = 0.5_dp
                 !END IF                
@@ -565,6 +566,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
                     ELSE
                         tmp3 = 0.0_dp
                     END IF
+                    tmp3=0.5_dp
                 !ELSE
                 !    tmp3 = 0.5_dp
                 !END IF

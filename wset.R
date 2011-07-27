@@ -280,7 +280,7 @@ test_susdist<-function(ys, bed, water, Cbed, Es, wset, qby, aref, ustar, num_z =
     }
 
     dcdy_h = c3d_plus[,1:(length(ys)-1)] - c3d_minus[,1:(length(ys)-1)] 
-    dcdy_h = dcdy_h/(0.002*(ys[2]-ys[1]))
+    dcdy_h = dcdy_h/(0.002*(ys[2]-ys[1])) #FIXME: Assumes constant dy spacing
     epsy_h = 0.5*(epsy[,2:length(ys)] + epsy[,1:(length(ys)-1)])
 
     ## Calculate dc/dy_(i+1/2)
