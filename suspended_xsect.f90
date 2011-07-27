@@ -458,10 +458,10 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
            
             IF(i<a) THEN
                 ! 2 point derivative approx -- note cb = Cbar/zetamult
-                    tmp4 = impcon*tmp1*tmp2*int_edif_f(i+1)
-                    IF((water-bed(i))>2.0_dp*(water-bed(i+1)) ) THEN
+                    !tmp4 = impcon*tmp1*tmp2*int_edif_f(i+1)
+                    IF((water-bed(i))>1.0_dp*(water-bed(i+1)) ) THEN
                         tmp4 = impcon*tmp1*tmp2*0.5_dp*(int_edif_f(i+1)+int_edif_f(i))
-                    ELSEIF((water-bed(i))<0.5_dp*(water-bed(i+1)) ) THEN
+                    ELSEIF((water-bed(i))<=1.0_dp*(water-bed(i+1)) ) THEN
                         tmp4 = impcon*tmp1*tmp2*0.5_dp*(int_edif_f(i+1)+int_edif_f(i+2))
                     END IF
                     !tmp4 = impcon*tmp1*tmp2*& 
@@ -480,10 +480,10 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
             tmp2 = 1.0_dp/(ys_temp(i)-ys_temp(i-1))
             IF(i>1) THEN
 
-                    tmp4 = impcon*tmp1*tmp2*int_edif_f(i)
-                    IF((water-bed(i))>=2.0_dp*(water-bed(i-1))) THEN
+                    !tmp4 = impcon*tmp1*tmp2*int_edif_f(i)
+                    IF((water-bed(i))>=1.0_dp*(water-bed(i-1))) THEN
                         tmp4 = impcon*tmp1*tmp2*0.5_dp*(int_edif_f(i+1)+int_edif_f(i))
-                    ELSEIF((water-bed(i))<=0.5_dp*(water-bed(i-1))) THEN
+                    ELSEIF((water-bed(i))<=1.0_dp*(water-bed(i-1))) THEN
                         tmp4 = impcon*tmp1*tmp2*0.5_dp*(int_edif_f(i)+int_edif_f(i-1))
                     END IF
                     !tmp4 = impcon*tmp1*tmp2*&
@@ -753,11 +753,11 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
             cbed_tmp1 = Cbar(i+1)/zetamult(i+1) - Cbar(i)/zetamult(i) ! diff(cbed)
             !cbed_tmp2 = cbed(i)
             !IF(Cbar_old(i)/zetamult(i)<Cbar_old(i+1)/zetamult(i+1)) THEN
-            tmp1 = int_edif_f(i+1)
-            IF((water-bed(i+1))>=2.0_dp*(water-bed(i))) THEN
+            !tmp1 = int_edif_f(i+1)
+            IF((water-bed(i+1))>=1.0_dp*(water-bed(i))) THEN
                 !cbed_tmp2 = Cbar(i)/zetamult(i)
                 tmp1 = 0.5_dp*(int_edif_f(i+1)+int_edif_f(i+2))
-            ELSEIF((water-bed(i+1))<=0.5_dp*(water-bed(i))) THEN
+            ELSEIF((water-bed(i+1))<=1.0_dp*(water-bed(i))) THEN
                 !cbed_tmp2 = Cbar(i+1)/zetamult(i+1)
                 tmp1 = 0.5_dp*(int_edif_f(i+1)+int_edif_f(i))
             END IF
