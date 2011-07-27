@@ -458,12 +458,12 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
            
             IF(i<a) THEN
                 ! 2 point derivative approx -- note cb = Cbar/zetamult
-                    tmp4 = impcon*tmp1*tmp2*int_edif_f(i+1)
-                    !IF(bed(i)<bed(i+1)) THEN
-                    !    tmp4 = impcon*tmp1*tmp2*0.5_dp*(int_edif_f(i+1)+int_edif_f(i))
-                    !ELSE
-                    !    tmp4 = impcon*tmp1*tmp2*0.5_dp*(int_edif_f(i+1)+int_edif_f(i+2))
-                    !END IF
+                    !tmp4 = impcon*tmp1*tmp2*int_edif_f(i+1)
+                    IF(bed(i)<bed(i+1)) THEN
+                        tmp4 = impcon*tmp1*tmp2*0.5_dp*(int_edif_f(i+1)+int_edif_f(i))
+                    ELSE
+                        tmp4 = impcon*tmp1*tmp2*0.5_dp*(int_edif_f(i+1)+int_edif_f(i+2))
+                    END IF
                     !tmp4 = impcon*tmp1*tmp2*& 
                     !        0.5_dp*minmod(int_edif_f(i+1)+int_edif_f(i+2), int_edif_f(i+1)+int_edif_f(i))
                     M1_upper(i) = M1_upper(i) - tmp4/zetamult(i+1)
@@ -480,12 +480,12 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
             tmp2 = 1.0_dp/(ys_temp(i)-ys_temp(i-1))
             IF(i>1) THEN
 
-                    tmp4 = impcon*tmp1*tmp2*int_edif_f(i)
-                    !IF(bed(i)<=bed(i-1)) THEN
-                    !    tmp4 = impcon*tmp1*tmp2*0.5_dp*(int_edif_f(i+1)+int_edif_f(i))
-                    !ELSE
-                    !    tmp4 = impcon*tmp1*tmp2*0.5_dp*(int_edif_f(i)+int_edif_f(i-1))
-                    !END IF
+                    !tmp4 = impcon*tmp1*tmp2*int_edif_f(i)
+                    IF(bed(i)<=bed(i-1)) THEN
+                        tmp4 = impcon*tmp1*tmp2*0.5_dp*(int_edif_f(i+1)+int_edif_f(i))
+                    ELSE
+                        tmp4 = impcon*tmp1*tmp2*0.5_dp*(int_edif_f(i)+int_edif_f(i-1))
+                    END IF
                     !tmp4 = impcon*tmp1*tmp2*&
                     !        0.5_dp*minmod(int_edif_f(i) + int_edif_f(i+1), int_edif_f(i)+int_edif_f(i-1))
                     M1_diag(i)  = M1_diag(i)  + tmp4/zetamult(i)
@@ -755,12 +755,12 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
             !IF(Cbar_old(i)/zetamult(i)<Cbar_old(i+1)/zetamult(i+1)) THEN
             IF(bed(i+1)<=bed(i)) THEN
                 !cbed_tmp2 = Cbar(i)/zetamult(i)
-                !tmp1 = 0.5_dp*(int_edif_f(i+1)+int_edif_f(i+2))
+                tmp1 = 0.5_dp*(int_edif_f(i+1)+int_edif_f(i+2))
             ELSE
                 !cbed_tmp2 = Cbar(i+1)/zetamult(i+1)
-                !tmp1 = 0.5_dp*(int_edif_f(i+1)+int_edif_f(i))
+                tmp1 = 0.5_dp*(int_edif_f(i+1)+int_edif_f(i))
             END IF
-            tmp1 = int_edif_f(i+1)
+            !tmp1 = int_edif_f(i+1)
             cbed_tmp2 = 0.5_dp*(Cbar(i+1)/zetamult(i+1) + Cbar(i)/zetamult(i))
         ELSE
             cbed_tmp1 = 0.0_dp
