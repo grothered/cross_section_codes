@@ -458,52 +458,52 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
            
             IF(i<a) THEN
                 ! 2 point derivative approx -- note cb = Cbar/zetamult
-                    !tmp4 = impcon*tmp1*tmp2*int_edif_f(i+1)
-                    tmp4 = impcon*tmp1*tmp2*0.5_dp*max(int_edif_f(i+1)&
-                            +int_edif_f(i+2), int_edif_f(i+1)+int_edif_f(i))
-                    !tmp4 = impcon*tmp1*tmp2*0.25_dp*(int_edif_f(i+1)&
-                    !        +int_edif_f(i+2)+ int_edif_f(i+1)+int_edif_f(i))
-                    !IF((water-bed(i))>1.0_dp*(water-bed(i+1)) ) THEN
-                    !    tmp4 = impcon*tmp1*tmp2*0.5_dp*(int_edif_f(i+1)+int_edif_f(i))
-                    !ELSEIF((water-bed(i))<=1.0_dp*(water-bed(i+1)) ) THEN
-                    !    tmp4 = impcon*tmp1*tmp2*0.5_dp*(int_edif_f(i+1)+int_edif_f(i+2))
-                    !END IF
-                    !tmp4 = impcon*tmp1*tmp2*& 
-                    !        0.5_dp*minmod(int_edif_f(i+1)+int_edif_f(i+2), int_edif_f(i+1)+int_edif_f(i))
-                    M1_upper(i) = M1_upper(i) - tmp4/zetamult(i+1)
-                    M1_diag(i)  = M1_diag(i)  + tmp4/zetamult(i)
-            
-                    tmp4 = (1.0_dp-impcon)*tmp1*tmp2*int_edif_f_old(i+1)
-                    !tmp4 = (1.0_dp-impcon)*tmp1*tmp2*&
-                    !        0.5_dp*minmod(int_edif_f_old(i+1)+int_edif_f_old(i+2), int_edif_f_old(i+1)+int_edif_f_old(i))
-                    RHS(i)      = RHS(i) + tmp4/zetamult_old(i+1)*Cbar(i+1)
-                    RHS(i)      = RHS(i) - tmp4/zetamult_old(i)*Cbar(i)
+                !tmp4 = impcon*tmp1*tmp2*int_edif_f(i+1)
+                tmp4 = impcon*tmp1*tmp2*0.5_dp*max(int_edif_f(i+1)&
+                        +int_edif_f(i+2), int_edif_f(i+1)+int_edif_f(i))
+                !tmp4 = impcon*tmp1*tmp2*0.25_dp*(int_edif_f(i+1)&
+                !        +int_edif_f(i+2)+ int_edif_f(i+1)+int_edif_f(i))
+                !IF((water-bed(i))>1.0_dp*(water-bed(i+1)) ) THEN
+                !    tmp4 = impcon*tmp1*tmp2*0.5_dp*(int_edif_f(i+1)+int_edif_f(i))
+                !ELSEIF((water-bed(i))<=1.0_dp*(water-bed(i+1)) ) THEN
+                !    tmp4 = impcon*tmp1*tmp2*0.5_dp*(int_edif_f(i+1)+int_edif_f(i+2))
+                !END IF
+                !tmp4 = impcon*tmp1*tmp2*& 
+                !        0.5_dp*minmod(int_edif_f(i+1)+int_edif_f(i+2), int_edif_f(i+1)+int_edif_f(i))
+                M1_upper(i) = M1_upper(i) - tmp4/zetamult(i+1)
+                M1_diag(i)  = M1_diag(i)  + tmp4/zetamult(i)
+        
+                tmp4 = (1.0_dp-impcon)*tmp1*tmp2*int_edif_f_old(i+1)
+                !tmp4 = (1.0_dp-impcon)*tmp1*tmp2*&
+                !        0.5_dp*minmod(int_edif_f_old(i+1)+int_edif_f_old(i+2), int_edif_f_old(i+1)+int_edif_f_old(i))
+                RHS(i)      = RHS(i) + tmp4/zetamult_old(i+1)*Cbar(i+1)
+                RHS(i)      = RHS(i) - tmp4/zetamult_old(i)*Cbar(i)
 
             END IF
 
             tmp2 = 1.0_dp/(ys_temp(i)-ys_temp(i-1))
             IF(i>1) THEN
 
-                    !tmp4 = impcon*tmp1*tmp2*int_edif_f(i)
-                    tmp4 = impcon*tmp1*tmp2*0.5_dp*max(int_edif_f(i)&
-                            +int_edif_f(i+1), int_edif_f(i)+int_edif_f(i-1))
-                    !tmp4 = impcon*tmp1*tmp2*0.25_dp*(int_edif_f(i)&
-                    !        +int_edif_f(i+1)+ int_edif_f(i)+int_edif_f(i-1))
-                    !IF((water-bed(i))>=1.0_dp*(water-bed(i-1))) THEN
-                    !    tmp4 = impcon*tmp1*tmp2*0.5_dp*(int_edif_f(i+1)+int_edif_f(i))
-                    !ELSEIF((water-bed(i))<=1.0_dp*(water-bed(i-1))) THEN
-                    !    tmp4 = impcon*tmp1*tmp2*0.5_dp*(int_edif_f(i)+int_edif_f(i-1))
-                    !END IF
-                    !tmp4 = impcon*tmp1*tmp2*&
-                    !        0.5_dp*minmod(int_edif_f(i) + int_edif_f(i+1), int_edif_f(i)+int_edif_f(i-1))
-                    M1_diag(i)  = M1_diag(i)  + tmp4/zetamult(i)
-                    M1_lower(i) = M1_lower(i) - tmp4/zetamult(i-1)
+                !tmp4 = impcon*tmp1*tmp2*int_edif_f(i)
+                tmp4 = impcon*tmp1*tmp2*0.5_dp*max(int_edif_f(i)&
+                        +int_edif_f(i+1), int_edif_f(i)+int_edif_f(i-1))
+                !tmp4 = impcon*tmp1*tmp2*0.25_dp*(int_edif_f(i)&
+                !        +int_edif_f(i+1)+ int_edif_f(i)+int_edif_f(i-1))
+                !IF((water-bed(i))>=1.0_dp*(water-bed(i-1))) THEN
+                !    tmp4 = impcon*tmp1*tmp2*0.5_dp*(int_edif_f(i+1)+int_edif_f(i))
+                !ELSEIF((water-bed(i))<=1.0_dp*(water-bed(i-1))) THEN
+                !    tmp4 = impcon*tmp1*tmp2*0.5_dp*(int_edif_f(i)+int_edif_f(i-1))
+                !END IF
+                !tmp4 = impcon*tmp1*tmp2*&
+                !        0.5_dp*minmod(int_edif_f(i) + int_edif_f(i+1), int_edif_f(i)+int_edif_f(i-1))
+                M1_diag(i)  = M1_diag(i)  + tmp4/zetamult(i)
+                M1_lower(i) = M1_lower(i) - tmp4/zetamult(i-1)
 
-                    tmp4 = (1.0_dp-impcon)*tmp1*tmp2*int_edif_f_old(i)
-                    !tmp4 = (1.0_dp-impcon)*tmp1*tmp2*&
-                    !        minmod(int_edif_f_old(i) + int_edif_f_old(i+1), int_edif_f_old(i)+int_edif_f_old(i-1))
-                    RHS(i) = RHS(i) - tmp4/zetamult_old(i)*Cbar(i)
-                    RHS(i) = RHS(i) + tmp4/zetamult_old(i-1)*Cbar(i-1)
+                tmp4 = (1.0_dp-impcon)*tmp1*tmp2*int_edif_f_old(i)
+                !tmp4 = (1.0_dp-impcon)*tmp1*tmp2*&
+                !        minmod(int_edif_f_old(i) + int_edif_f_old(i+1), int_edif_f_old(i)+int_edif_f_old(i-1))
+                RHS(i) = RHS(i) - tmp4/zetamult_old(i)*Cbar(i)
+                RHS(i) = RHS(i) + tmp4/zetamult_old(i-1)*Cbar(i-1)
                     
             END IF
 
