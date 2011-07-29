@@ -459,11 +459,15 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
             IF(i<a) THEN
                 ! 2 point derivative approx -- note cb = Cbar/zetamult
                     !tmp4 = impcon*tmp1*tmp2*int_edif_f(i+1)
-                    IF((water-bed(i))>1.0_dp*(water-bed(i+1)) ) THEN
-                        tmp4 = impcon*tmp1*tmp2*0.5_dp*(int_edif_f(i+1)+int_edif_f(i))
-                    ELSEIF((water-bed(i))<=1.0_dp*(water-bed(i+1)) ) THEN
-                        tmp4 = impcon*tmp1*tmp2*0.5_dp*(int_edif_f(i+1)+int_edif_f(i+2))
-                    END IF
+                    tmp4 = impcon*tmp1*tmp2*0.5_dp*max(int_edif_f(i+1)&
+                            +int_edif_f(i+2), int_edif_f(i+1)+int_edif_f(i))
+                    !tmp4 = impcon*tmp1*tmp2*0.25_dp*(int_edif_f(i+1)&
+                    !        +int_edif_f(i+2)+ int_edif_f(i+1)+int_edif_f(i))
+                    !IF((water-bed(i))>1.0_dp*(water-bed(i+1)) ) THEN
+                    !    tmp4 = impcon*tmp1*tmp2*0.5_dp*(int_edif_f(i+1)+int_edif_f(i))
+                    !ELSEIF((water-bed(i))<=1.0_dp*(water-bed(i+1)) ) THEN
+                    !    tmp4 = impcon*tmp1*tmp2*0.5_dp*(int_edif_f(i+1)+int_edif_f(i+2))
+                    !END IF
                     !tmp4 = impcon*tmp1*tmp2*& 
                     !        0.5_dp*minmod(int_edif_f(i+1)+int_edif_f(i+2), int_edif_f(i+1)+int_edif_f(i))
                     M1_upper(i) = M1_upper(i) - tmp4/zetamult(i+1)
@@ -481,11 +485,15 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
             IF(i>1) THEN
 
                     !tmp4 = impcon*tmp1*tmp2*int_edif_f(i)
-                    IF((water-bed(i))>=1.0_dp*(water-bed(i-1))) THEN
-                        tmp4 = impcon*tmp1*tmp2*0.5_dp*(int_edif_f(i+1)+int_edif_f(i))
-                    ELSEIF((water-bed(i))<=1.0_dp*(water-bed(i-1))) THEN
-                        tmp4 = impcon*tmp1*tmp2*0.5_dp*(int_edif_f(i)+int_edif_f(i-1))
-                    END IF
+                    tmp4 = impcon*tmp1*tmp2*0.5_dp*max(int_edif_f(i)&
+                            +int_edif_f(i+1), int_edif_f(i)+int_edif_f(i-1))
+                    !tmp4 = impcon*tmp1*tmp2*0.25_dp*(int_edif_f(i)&
+                    !        +int_edif_f(i+1)+ int_edif_f(i)+int_edif_f(i-1))
+                    !IF((water-bed(i))>=1.0_dp*(water-bed(i-1))) THEN
+                    !    tmp4 = impcon*tmp1*tmp2*0.5_dp*(int_edif_f(i+1)+int_edif_f(i))
+                    !ELSEIF((water-bed(i))<=1.0_dp*(water-bed(i-1))) THEN
+                    !    tmp4 = impcon*tmp1*tmp2*0.5_dp*(int_edif_f(i)+int_edif_f(i-1))
+                    !END IF
                     !tmp4 = impcon*tmp1*tmp2*&
                     !        0.5_dp*minmod(int_edif_f(i) + int_edif_f(i+1), int_edif_f(i)+int_edif_f(i-1))
                     M1_diag(i)  = M1_diag(i)  + tmp4/zetamult(i)
@@ -736,8 +744,8 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     DO i=1,a
         IF(Cbar(i)<0.0_dp) THEN
             IF(Cbar(i)< -1.0e-012_dp) THEN
-                print*, 'Cbar clip', i, Cbar(i), Cbar_old(i), depth(i)
-                IF((i>1).and.(i<a)) print*, depth(i-1),depth(i+1)
+                print*, 'Cbar clip', i, Cbar(i) !, int_edif_f(i-1:i+2), int_edif_dfdy(i-1:i+2)
+                !IF((i>1).and.(i<a)) print*, depth(i-1),depth(i+1)
             END IF
             Cbar(i) = 0.0e-12_dp
         END IF
@@ -754,12 +762,16 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
             !cbed_tmp2 = cbed(i)
             !IF(Cbar_old(i)/zetamult(i)<Cbar_old(i+1)/zetamult(i+1)) THEN
             !tmp1 = int_edif_f(i+1)
+            tmp1 = 0.5_dp*max(int_edif_f(i+1)+int_edif_f(i+2),&
+                    int_edif_f(i+1)+int_edif_f(i))
+            !tmp1 = 0.25_dp*(int_edif_f(i+1)+int_edif_f(i+2)+&
+            !        int_edif_f(i+1)+int_edif_f(i))
             IF((water-bed(i+1))>=1.0_dp*(water-bed(i))) THEN
                 !cbed_tmp2 = Cbar(i)/zetamult(i)
-                tmp1 = 0.5_dp*(int_edif_f(i+1)+int_edif_f(i+2))
+                !tmp1 = 0.5_dp*(int_edif_f(i+1)+int_edif_f(i+2))
             ELSEIF((water-bed(i+1))<=1.0_dp*(water-bed(i))) THEN
                 !cbed_tmp2 = Cbar(i+1)/zetamult(i+1)
-                tmp1 = 0.5_dp*(int_edif_f(i+1)+int_edif_f(i))
+                !tmp1 = 0.5_dp*(int_edif_f(i+1)+int_edif_f(i))
             END IF
             cbed_tmp2 = 0.5_dp*(Cbar(i+1)/zetamult(i+1) + Cbar(i)/zetamult(i))
         ELSE
@@ -860,7 +872,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
 
     DO i=1,a
         IF(Cbar(i)<0.0_dp) THEN
-            IF(Cbar(i)< -1.0e-012_dp) print*, 'Cbar clip', i, Cbar(i), Cbar_old(i), depth(i)
+            IF(Cbar(i)< -1.0e-012_dp) print*, 'Cbar clip', i, int_edif_f(i:(i+2)), int_edif_dfdy(i:(i+2))
             Cbar(i) = 0.0e-12_dp
         END IF
     END DO
@@ -920,8 +932,9 @@ REAL(dp) FUNCTION rouse_int(z,d_aref)
     INTEGER:: i, num_trapz_pts=400 
     REAL(dp):: db_const, F1, J1, j, E2, z2, perturb = 1.0e-05_dp, eps, d_eps
    
-    IF((d_aref>1.0_dp)) THEN
+    IF((d_aref>1.0_dp).or.(z>50.0_dp)) THEN
         ! If aref is larger than the depth, there is no suspended load, make a quick exit
+        ! FIXME: Assuming that if z is large enough, we can neglect rouse_int
         rouse_int = 0.0_dp 
         
     ELSE

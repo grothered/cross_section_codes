@@ -27,7 +27,7 @@ REAL(dp):: wslope, ar, Q, t, &
             ysl,ysu,bedl, bedu, wdthx, TR, storer(9), tmp, tmp2, a_ref, &
             failure_slope, x_len_scale, sus_flux, sed_lag_scale, Clast, &
             lat_sus_flux, int_edif_f, int_edif_dfdy, zetamult
-INTEGER::  remesh_freq, no_discharges, too_steep
+INTEGER::  remesh_freq, no_discharges, too_steep, morbl, morbu
 REAL(dp):: discharges(1000), susconcs(1000)
 LOGICAL::  flag, susdist, sus2d, readin, geo, remesh, norm, vertical, & 
             tbston, normmov, Qbedon, susQbal, talmon,&
@@ -776,9 +776,17 @@ DO Q_loop= 1, no_discharges!15
 
         !! REMESHING. If the points are becoming too spaced apart, we might have to do this
         IF(remesh) THEN
+            print*, 'ERROR: REMESHING PRESENTLY NOT SUPPORTED'
+            stop
             IF(mod(j, remesh_freq).EQ.0) THEN
                 ysold=ys !Predefine
-                call refit(ys, bed, nos) !Remesh so things are more even.
+                !call refit(ys, bed, nos) !Remesh so things are more even.
+
+                ! Find where heights has changed
+                !call active_zone(nos-2, bed(2:nos-1), bedold(2:nos-1), morbl, morbu, 6)
+                !print*, morbl+morbu, morbl, morbu
+                ! Redefine ys
+                !call reset_ys(nos-2, ys(2:nos-1), morbl, morbu, 0.1_dp, 5.0_dp)
                 ! Also remesh old timestep records of the bed
                 call interp3(ysold, bedlast,ys,nos)
                 call interp3(ysold, bedold, ys, nos)
