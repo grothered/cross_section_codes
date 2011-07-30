@@ -302,8 +302,8 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
 
     ! Add the term to the matrix equation. 
     DO i=1,a
-        M1_diag(i) = M1_diag(i) + (depth(i) + (vel(i)*depth(i)*delT)*(1.0_dp-sed_lag_scale)/x_len_scale)
-        RHS(i) = RHS(i) + depthlast(i)*Cbar_old(i)
+        M1_diag(i) = M1_diag(i) + (depth(i)/delT + (vel(i)*depth(i))*(1.0_dp-sed_lag_scale)/x_len_scale)
+        RHS(i) = RHS(i) + depthlast(i)*Cbar_old(i)/delT
     END DO
     
     DO i = 1, a
