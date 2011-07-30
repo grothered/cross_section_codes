@@ -338,17 +338,17 @@ DO Q_loop= 1, no_discharges!15
         too_steep=1
         ! Find where the slope > failure_slope, and prevent deposition on the
         ! upper part of that slope.
-        !DO i=1,nos
-        !    IF((i==nos).or.(bed(i)>bed(max(i-1,1)))) THEN
-        !        IF( (bed(i)-bed(i-1)) > 0.99_dp*failure_slope*(ys(i)-ys(i-1))) THEN
-        !            too_steep(i)=0
-        !        END IF
-        !    ELSEIF((i==1).or.(bed(i)>bed(min(i+1,nos)))) THEN
-        !        IF( (bed(i)-bed(i+1)) > 0.99_dp*failure_slope*(ys(i+1)-ys(i))) THEN
-        !            too_steep(i)=0
-        !        END IF
-        !    END IF
-        !END DO
+        DO i=1,nos
+            IF((i==nos).or.(bed(i)>bed(max(i-1,1)))) THEN
+                IF( (bed(i)-bed(i-1)) >= failure_slope*(ys(i)-ys(i-1))) THEN
+                    too_steep(i)=0
+                END IF
+            ELSEIF((i==1).or.(bed(i)>bed(min(i+1,nos)))) THEN
+                IF( (bed(i)-bed(i+1)) >= failure_slope*(ys(i+1)-ys(i))) THEN
+                    too_steep(i)=0
+                END IF
+            END IF
+        END DO
 
         ! Water elevation (free surface)
         waterlast=water
@@ -718,6 +718,8 @@ DO Q_loop= 1, no_discharges!15
             ! if there are no bed layers, because otherwise DT
             ! has already been used this timestep.
             IF(variable_timestep) THEN
+                print*, 'ERROR: VARIABLE TIMESTEP NOT SUPPORTED AT PRESENT'
+                stop                
                 ! These methods change DT1 during the evolution of the
                 ! cross-section
                 
@@ -735,41 +737,6 @@ DO Q_loop= 1, no_discharges!15
                 DT1 = DT
             END IF 
 
-            ! ADD RANDOM SEDIMENTATION TO THE CHANNEL
-            ! This is a technique to prevent the channel from converging to a
-            ! marginally stable state where tau_g < taucrit, which is dependent
-            ! on the imposed initial condition. This way we force tau>=taucrit
-            ! in a stable channel, which seems to allow the same solution
-            ! irrespective of the initial geometry (RIGOROUSLY CHECK THIS)
-            !IF((.FALSE.).AND.(mod(j,5000).eq.0).AND.(1.0_dp*j<jmax*1.0_dp)) THEN
-            !    
-            !    call random_seed(size = iii2)
-            !    call random_number(tss)
-            !    tss(3:nos-2) = 0.1_dp*(tss(1:nos-4) + tss(2:nos-3)+tss(3:nos-2)+tss(4:nos-1)+tss(5:nos))/5._dp
-            !    tss(2) = tss(3)
-            !    tss(1) = 0.0_dp
-            !    tss(nos-1) = tss(nos-2)
-            !    tss(nos) = 0.0_dp
-   
-            !    ! Zero the perturbation where taug > taucrit
-            !    DO i=2,nos-1
-            !        IF(max(tau_g(i), tau_g(i+1), tau_g(i-1))>taucrit(i,0)) tss(i) = 0._dp
-            !        IF(bed(i)>=water) tss(i) = 0._dp
-            !    END DO
-
-            !    PRINT*, 'Smooth random deposition of max ', maxval(tss), ' metres'
-            !    
-            !    DO i=1,nos
-            !        bed(i) = min(bed(i)+tss(i), water)
-            !    END DO
-            !END IF
-
-            ! Alternative method to 'wipe out' points which can't erode.
-            !DO i=2,nos-1
-            !    IF(tau_g(i)<taucrit(i,0)) bed(i) = min(bed(i) + & 
-            !                            max((water-bed(i))*0.01_dp, min(0.02_dp, (water-bed(i))*0.1_dp)), water) 
-            !END DO
-                
         END DO
 
 

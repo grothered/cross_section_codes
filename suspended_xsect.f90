@@ -279,17 +279,14 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
             ( ( (/ ys(2:a), ysu /) - (/ ysl, ys(1:a-1) /) )*0.5_dp) &  ! dy
                   )
 
-    ! Store old value of sed_lag_scale, to use below
-    tmp2 = sed_lag_scale
-
     IF(sus_flux > 1.0e-12_dp) THEN
         sed_lag_scale = 1.0_dp*((sconc*discharge)/sus_flux) !Desired flux / actual flux
-
         ! Prevent very high or low values
         sed_lag_scale = min(max(sed_lag_scale,0.666_dp),1.5_dp) 
-        !IF(mod(counter,1000).eq.1) PRINT*, 'sed_lag_scale = ', sed_lag_scale
-
     ELSE
+        ! Here, sus_flux is very close to zero -- so to avoid dividing by
+        ! sus_flux,  just choose a value of sed_lag_scale based on some simple
+        ! logical criteria
         IF(sconc*discharge<sus_flux) THEN
             sed_lag_scale = 0.666_dp
         ELSEIF(sconc*discharge==sus_flux) THEN
@@ -299,11 +296,20 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
         END IF
 
     END IF
-
+    ! Try to increase x_len_scale as sed_lag_scale --> 1. That way, we can
+    ! reduce the chance of the code settling to an equilibrium with a non-zero
+    ! d/dx(vel*d*Cbar)
+    tmp1 = 1.0_dp
+    !IF(abs(sed_lag_scale-1.0_dp)<1.0e-03) THEN
+    !    ! tmp1 becomes large as sed_lag_scale -->1
+    !    !tmp1 = exp((-abs(sed_lag_scale-1.0_dp)+1.0e-03_dp)/1.0e-04_dp)
+    !    tmp1 = 1.0e-03_dp/(abs(sed_lag_scale-1.0_dp))
+    !END IF
+    
     ! Add the term to the matrix equation. 
+    ! d/dx(vel*depth*Cbar)
     DO i=1,a
-        M1_diag(i) = M1_diag(i) + (depth(i)/delT + (vel(i)*depth(i))*(1.0_dp-sed_lag_scale)/x_len_scale)
-        RHS(i) = RHS(i) + depthlast(i)*Cbar_old(i)/delT
+        M1_diag(i) = M1_diag(i) +  (vel(i)*depth(i))*(1.0_dp-sed_lag_scale)/(x_len_scale*tmp1)
     END DO
     
     DO i = 1, a
