@@ -613,7 +613,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
                 !d2 = water-bed(i-1)
                
                 !IF((d1>1.5_dp*d2).or.(1.5_dp*d1<d2)) THEN
-                    IF(bed(i)<=bed(i-1)) THEN
+                    IF(bed(i-1)>bed(i)) THEN
                         tmp3 = 1.0_dp
                     ELSE
                         tmp3 = 0.0_dp
@@ -909,11 +909,6 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     END DO
       
  
-    Cbar = Cbar*(1.0_dp - 0.5_dp*delT*vel*(1._dp-tmp2)/x_len_scale)/ &
-           (1.0_dp + 0.5_dp*delT*vel*(1.0_dp-sed_lag_scale)/x_len_scale)
-
- 
-
     DO i=1,a
         IF(Cbar(i)<0.0_dp) THEN
             IF(Cbar(i)< -1.0e-012_dp) print*, 'Cbar clip', i, int_edif_f(i:(i+2)), int_edif_dfdy(i:(i+2))
