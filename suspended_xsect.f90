@@ -597,7 +597,6 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
                 tmp4 = (1.0_dp-impcon)*tmp1*int_edif_dfdy_old(i+1) 
                 RHS(i) = RHS(i) +  (1.0_dp-tmp3)*tmp4/zetamult_old(i+1)*Cbar(i+1)
                 RHS(i) = RHS(i) +  tmp3*tmp4/zetamult_old(i)*Cbar(i)
- 
             END IF
     
             IF(i>1) THEN
