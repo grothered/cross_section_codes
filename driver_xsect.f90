@@ -662,7 +662,8 @@ DO Q_loop= 1, no_discharges!15
                 ! BASIC LIMITING OF THE CHANNEL SLOPE -- to circumvent the numerically
                 ! difficult problem of allowing infinite banks otherwise
                 !IF(mod(j,1)==0) call basic_slope_limit(nos,ys,bed,failure_slope, remesh, 1.0e-05_dp*DT1)
-                call critical_slope_wasting(DT1, nos,ys,bed,failure_slope, 1.0e-05_dp)
+                !call critical_slope_wasting(DT1, nos,ys,bed,failure_slope, 1.0e-05_dp)
+                call critical_bedjump_wasting(DT1, nos,ys,bed,0.5_dp, 1.0e-05_dp)
                 !Update Cbar to reflect changes in the bed.
                 !DO i=1,nos
                 !    IF((water>bedlast(i)).and.(water>bed(i))) THEN

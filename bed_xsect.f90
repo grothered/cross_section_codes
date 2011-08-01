@@ -988,4 +988,52 @@ SUBROUTINE critical_slope_wasting(dT, nos,ys,bed,failure_slope, rate)
     
 END SUBROUTINE critical_slope_wasting
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+SUBROUTINE critical_bedjump_wasting(dT, nos,ys,bed,failure_jump, rate)
+    ! Purpose: Basic routine to limit the absolute value of the difference in
+    !          conscutive bed elevations.  This happens by having downslope motion
+    !          whenever the difference in two consecutive bed values is >= a constant
+    !          value. 
+    ! Input:   The channel geometry, the jump at which there starts to
+    !          be downslope motion, and rate = constant determining rate of
+    !          failure over time
+    ! Output:  The updated channel geometry
+    INTEGER, INTENT(IN):: nos
+    REAL(dp), INTENT(IN):: ys(nos), failure_jump, rate, dT
+    REAL(dp), INTENT(IN OUT):: bed(nos)
+
+    ! Local variables
+    INTEGER:: i
+    REAL(dp):: flux(nos), jump, bed_pred(nos), flux_cor(nos)
+
+    ! Determine rate of mass failure at i+1/2
+    DO i=1,nos-1
+        jump = (bed(i+1)-bed(i))
+        flux(i) = -rate*max( abs(jump) - failure_jump,0.0_dp)*sign(1.0_dp, jump)
+    END DO
+
+    ! This routine uses MacCormack predictor-corrector type timestepping. 
+
+    ! d(bed)/dT = -d(flux)/dy
+    bed_pred(2:nos-1) = bed(2:nos-1) - dT*(flux(2:nos-1) - flux(1:nos-2))/(0.5_dp*(ys(3:nos)-ys(1:nos-2)))
+    bed_pred(1) = bed(1)             - dT*(flux(1)                      )/(ys(2)-ys(1))
+    bed_pred(nos) = bed(nos)         - dT*(              - flux(nos-1)  )/(ys(nos)-ys(nos-1))
+
+    ! Re-calculate the flux using the predictor value of the bed
+    DO i=1,nos-1
+        jump = (bed_pred(i+1)-bed_pred(i))
+        flux_cor(i) = -rate*max( abs(jump) - failure_jump,0.0_dp)*sign(1.0_dp, jump)
+    END DO
+
+    ! New value of the flux = 0.5*(predictor + corrector)
+    flux = 0.5_dp*(flux + flux_cor) 
+    
+    ! d(bed)/dT = -d(flux)/dy
+    bed(2:nos-1) = bed(2:nos-1) - dT*(flux(2:nos-1) - flux(1:nos-2))/(0.5_dp*(ys(3:nos)-ys(1:nos-2)))
+    bed(1) = bed(1)             - dT*(flux(1)                      )/(ys(2)-ys(1))
+    bed(nos) = bed(nos)         - dT*(              - flux(nos-1)  )/(ys(nos)-ys(nos-1))
+    
+END SUBROUTINE critical_bedjump_wasting
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 END MODULE bed_xsect
