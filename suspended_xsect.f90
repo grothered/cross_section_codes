@@ -155,74 +155,74 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     ! consistent with the method in hydro_xsect, because it uses the ysu, ysl
     ! boundaries, instead of the linearly interpolated approximations of the
     ! boundaries. The difference is very minor though. 
-    !discharge = sum( abs(vel)*max(water-bed,0.0_dp)*& 
-    !          ( ( (/ ys(2:a), ysu /) - (/ ysl, ys(1:a-1) /) )*0.5_dp) &  ! dy
-    !              )
+    discharge = sum( abs(vel)*max(water-bed,0.0_dp)*& 
+              ( ( (/ ys(2:a), ysu /) - (/ ysl, ys(1:a-1) /) )*0.5_dp) &  ! dy
+                  )
 
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !! Take a half time step of deposition and erosion
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !imax=1
-    !DO i=1,imax
-    !    ! Take 'imax' small time-steps, which in total sum to delT/2
+    imax=1
+    DO i=1,imax
+        ! Take 'imax' small time-steps, which in total sum to delT/2
 
-    !    ! Erosion and deposition
-    !    !Cbar = (Qe*1.0_dp + depth(1:a)/(delT/(2.0*imax))*Cbar - 0.5_dp*wset/zetamult_old(1:a)*Cbar)/ &
-    !    !       (depth(1:a)/(delT/(2.0*imax)) + 0.5_dp*wset/zetamult(1:a))
-    !
-    !    ! PUSH THE SUSPENDED FLUX TOWARDS THE DESIRED VALUE   
-    !    ! Calculate total sediment flux at time = t.
-    !    ! We will use this to 'correct' the sediment flux towards the desired value 
-    !    sus_flux = sum( & 
-    !            (Qbed+Cbar*abs(vel)*max(water-bed,0._dp) )*& ! Total load
-    !            ( ( (/ ys(2:a), ysu /) - (/ ysl, ys(1:a-1) /) )*0.5_dp) &  ! dy
-    !                  )
+        ! Erosion and deposition
+        !Cbar = (Qe*1.0_dp + depth(1:a)/(delT/(2.0*imax))*Cbar - 0.5_dp*wset/zetamult_old(1:a)*Cbar)/ &
+        !       (depth(1:a)/(delT/(2.0*imax)) + 0.5_dp*wset/zetamult(1:a))
+    
+        ! PUSH THE SUSPENDED FLUX TOWARDS THE DESIRED VALUE   
+        ! Calculate total sediment flux at time = t.
+        ! We will use this to 'correct' the sediment flux towards the desired value 
+        sus_flux = sum( & 
+                (Qbed+Cbar*abs(vel)*max(water-bed,0._dp) )*& ! Total load
+                ( ( (/ ys(2:a), ysu /) - (/ ysl, ys(1:a-1) /) )*0.5_dp) &  ! dy
+                      )
 
-    !    ! Store old value of sed_lag_scale, to use below
-    !    tmp2 = sed_lag_scale
+        ! Store old value of sed_lag_scale, to use below
+        tmp2 = sed_lag_scale
 
-    !    IF(sus_flux > 1.0e-12_dp) THEN
-    !        sed_lag_scale = 1.0_dp*((sconc*discharge)/sus_flux) !Desired flux / actual flux
+        IF(sus_flux > 1.0e-12_dp) THEN
+            sed_lag_scale = 1.0_dp*((sconc*discharge)/sus_flux) !Desired flux / actual flux
 
-    !        ! Prevent very high or low values
-    !        sed_lag_scale = min(max(sed_lag_scale,0.666_dp),1.5_dp) 
-    !        !IF(mod(counter,1000).eq.1) PRINT*, 'sed_lag_scale = ', sed_lag_scale
+            ! Prevent very high or low values
+            sed_lag_scale = min(max(sed_lag_scale,0.666_dp),1.5_dp) 
+            !IF(mod(counter,1000).eq.1) PRINT*, 'sed_lag_scale = ', sed_lag_scale
 
-    !    ELSE
-    !        IF(sconc*discharge<sus_flux) THEN
-    !            sed_lag_scale = 0.666_dp
-    !        ELSEIF(sconc*discharge==sus_flux) THEN
-    !            sed_lag_scale = 1.0_dp
-    !        ELSE
-    !            sed_lag_scale = 1.5_dp
-    !        END IF
+        ELSE
+            IF(sconc*discharge<sus_flux) THEN
+                sed_lag_scale = 0.666_dp
+            ELSEIF(sconc*discharge==sus_flux) THEN
+                sed_lag_scale = 1.0_dp
+            ELSE
+                sed_lag_scale = 1.5_dp
+            END IF
 
-    !    END IF
+       END IF
 
-    !    ! NON-CONSERVATIVE VERSION
-    !    !! Now we add the term U*d*dCbar/dx using an operator splitting technique
-    !    !! depth*dCbar/dT + depth*vel*dCbar/dx = 0.0
-    !    !! Implicit 
-    !    !!IF(maxval(Cbar)>0.0_dp) THEN
-    !    !    Cbar = Cbar*(1.0_dp - (1.0_dp-impcon)*(delT/(2.0_dp*imax))*vel*(1._dp-tmp2)/x_len_scale)/ &
-    !    !          (1.0_dp + impcon*(delT/(2.0_dp*imax))*vel*(1.0_dp-sed_lag_scale)/x_len_scale)
-    !    
-    !    ! CONSERVATIVE VERSION
-    !    ! Now we add the term d(U*d*Cbar)/dx using an operator splitting technique
-    !    ! d(depth*Cbar)/dT + d(depth*vel*Cbar)/dx = 0.0
-    !    ! Here we are assuming that the spatially lagged value of depth*vel*Cbar 
-    !    !  = depth*vel*Cbar/(actual_flux)*desired_flux -- i.e. same shape, but
-    !    !  scaled so that the flux is exactly the desired flux.
-    !    ! Implicit
-    !    WHERE(depth(1:a)>0.0_dp)        
-    !        Cbar = (depthlast(1:a)*Cbar_old)/ &
-    !               (depth(1:a) + (vel*depth(1:a)*delT/(2.0_dp*imax))*(1.0_dp-sed_lag_scale)/x_len_scale)
-    !    ELSEWHERE
-    !        Cbar = 0.0_dp
-    !    END WHERE
+        ! NON-CONSERVATIVE VERSION
+        !! Now we add the term U*d*dCbar/dx using an operator splitting technique
+        !! depth*dCbar/dT + depth*vel*dCbar/dx = 0.0
+        !! Implicit 
+        !!IF(maxval(Cbar)>0.0_dp) THEN
+        !    Cbar = Cbar*(1.0_dp - (1.0_dp-impcon)*(delT/(2.0_dp*imax))*vel*(1._dp-tmp2)/x_len_scale)/ &
+        !          (1.0_dp + impcon*(delT/(2.0_dp*imax))*vel*(1.0_dp-sed_lag_scale)/x_len_scale)
+        
+        ! CONSERVATIVE VERSION
+        ! Now we add the term d(U*d*Cbar)/dx using an operator splitting technique
+        ! d(depth*Cbar)/dT + d(depth*vel*Cbar)/dx = 0.0
+        ! Here we are assuming that the spatially lagged value of depth*vel*Cbar 
+        !  = depth*vel*Cbar/(actual_flux)*desired_flux -- i.e. same shape, but
+        !  scaled so that the flux is exactly the desired flux.
+        ! Implicit
+        WHERE(depth(1:a)>0.0_dp)        
+            Cbar = (depthlast(1:a)*Cbar_old)/ &
+                   (depth(1:a) + (vel*depth(1:a)*delT/(2.0_dp*imax))*(1.0_dp-sed_lag_scale)/x_len_scale)
+        ELSEWHERE
+            Cbar = 0.0_dp
+        END WHERE
 
-    !END DO
+    END DO
     !
     !DO i=1,a
     !    IF((isnan(Cbar(i)))) THEN
@@ -265,52 +265,52 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
         
     END DO
    
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!! 
-    ! d/dx (vel*depth*Cbar) term
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
+    !! d/dx (vel*depth*Cbar) term
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  
-    ! Discharge 
-    discharge = sum( abs(vel)*max(water-bed,0.0_dp)*& 
-              ( ( (/ ys(2:a), ysu /) - (/ ysl, ys(1:a-1) /) )*0.5_dp) &  ! dy
-                  )
-    ! Total suspended sediment flux 
-    sus_flux = sum( & 
-            (Qbed+Cbar*abs(vel)*max(water-bed,0._dp) )*& ! Total load
-            ( ( (/ ys(2:a), ysu /) - (/ ysl, ys(1:a-1) /) )*0.5_dp) &  ! dy
-                  )
+    !! Discharge 
+    !discharge = sum( abs(vel)*max(water-bed,0.0_dp)*& 
+    !          ( ( (/ ys(2:a), ysu /) - (/ ysl, ys(1:a-1) /) )*0.5_dp) &  ! dy
+    !              )
+    !! Total suspended sediment flux 
+    !sus_flux = sum( & 
+    !        (Qbed+Cbar*abs(vel)*max(water-bed,0._dp) )*& ! Total load
+    !        ( ( (/ ys(2:a), ysu /) - (/ ysl, ys(1:a-1) /) )*0.5_dp) &  ! dy
+    !              )
 
-    IF(sus_flux > 1.0e-12_dp) THEN
-        sed_lag_scale = 1.0_dp*((sconc*discharge)/sus_flux) !Desired flux / actual flux
-        ! Prevent very high or low values
-        sed_lag_scale = min(max(sed_lag_scale,0.666_dp),1.5_dp) 
-    ELSE
-        ! Here, sus_flux is very close to zero -- so to avoid dividing by
-        ! sus_flux,  just choose a value of sed_lag_scale based on some simple
-        ! logical criteria
-        IF(sconc*discharge<sus_flux) THEN
-            sed_lag_scale = 0.666_dp
-        ELSEIF(sconc*discharge==sus_flux) THEN
-            sed_lag_scale = 1.0_dp
-        ELSE
-            sed_lag_scale = 1.5_dp
-        END IF
+    !IF(sus_flux > 1.0e-12_dp) THEN
+    !    sed_lag_scale = 1.0_dp*((sconc*discharge)/sus_flux) !Desired flux / actual flux
+    !    ! Prevent very high or low values
+    !    sed_lag_scale = min(max(sed_lag_scale,0.666_dp),1.5_dp) 
+    !ELSE
+    !    ! Here, sus_flux is very close to zero -- so to avoid dividing by
+    !    ! sus_flux,  just choose a value of sed_lag_scale based on some simple
+    !    ! logical criteria
+    !    IF(sconc*discharge<sus_flux) THEN
+    !        sed_lag_scale = 0.666_dp
+    !    ELSEIF(sconc*discharge==sus_flux) THEN
+    !        sed_lag_scale = 1.0_dp
+    !    ELSE
+    !        sed_lag_scale = 1.5_dp
+    !    END IF
 
-    END IF
-    ! Try to increase x_len_scale as sed_lag_scale --> 1. That way, we can
-    ! reduce the chance of the code settling to an equilibrium with a non-zero
-    ! d/dx(vel*d*Cbar)
-    tmp1 = 1.0_dp
-    !IF(abs(sed_lag_scale-1.0_dp)<1.0e-03) THEN
-    !    ! tmp1 becomes large as sed_lag_scale -->1
-    !    !tmp1 = exp((-abs(sed_lag_scale-1.0_dp)+1.0e-03_dp)/1.0e-04_dp)
-    !    tmp1 = 1.0e-03_dp/(abs(sed_lag_scale-1.0_dp))
     !END IF
-    
-    ! Add the term to the matrix equation. 
-    ! d/dx(vel*depth*Cbar)
-    DO i=1,a
-        M1_diag(i) = M1_diag(i) +  (vel(i)*depth(i))*(1.0_dp-sed_lag_scale)/(x_len_scale*tmp1)
-    END DO
+    !! Try to increase x_len_scale as sed_lag_scale --> 1. That way, we can
+    !! reduce the chance of the code settling to an equilibrium with a non-zero
+    !! d/dx(vel*d*Cbar)
+    !tmp1 = 1.0_dp
+    !!IF(abs(sed_lag_scale-1.0_dp)<1.0e-03) THEN
+    !!    ! tmp1 becomes large as sed_lag_scale -->1
+    !!    !tmp1 = exp((-abs(sed_lag_scale-1.0_dp)+1.0e-03_dp)/1.0e-04_dp)
+    !!    tmp1 = 1.0e-03_dp/(abs(sed_lag_scale-1.0_dp))
+    !!END IF
+    !
+    !! Add the term to the matrix equation. 
+    !! d/dx(vel*depth*Cbar)
+    !DO i=1,a
+    !    M1_diag(i) = M1_diag(i) +  (vel(i)*depth(i))*(1.0_dp-sed_lag_scale)/(x_len_scale*tmp1)
+    !END DO
     
     DO i = 1, a
         !PRINT*, 'SANITY CHECK a'
@@ -850,68 +850,68 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     ! consistent with the method in hydro_xsect, because it uses the ysu, ysl
     ! boundaries, instead of the linearly interpolated approximations of the
     ! boundaries. The difference is very minor though. 
-    !discharge = sum( abs(vel)*max(water-bed,0.0_dp)*& 
-    !          ( ( (/ ys(2:a), ysu /) - (/ ysl, ys(1:a-1) /) )*0.5_dp) &  ! dy
-    !              )
-    !imax=1
-    !DO i=1,imax
-    !    ! Take 'imax' small time-steps, which in total sum to delT/2
-    !    !Cbar = (Qe + depth(1:a)/(delT/(2.0*imax))*Cbar - 0.5_dp*wset/zetamult_old(1:a)*Cbar)/ &
-    !    !       (depth(1:a)/(delT/(2.0*imax)) + 0.5_dp*wset/zetamult(1:a))
-    !
-    !    ! PUSH THE SUSPENDED FLUX TOWARDS THE DESIRED VALUE   
-    !    ! Calculate total sediment flux at time = t.
-    !    ! We will use this to 'correct' the sediment flux towards the desired value 
-    !    sus_flux = sum( & 
-    !            (Qbed+Cbar*abs(vel)*max(water-bed,0._dp) )*& ! Total load
-    !            ( ( (/ ys(2:a), ysu /) - (/ ysl, ys(1:a-1) /) )*0.5_dp) &  ! dy
-    !                  )
+    discharge = sum( abs(vel)*max(water-bed,0.0_dp)*& 
+              ( ( (/ ys(2:a), ysu /) - (/ ysl, ys(1:a-1) /) )*0.5_dp) &  ! dy
+                  )
+    imax=1
+    DO i=1,imax
+        ! Take 'imax' small time-steps, which in total sum to delT/2
+        !Cbar = (Qe + depth(1:a)/(delT/(2.0*imax))*Cbar - 0.5_dp*wset/zetamult_old(1:a)*Cbar)/ &
+        !       (depth(1:a)/(delT/(2.0*imax)) + 0.5_dp*wset/zetamult(1:a))
+    
+        ! PUSH THE SUSPENDED FLUX TOWARDS THE DESIRED VALUE   
+        ! Calculate total sediment flux at time = t.
+        ! We will use this to 'correct' the sediment flux towards the desired value 
+        sus_flux = sum( & 
+                (Qbed+Cbar*abs(vel)*max(water-bed,0._dp) )*& ! Total load
+                ( ( (/ ys(2:a), ysu /) - (/ ysl, ys(1:a-1) /) )*0.5_dp) &  ! dy
+                      )
 
-    !    ! Store old value of sed_lag_scale, to use below
-    !    tmp2 = sed_lag_scale
+        ! Store old value of sed_lag_scale, to use below
+        tmp2 = sed_lag_scale
 
-    !    IF(sus_flux > 1.0e-12_dp) THEN
-    !        sed_lag_scale = ((sconc*discharge)/sus_flux) !Desired flux / actual flux
+        IF(sus_flux > 1.0e-12_dp) THEN
+            sed_lag_scale = ((sconc*discharge)/sus_flux) !Desired flux / actual flux
 
-    !        ! Prevent very high or low values
-    !        sed_lag_scale = min(max(sed_lag_scale,0.666_dp),1.5_dp) 
+            ! Prevent very high or low values
+            sed_lag_scale = min(max(sed_lag_scale,0.666_dp),1.5_dp) 
 
-    !    ELSE
-    !        IF(sconc*discharge<sus_flux) THEN
-    !            sed_lag_scale = 0.666_dp
-    !        ELSEIF(sconc*discharge==sus_flux) THEN
-    !            sed_lag_scale = 1.0_dp
-    !        ELSE
-    !            sed_lag_scale = 1.5_dp
-    !        END IF
+        ELSE
+            IF(sconc*discharge<sus_flux) THEN
+                sed_lag_scale = 0.666_dp
+            ELSEIF(sconc*discharge==sus_flux) THEN
+                sed_lag_scale = 1.0_dp
+            ELSE
+                sed_lag_scale = 1.5_dp
+            END IF
 
-    !    END IF
+        END IF
 
-    !    ! NON-CONSERVATIVE VERSION
-    !    ! Now we add the term U*d*dCbar/dx using an operator splitting technique
-    !    ! depth*dCbar/dT + depth*vel*dCbar/dx = 0.0
-    !    ! Implicit 
-    !    !    Cbar = Cbar*(1.0_dp - (1.0_dp-impcon)*(delT/(2.0_dp*imax))*vel*(1._dp-tmp2)/x_len_scale)/ &
-    !    !           (1.0_dp + impcon*(delT/(2.0_dp*imax))*vel*(1.0_dp-sed_lag_scale)/x_len_scale)
+        ! NON-CONSERVATIVE VERSION
+        ! Now we add the term U*d*dCbar/dx using an operator splitting technique
+        ! depth*dCbar/dT + depth*vel*dCbar/dx = 0.0
+        ! Implicit 
+        !    Cbar = Cbar*(1.0_dp - (1.0_dp-impcon)*(delT/(2.0_dp*imax))*vel*(1._dp-tmp2)/x_len_scale)/ &
+        !           (1.0_dp + impcon*(delT/(2.0_dp*imax))*vel*(1.0_dp-sed_lag_scale)/x_len_scale)
 
-    !    ! CONSERVATIVE VERSION
-    !    ! Now we add the term d(U*d*Cbar)/dx using an operator splitting technique
-    !    ! d(depth*Cbar)/dT + d(depth*vel*Cbar)/dx = 0.0
-    !    ! Here we are assuming that the spatially lagged value of depth*vel*Cbar 
-    !    !  = depth*vel*Cbar/(actual_flux)*desired_flux -- i.e. same shape, but
-    !    !  scaled so that the flux is exactly the desired flux.
-    !    ! Implicit 
-    !    WHERE(depth(1:a)>0.0_dp)
-    !        Cbar = (depth(1:a)*Cbar)/ &
-    !               (depth(1:a) + (vel*depth(1:a)*delT/(2.0_dp*imax))*(1.0_dp-sed_lag_scale)/x_len_scale)
-    !    ELSEWHERE
-    !        Cbar = 0.0_dp
-    !    END WHERE
-    !END DO
-       
+        ! CONSERVATIVE VERSION
+        ! Now we add the term d(U*d*Cbar)/dx using an operator splitting technique
+        ! d(depth*Cbar)/dT + d(depth*vel*Cbar)/dx = 0.0
+        ! Here we are assuming that the spatially lagged value of depth*vel*Cbar 
+        !  = depth*vel*Cbar/(actual_flux)*desired_flux -- i.e. same shape, but
+        !  scaled so that the flux is exactly the desired flux.
+        ! Implicit 
+        WHERE(depth(1:a)>0.0_dp)
+            Cbar = (depth(1:a)*Cbar)/ &
+                   (depth(1:a) + (vel*depth(1:a)*delT/(2.0_dp*imax))*(1.0_dp-sed_lag_scale)/x_len_scale)
+        ELSEWHERE
+            Cbar = 0.0_dp
+        END WHERE
+    END DO
+      
  
-    !Cbar = Cbar*(1.0_dp - 0.5_dp*delT*vel*(1._dp-tmp2)/x_len_scale)/ &
-    !       (1.0_dp + 0.5_dp*delT*vel*(1.0_dp-sed_lag_scale)/x_len_scale)
+    Cbar = Cbar*(1.0_dp - 0.5_dp*delT*vel*(1._dp-tmp2)/x_len_scale)/ &
+           (1.0_dp + 0.5_dp*delT*vel*(1.0_dp-sed_lag_scale)/x_len_scale)
 
  
 
