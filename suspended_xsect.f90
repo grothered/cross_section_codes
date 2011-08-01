@@ -574,12 +574,12 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
                 !! or 1 where the depth changes rapidly, although where this is
                 !! not an issue we expect 0.5 to be more accurate. 
                 !IF((d1>1.5_dp*d2).or.(1.5_dp*d1<d2)) THEN
-                    !IF(bed(i)>bed(i+1)) THEN
-                    !    tmp3 = 1.0_dp
-                    !ELSE
-                    !    tmp3 = 0.0_dp
-                    !END IF
-                    tmp3=0.5_dp
+                    IF(bed(i)>bed(i+1)) THEN
+                        tmp3 = 1.0_dp
+                    ELSE
+                        tmp3 = 0.0_dp
+                    END IF
+                    !tmp3=0.5_dp
                 !ELSE
                 !    tmp3 = 0.5_dp
                 !END IF                
@@ -614,12 +614,12 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
                 !d2 = water-bed(i-1)
                
                 !IF((d1>1.5_dp*d2).or.(1.5_dp*d1<d2)) THEN
-                    !IF(bed(i)<bed(i-1)) THEN
-                    !    tmp3 = 1.0_dp
-                    !ELSE
-                    !    tmp3 = 0.0_dp
-                    !END IF
-                    tmp3=0.5_dp
+                    IF(bed(i)<bed(i-1)) THEN
+                        tmp3 = 1.0_dp
+                    ELSE
+                        tmp3 = 0.0_dp
+                    END IF
+                    !tmp3=0.5_dp
                 !ELSE
                 !    tmp3 = 0.5_dp
                 !END IF
