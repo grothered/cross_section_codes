@@ -613,7 +613,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
                 !d2 = water-bed(i-1)
                
                 !IF((d1>1.5_dp*d2).or.(1.5_dp*d1<d2)) THEN
-                    IF(bed(i)<bed(i-1)) THEN
+                    IF(bed(i)<=bed(i-1)) THEN
                         tmp3 = 1.0_dp
                     ELSE
                         tmp3 = 0.0_dp
@@ -810,14 +810,14 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
                     int_edif_f(i+1)+int_edif_f(i))
             !tmp1 = 0.25_dp*(int_edif_f(i+1)+int_edif_f(i+2)+&
             !        int_edif_f(i+1)+int_edif_f(i))
-            IF((water-bed(i+1))>=1.0_dp*(water-bed(i))) THEN
-                !cbed_tmp2 = Cbar(i)/zetamult(i)
+            IF((water-bed(i+1))>1.0_dp*(water-bed(i))) THEN
+                cbed_tmp2 = Cbar(i)/zetamult(i)
                 !tmp1 = 0.5_dp*(int_edif_f(i+1)+int_edif_f(i+2))
             ELSEIF((water-bed(i+1))<=1.0_dp*(water-bed(i))) THEN
-                !cbed_tmp2 = Cbar(i+1)/zetamult(i+1)
+                cbed_tmp2 = Cbar(i+1)/zetamult(i+1)
                 !tmp1 = 0.5_dp*(int_edif_f(i+1)+int_edif_f(i))
             END IF
-            cbed_tmp2 = 0.5_dp*(Cbar(i+1)/zetamult(i+1) + Cbar(i)/zetamult(i))
+            !cbed_tmp2 = 0.5_dp*(Cbar(i+1)/zetamult(i+1) + Cbar(i)/zetamult(i))
         ELSE
             cbed_tmp1 = 0.0_dp
             cbed_tmp2 = 0.0_dp
