@@ -21,8 +21,8 @@
 !!!!!!!!!!!!!!!!!!!!!
 
 nos = 200 ! Number of spatial grid points
-writfreq = 2000 !24*5*5 ! The output is written every writfreq 'th timestep
-jmax= 200001 !600000 !1382400 !24*5*2*45*4*4*4*4*5 ! The number of time steps
+writfreq = 1 !24*5*5 ! The output is written every writfreq 'th timestep
+jmax= 200 !001 !600000 !1382400 !24*5*2*45*4*4*4*4*5 ! The number of time steps
 t = 0.00 ! Starting time (s)
 dT = 400.00 !Time step (s)
 variable_timestep=.FALSE. !Do we change the timestepping for high sediment concentrations? -- this is presently inconsistent with bed layers
@@ -37,7 +37,7 @@ susconcs =   1.0e-03 !5.0e-04 2.0e-04 1.0e-04 7.0e-05 5.0e-05 2.0e-06
 !manning=.true. !Do we use a manning friction factor? If not, then we use a Darcy Weisbach friction factor, calculated as f=man_n**2*8.*9.8 -i.e., the equivalent manning friction value if the depth were 1 everywhere. Hence, the variable man_n is used to set either a manning or darcy friction. Same deal for vegetation drag
 friction_type = 'ks' !'manning'!, 'darcy', 'vanrijn', 'ks'
 rough_coef =0.01 ! A value depending on the friction type. if 'manning' = Mannings n for the basic bed, if 'ks' = value of ks, if 'darcy' = f, etc, if 'vanrijn', then the value is not used.
-grain_friction_type  = 'onethird' ! 'vanrijn', 'colebrook', 'onethird' -- model for bed shear acting on grains 
+grain_friction_type  = 'vanrijn' ! 'vanrijn', 'colebrook', 'onethird' -- model for bed shear acting on grains 
 man_nveg = 0.3 !Mannings n for vegetated regions
 veg_ht = 9.0e+20 !Height at which vegetation is assumed to occur.
 lambdacon=0.24 !Dimensionless eddy viscosity constant
@@ -48,7 +48,7 @@ layers=1 !The number of bed layers
 lincrem = 1000.031 ! The distance between bed layers (m). Set it to a very high number to avoid the multi bed layers having any influence.
 mu = 10000.60 !Angle of repose - this can be used to influence the critical shear stress if the code is adjusted
 failure_slope = 0.5 ! Slope at which mass failure occurs.
-erconst = 1000.178  ! The constant determining the min critical shear and the critical shear increment
+erconst = 0.178  ! The constant determining the min critical shear and the critical shear increment
 taucrit_slope_reduction=.FALSE. ! Is taucrit reduced on lateral slopes?
 wset = 0.0139 ! Settling velocity of sediment in m/s
 voidf = 0.4 ! Void fraction (non sediment fraction) of bed = porosity
@@ -84,7 +84,6 @@ normmov=.false. !Do the bed points actually shift with the D-E vector? This is o
 
 high_order_shear=.FALSE. ! Do we try to use a higher order estimate of derivatives in the shear approximation
 high_order_bedload=.FALSE. !Do we try to use a higher order estimate of derivatives in the downslope bedload approximation
-high_order_Cflux=.FALSE. ! Do we try to use a higher order estimate of derivatives in the dynamic_sus_dist routine
 /
 
 

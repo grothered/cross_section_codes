@@ -32,7 +32,7 @@ REAL(dp):: discharges(1000), susconcs(1000)
 LOGICAL::  flag, susdist, sus2d, readin, geo, remesh, norm, vertical, & 
             tbston, normmov, Qbedon, susQbal, talmon,&
              variable_timestep, high_order_shear, high_order_bedload, &
-            high_order_Cflux, taucrit_slope_reduction, evolve_bed
+            taucrit_slope_reduction, evolve_bed
 CHARACTER(LEN=20):: friction_type, grain_friction_type, resus_type, &
                     bedload_type, sus_vert_prof, edify_model
 NAMELIST /inputdata/ nos,writfreq,jmax, layers, hlim, mor, mu, &
@@ -44,7 +44,7 @@ NAMELIST /inputdata/ nos,writfreq,jmax, layers, hlim, mor, mu, &
                 Qbedon, susQbal, TR, talmon, variable_timestep, & 
                 friction_type, no_discharges, &
                 discharges, susconcs, high_order_shear, &
-                high_order_bedload, high_order_Cflux, grain_friction_type, &
+                high_order_bedload, grain_friction_type, &
                 resus_type, bedload_type, sus_vert_prof, edify_model, &
                 failure_slope, x_len_scale, taucrit_slope_reduction, &
                 evolve_bed
@@ -558,7 +558,7 @@ DO Q_loop= 1, no_discharges!15
 
                 call dynamic_sus_dist(u-l+1, DT1/10.0_dp, ys(l:u), bed(l:u), water, waterlast, Q, tau(l:u), vel(l:u), wset, & 
                                         0.5_dp*(Qe(l:u)+Qelast(l:u)), lambdacon, rho,rhos, g, d50, bedl,bedu, ysl, ysu, C(l:u),&
-                                        Cbar(l:u), Qbed(l:u), sed_lag_scale, j, high_order_Cflux, a_ref(l:u), sus_vert_prof,&
+                                        Cbar(l:u), Qbed(l:u), sed_lag_scale, j, a_ref(l:u), sus_vert_prof,&
                                         edify_model, x_len_scale, sconc, lat_sus_flux(l:u+1), bedlast(l:u), int_edif_f(l:u+1), &
                                         int_edif_dfdy(l:u+1), zetamult((l-1):(u+1)), too_steep(l:u))
                 !END DO

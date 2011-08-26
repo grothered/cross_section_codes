@@ -12,7 +12,7 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wset, Qe,lambdacon, &
                                 rho,rhos, g, d50, bedl,bedu, ysl, ysu, cb, Cbar, Qbed, &
-                                sed_lag_scale, counter, high_order_Cflux, a_ref, sus_vert_prof, edify_model, &
+                                sed_lag_scale, counter, a_ref, sus_vert_prof, edify_model, &
                                 x_len_scale, sconc, lat_sus_flux, bedlast, int_edif_f, int_edif_dfdy, zetamult, &
                                 too_steep)
     ! Calculate the cross-sectional distribution of suspended sediment using
@@ -42,7 +42,6 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     ! Cbar = Depth averaged suspended sediment concentration
     REAL(dp), INTENT(IN OUT):: cb, Cbar
     CHARACTER(20), INTENT(IN):: sus_vert_prof, edify_model
-    LOGICAL, INTENT(IN):: high_order_Cflux
     DIMENSION ys(a), bed(a), tau(a),vel(a), Qe(a), cb(a), Cbar(a),Qbed(a), a_ref(a), lat_sus_flux(a+1), bedlast(a), &
               int_edif_f(a+1), int_edif_dfdy(a+1), zetamult(0:a+1), too_steep(a)
 
@@ -396,7 +395,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     ! Diffusion term
     DO i = 1, a
         ! Calculate a centred dy
-        dy_outer = 0.5*(ys_temp(i+1) - ys_temp(i-1))
+        dy_outer = 0.5_dp*(ys_temp(i+1) - ys_temp(i-1))
 
         ! Treat the cases with vertically constant / variable lateral eddy
         ! diffusivity differently
@@ -1291,7 +1290,7 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
 
             CASE('constant')
                 IF(d>0.0_dp) THEN
-                    edify = 0.24*d*us ! Constant
+                    edify = 0.24_dp*d*us ! Constant
                 ELSE
                     edify = 0.0_dp
                 END IF
