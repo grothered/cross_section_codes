@@ -338,17 +338,17 @@ DO Q_loop= 1, no_discharges!15
         too_steep=1
         ! Find where the slope > failure_slope, and prevent deposition on the
         ! upper part of that slope.
-        DO i=1,nos
-            IF((i==nos).or.(bed(i)>bed(max(i-1,1)))) THEN
-                IF( (bed(i)-bed(i-1)) >= failure_slope*(ys(i)-ys(i-1))) THEN
-                    too_steep(i)=0
-                END IF
-            ELSEIF((i==1).or.(bed(i)>bed(min(i+1,nos)))) THEN
-                IF( (bed(i)-bed(i+1)) >= failure_slope*(ys(i+1)-ys(i))) THEN
-                    too_steep(i)=0
-                END IF
-            END IF
-        END DO
+        !DO i=1,nos
+        !    IF((i==nos).or.(bed(i)>bed(max(i-1,1)))) THEN
+        !        IF( (bed(i)-bed(i-1)) >= failure_slope*(ys(i)-ys(i-1))) THEN
+        !            too_steep(i)=0
+        !        END IF
+        !    ELSEIF((i==1).or.(bed(i)>bed(min(i+1,nos)))) THEN
+        !        IF( (bed(i)-bed(i+1)) >= failure_slope*(ys(i+1)-ys(i))) THEN
+        !            too_steep(i)=0
+        !        END IF
+        !    END IF
+        !END DO
 
         ! Water elevation (free surface)
         waterlast=water
