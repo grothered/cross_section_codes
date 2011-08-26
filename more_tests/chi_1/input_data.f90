@@ -83,6 +83,5 @@ normmov=.false. !Do the bed points actually shift with the D-E vector? This is o
 
 high_order_shear=.FALSE. ! Do we try to use a higher order estimate of derivatives in the shear approximation
 high_order_bedload=.FALSE. !Do we try to use a higher order estimate of derivatives in the downslope bedload approximation
-high_order_Cflux=.FALSE. ! Do we try to use a higher order estimate of derivatives in the dynamic_sus_dist routine
 /
 

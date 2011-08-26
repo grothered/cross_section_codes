@@ -965,7 +965,7 @@ SUBROUTINE critical_slope_wasting(dT, nos,ys,bed,failure_slope, rate)
         flux(i) = -rate*max( abs(slope) - failure_slope,0.0_dp)*sign(1.0_dp, slope)
     END DO
 
-    ! This routine uses MacCormack predictor-corrector type timestepping. 
+    ! This routine uses predictor-corrector type timestepping. 
 
     ! d(bed)/dT = -d(flux)/dy
     bed_pred(2:nos-1) = bed(2:nos-1) - dT*(flux(2:nos-1) - flux(1:nos-2))/(0.5_dp*(ys(3:nos)-ys(1:nos-2)))
@@ -1012,9 +1012,9 @@ SUBROUTINE critical_bedjump_wasting(dT, nos,ys,bed,failure_jump, rate)
         flux(i) = -rate*max( abs(jump) - failure_jump,0.0_dp)*sign(1.0_dp, jump)
     END DO
 
-    ! This routine uses MacCormack predictor-corrector type timestepping. 
+    ! This routine uses predictor-corrector type timestepping. 
 
-    ! d(bed)/dT = -d(flux)/dy
+    ! d(bed)/dT = -d(flux) !/dy
     bed_pred(2:nos-1) = bed(2:nos-1) - dT*(flux(2:nos-1) - flux(1:nos-2))/(0.5_dp*(ys(3:nos)-ys(1:nos-2)))
     bed_pred(1) = bed(1)             - dT*(flux(1)                      )/(ys(2)-ys(1))
     bed_pred(nos) = bed(nos)         - dT*(              - flux(nos-1)  )/(ys(nos)-ys(nos-1))
@@ -1028,7 +1028,7 @@ SUBROUTINE critical_bedjump_wasting(dT, nos,ys,bed,failure_jump, rate)
     ! New value of the flux = 0.5*(predictor + corrector)
     flux = 0.5_dp*(flux + flux_cor) 
     
-    ! d(bed)/dT = -d(flux)/dy
+    ! d(bed)/dT = -d(flux) !/dy
     bed(2:nos-1) = bed(2:nos-1) - dT*(flux(2:nos-1) - flux(1:nos-2))/(0.5_dp*(ys(3:nos)-ys(1:nos-2)))
     bed(1) = bed(1)             - dT*(flux(1)                      )/(ys(2)-ys(1))
     bed(nos) = bed(nos)         - dT*(              - flux(nos-1)  )/(ys(nos)-ys(nos-1))
