@@ -352,7 +352,8 @@ DO Q_loop= 1, no_discharges!15
 
         ! Water elevation (free surface)
         waterlast=water
-        water= waterM + (TR/2._dp+.0*sin(2._dp*pi*t/(12.4_dp*3600._dp*100._dp))+0.0_dp)*sin(2._dp*pi*t/(12.4_dp*3600._dp))  !1.+ 1.*sin(2.*pi*j/500.) 
+        water= waterM + (TR/2._dp+.0*sin(2._dp*pi*t/(12.4_dp*3600._dp*100._dp))+0.0_dp)&
+                        *sin(2._dp*pi*t/(12.4_dp*3600._dp))  !1.+ 1.*sin(2.*pi*j/500.) 
 
         ! Find wetted part of section
         call wet(l,u,nos,water, bed) 
@@ -364,23 +365,10 @@ DO Q_loop= 1, no_discharges!15
             IF (u<nos) wdthx = wdthx+ (water-bed(u))/(bed(u+1)-bed(u))*(ys(u+1)-ys(u))
             IF (l>1) wdthx = wdthx+ (water-bed(l))/(bed(l-1)-bed(l))*(ys(l)-ys(l-1))
         END IF
+
         ! Cross sectional area
         Arealast=Area
-        Area=0.0_dp
-        IF(l>0) THEN 
-            DO i = l,u-1
-                Area=Area+ 0.5_dp*( max( (water-bed(i)),0._dp) +max( (water-bed(i+1)), 0._dp) )*(ys(i+1)-ys(i))
-            END DO
-            !!Add edge residuals if needed
-            IF(u<nos) Area=Area+0.5_dp*(water-bed(u))**2/(bed(u+1)-bed(u))*(ys(u+1)-ys(u))
-            IF(l>1) Area = Area+ 0.5_dp*(water-bed(l))**2/(bed(l-1)-bed(l))*(ys(l)-ys(l-1))
-
-        END IF
-
-        IF(isnan(Area)) THEN
-            PRINT*, "Area is nan", l, u, water, maxval(bed(l:u)), minval(bed(l:u)), maxval(tau), minval(tau)
-            STOP
-        END IF
+        Area = compute_area(nos, water,bed,ys,l,u)
 
         IF ( (Area<0.0002).OR.((l>0).and.(maxval(water-bed)<.01)) )THEN 
             !If we let the area go to zero, then the continuity model will allow

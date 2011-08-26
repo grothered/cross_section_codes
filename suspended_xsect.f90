@@ -28,8 +28,6 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     !
     ! With suitable approximations for dCbar/dx and V, and if needed, numerical
     ! integration to calculate Fl (the lateral flux)
-    ! Numerically, we use (linear) implicit discretizations, except for the
-    ! dCbar/dx term (explicit)
     
     INTEGER, INTENT(IN)::a, counter, too_steep
     REAL(dp), INTENT(IN):: delT, ys, bed, water, waterlast, tau, vel, wset, Qe, lambdacon, rho, rhos,g, & 
@@ -37,7 +35,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     REAL(dp), INTENT(OUT):: lat_sus_flux 
     REAL(dp), INTENT(INOUT):: int_edif_f, int_edif_dfdy, sed_lag_scale , zetamult
     ! int_edif_f, int_edif_dfdy = 2 integrals that appear in the lateral diffusive flux
-    ! sed_lag_scale = used to estimate derivative terms, e.g. dCbar/dx
+    ! sed_lag_scale = used to estimate derivative terms, e.g. dCbar/dx = (Cbar - Cbar_ideal)/sed_lag_scale
     ! cb = Near bed suspended sediment concentration, 
     ! Cbar = Depth averaged suspended sediment concentration
     REAL(dp), INTENT(IN OUT):: cb, Cbar

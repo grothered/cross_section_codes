@@ -1087,5 +1087,39 @@ REAL(dp) FUNCTION maxmod(a,b)
     return
 END FUNCTION maxmod
 !!!!!!!!!!!!!!!!!!!
+REAL(dp) FUNCTION compute_area(nos, water,bed,ys,l,u)
+    ! Used to compute the cross-sectional area.
+    ! nos = number of points in cross-section (including dry regions)
+    ! Water = water elevation
+    ! ys,bed = y and z coordinates of cross-section
+    ! l,u = indices of lower wet point and the upper wet point on the
+    ! cross-section
+    INTEGER:: l,u,nos
+    REAL(dp):: water, bed(nos), ys(nos)
 
+    ! Local variables
+    INTEGER:: i
+    REAL(dp):: Area
+
+    Area=0.0_dp
+    IF(l>0) THEN 
+        DO i = l,u-1
+            Area=Area+ 0.5_dp*( max( (water-bed(i)),0._dp) +max( (water-bed(i+1)), 0._dp) )*(ys(i+1)-ys(i))
+        END DO
+        !!Add edge residuals if needed
+        IF(u<nos) Area=Area+0.5_dp*(water-bed(u))**2/(bed(u+1)-bed(u))*(ys(u+1)-ys(u))
+        IF(l>1) Area = Area+ 0.5_dp*(water-bed(l))**2/(bed(l-1)-bed(l))*(ys(l)-ys(l-1))
+
+    END IF
+
+    IF(isnan(Area)) THEN
+        PRINT*, "Area is nan", l, u, water, maxval(bed(l:u)), minval(bed(l:u))
+        STOP
+    END IF
+
+    !Return the value Area
+    compute_area = Area    
+
+END FUNCTION compute_area
+!!!!!!!!!!!!!!!!!!
 END MODULE util_various
