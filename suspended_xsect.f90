@@ -465,10 +465,12 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
                                  ys_temp(a+1), water, water, water, sqrt(abs(tau)/rho),&
                                  wset,a_ref, int_edif_f, int_edif_dfdy) !, 205)
 
-                ! Predefine edge values of (int(eddif_y*f) dz) to be used in the
-                ! discretization
+                ! Compute pointwise value of int(eddif_y*f)dz at (i+1/2)
+                ! (denoted 'diffuse1') -- this is reused later
                 diffuse1(0) = 0.0_dp
                 diffuse1(a) = 0.0_dp
+                diffuse1(1:a-1) = 0.5_dp*max(int_edif_f(2:a) + int_edif_f(3:a+1), &
+                                            int_edif_f(2:a) + int_edif_f(1:a-1))
             END IF
            
             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
@@ -481,9 +483,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
            
             IF(i<a) THEN
                 
-                ! Compute pointwise value of int(eddif_y*f)dz at (i+1/2)
-                ! (denoted 'diffuse1') -- this is reused later
-                diffuse1(i) = 0.5_dp*max(int_edif_f(i+1)+int_edif_f(i+2), int_edif_f(i+1)+int_edif_f(i))
+                !diffuse1(i) = 0.5_dp*max(int_edif_f(i+1)+int_edif_f(i+2), int_edif_f(i+1)+int_edif_f(i))
                 tmp4 = impcon*dy_outer_inv*dy_inner_inv*diffuse1(i)                
 
                 ! Compute derivatives involving i+1 and i
