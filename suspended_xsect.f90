@@ -48,7 +48,8 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     LOGICAL:: halt, xderivative_operator_splitting=.FALSE.
     REAL(dp):: depth(0:a+1), eddif_y(0:a+1), eddif_z(a), vd(0:a+1), ys_temp(0:a+1)
     REAL(dp):: M1_lower(a), M1_diag(a), M1_upper(a), M1_upper2(a), M1_lower2(a)
-    REAL(dp):: RHS(a), dy_all(a), depthlast(0:a+1), zetamult_old(0:a+1),diffuse1(0:a)
+    REAL(dp):: RHS(a), dy_all(a), depthlast(0:a+1), zetamult_old(0:a+1),&
+                diffuse1(0:a), diffuse2(0:a), cb_weight(1:a-1)
     REAL(dp):: tmp1, dy, dy_outer,dy_outer_inv, tmp2,dy_inner_inv, Cref, z,&
                 cbed_tmp1, cbed_tmp2, tmp3, tmp4, discharge
     REAL(dp):: dQdx, dhdt, Cbar_old(a), dUd_dx(0:a+1), sus_flux, impcon, d1, d2
@@ -469,8 +470,28 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
                 ! (denoted 'diffuse1') -- this is reused later
                 diffuse1(0) = 0.0_dp
                 diffuse1(a) = 0.0_dp
-                diffuse1(1:a-1) = int_edif_f(2:a) !0.5_dp*max(int_edif_f(2:a) + int_edif_f(3:a+1), &
-                                  !          int_edif_f(2:a) + int_edif_f(1:a-1))
+                diffuse1(1:a-1) = 0.5_dp*max(int_edif_f(2:a) + int_edif_f(3:a+1), &
+                                            int_edif_f(2:a) + int_edif_f(1:a-1))
+                ! Compute pointwise value of int(eddif_y*dfdy)dz at (i+1/2)
+                ! (denoted 'diffuse2') -- this is reused later
+                diffuse2(0) = 0.0_dp
+                diffuse2(a) = 0.0_dp
+                DO j=1,a-1
+                    diffuse2(j) = 0.5_dp*minmod(int_edif_dfdy(j+1)+int_edif_dfdy(j+2), &
+                                                  int_edif_dfdy(j+1)+int_edif_dfdy(j))
+                END DO
+
+                ! Compute the weighting of cb(i+1/2) = (1-cb_weight)*cb(i+1) + cb_weight*cb(i)
+                DO j=1,a-1
+                    IF(bed(j)>bed(j+1)) THEN
+                        cb_weight(j) = 1.0_dp
+                    ELSEIF(bed(j)<bed(j+1)) THEN
+                        cb_weight(j) = 0.0_dp
+                    ELSE
+                        cb_weight(j) = 0.5_dp
+                    END IF
+                END DO
+
             END IF
            
             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
@@ -542,15 +563,10 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
                 !    tmp3 = 0.5_dp
                 !END IF                
 
-                IF(bed(i)>bed(i+1)) THEN
-                    tmp3 = 1.0_dp
-                ELSE
-                    tmp3 = 0.0_dp
-                END IF
-                tmp4 = impcon*dy_outer_inv*int_edif_dfdy(i+1) 
+                tmp4 = impcon*dy_outer_inv*diffuse2(i)
 
-                M1_upper(i) = M1_upper(i) - (1.0_dp-tmp3)*tmp4/zetamult(i+1)  ! Note that 1/zetamult(i)*Cbar = cb
-                M1_diag(i)  = M1_diag(i)  - tmp3*tmp4/zetamult(i)
+                M1_upper(i) = M1_upper(i) - (1.0_dp-cb_weight(i))*tmp4/zetamult(i+1)  ! Note that 1/zetamult(i)*Cbar = cb
+                M1_diag(i)  = M1_diag(i)  - cb_weight(i)*tmp4/zetamult(i)
                
                 !tmp4 = (1.0_dp-impcon)*dy_outer_inv*int_edif_dfdy_old(i+1) 
                 !RHS(i) = RHS(i) +  (1.0_dp-tmp3)*tmp4/zetamult_old(i+1)*Cbar(i+1)
@@ -576,15 +592,10 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
                 !    tmp3 = 0.5_dp
                 !END IF
 
-                IF(bed(i-1)>bed(i)) THEN
-                    tmp3 = 1.0_dp
-                ELSE
-                    tmp3 = 0.0_dp
-                END IF
-                tmp4 = impcon*dy_outer_inv*int_edif_dfdy(i)
+                tmp4 = impcon*dy_outer_inv*diffuse2(i-1)
 
-                M1_diag(i)   = M1_diag(i)   + (1.0_dp-tmp3)*tmp4/zetamult(i)  ! Note that 1/zetamult(i)*Cbar = cb
-                M1_lower(i)  = M1_lower(i)  + tmp3*tmp4/zetamult(i-1)
+                M1_diag(i)   = M1_diag(i)   + (1.0_dp-cb_weight(i-1))*tmp4/zetamult(i)  ! Note that 1/zetamult(i)*Cbar = cb
+                M1_lower(i)  = M1_lower(i)  + cb_weight(i-1)*tmp4/zetamult(i-1)
     
                 !tmp4 = (1.0_dp-impcon)*dy_outer_inv*int_edif_dfdy_old(i)
                 !RHS(i) = RHS(i) -  (1.0_dp-tmp3)*tmp4/zetamult_old(i)*Cbar(i)
@@ -703,13 +714,8 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
         ! Near bed suspended sediment concentration at i+1, i
         IF((i<a).and.(i>0)) THEN
             cbed_tmp1 = Cbar(i+1)/zetamult(i+1) - Cbar(i)/zetamult(i) ! diff(cbed)
-
-            IF(bed(i+1)<bed(i)) THEN
-                cbed_tmp2 = Cbar(i)/zetamult(i)
-            ELSEIF(bed(i+1)>=bed(i)) THEN
-                cbed_tmp2 = Cbar(i+1)/zetamult(i+1)
-            END IF
-
+            ! cbed(i+1/2)
+            cbed_tmp2 = cb_weight(i)*Cbar(i)/zetamult(i) + (1.0_dp-cb_weight(i))*Cbar(i+1)/zetamult(i+1)
         ELSE
             cbed_tmp1 = 0.0_dp
             cbed_tmp2 = 0.0_dp
@@ -718,7 +724,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
         ! e.g. lat_sus_flux(1) = flux at 1/2 
         !      lat_sus_flux(a+1) = flux at a+1/2
         lat_sus_flux(i+1) = -diffuse1(i)*(cbed_tmp1)/(ys_temp(i+1)-ys_temp(i))
-        lat_sus_flux(i+1) = lat_sus_flux(i+1) -(cbed_tmp2)*int_edif_dfdy(i+1) 
+        lat_sus_flux(i+1) = lat_sus_flux(i+1) -(cbed_tmp2)*diffuse2(i)
     END DO 
 
     ! Add deposition and erosion here using operator splitting
