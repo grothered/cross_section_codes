@@ -72,7 +72,7 @@ x_len_scale=1000.0 ! x length scale. In dynamic_sus_dist dC/dx ~= (C -k*C)/x_len
 sus2d = .false. !Do we use a fully 2d suspended sediment - this is only applicable to the case with many cross sections strung together - the quasi 2d model.
 norm=.FALSE. !Is erosion to be directed normal to the bed?
 vertical=.TRUE. !Is the vertical shear method (SKM) to be used (support for Pizzuto method may not be complete, and in this case it should be .true.
-evolve_bed=.FALSE. ! Do we evolve the bed? If FALSE, hydrodynamics, erosion and deposition are computed, but no change to the bed occurs.
+evolve_bed=.TRUE. ! Do we evolve the bed? If FALSE, hydrodynamics, erosion and deposition are computed, but no change to the bed occurs.
 
 readin = .FALSE. !Do we read the initial conditions from a file?
 geo = .false. !Do we use the 'geotech' algorithm to prevent steep slopes? This is also a bit outdated
