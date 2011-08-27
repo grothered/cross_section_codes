@@ -48,8 +48,9 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     LOGICAL:: halt
     REAL(dp):: depth(0:a+1), eddif_y(0:a+1), eddif_z(a), vd(0:a+1), ys_temp(0:a+1)
     REAL(dp):: M1_lower(a), M1_diag(a), M1_upper(a), M1_upper2(a), M1_lower2(a)
-    REAL(dp):: RHS(a), dy_all(a), depthlast(0:a+1), zetamult_old(0:a+1)
-    REAL(dp):: tmp1, dy, dy_outer, tmp2, Cref, z, cbed_tmp1, cbed_tmp2, tmp3, tmp4, discharge
+    REAL(dp):: RHS(a), dy_all(a), depthlast(0:a+1), zetamult_old(0:a+1),diffuse1(0:a)
+    REAL(dp):: tmp1, dy, dy_outer,dy_outer_inv, tmp2,dy_inner_inv, Cref, z,&
+                cbed_tmp1, cbed_tmp2, tmp3, tmp4, discharge
     REAL(dp):: dQdx, dhdt, Cbar_old(a), dUd_dx(0:a+1), sus_flux, impcon, d1, d2
     REAL(dp):: DLF(a), DF(a), DUF(a), DU2(a),rcond, ferr, berr, work(3*a), XXX(a, 1)
     REAL(dp):: bandmat(5,a), AFB(7,a), RRR(a), CCC(a), int_edif_f_old(a+1), int_edif_dfdy_old(a+1)
@@ -494,65 +495,53 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
                 !int_edif_dfdy=0.0_dp
                 !if(counter.eq.1) print*, 'WARNING: int_edif_f and dfdy set to 0'
                 !print*, sum(zetamult)/(1.0_dp*a), minval(zetamult)
+                ! Predefine edge values of (int(eddif_y*f) dz)
+                diffuse1(0) = 0.0_dp
+                diffuse1(a) = 0.0_dp
             END IF
             
+            ! ADD THE FOLLOWING TERM TO THE EQUATIONS:
             ! d/dy [ dcb/dy*(int(eddif_y*f) dz) ]
-            tmp1 = 1.0_dp/dy_outer
-            tmp2 = 1.0_dp/(ys_temp(i+1)-ys_temp(i))
+            dy_outer_inv = 1.0_dp/dy_outer
+            dy_inner_inv = 1.0_dp/(ys_temp(i+1)-ys_temp(i))
            
             IF(i<a) THEN
                 ! 2 point derivative approx -- note cb = Cbar/zetamult
-                !tmp4 = impcon*tmp1*tmp2*int_edif_f(i+1)
-                tmp4 = impcon*tmp1*tmp2*0.5_dp*max(int_edif_f(i+1)&
-                        +int_edif_f(i+2), int_edif_f(i+1)+int_edif_f(i))
-                !tmp4 = impcon*tmp1*tmp2*0.25_dp*(int_edif_f(i+1)&
-                !        +int_edif_f(i+2)+ int_edif_f(i+1)+int_edif_f(i))
-                !IF((water-bed(i))>1.0_dp*(water-bed(i+1)) ) THEN
-                !    tmp4 = impcon*tmp1*tmp2*0.5_dp*(int_edif_f(i+1)+int_edif_f(i))
-                !ELSEIF((water-bed(i))<=1.0_dp*(water-bed(i+1)) ) THEN
-                !    tmp4 = impcon*tmp1*tmp2*0.5_dp*(int_edif_f(i+1)+int_edif_f(i+2))
-                !END IF
-                !tmp4 = impcon*tmp1*tmp2*& 
-                !        0.5_dp*minmod(int_edif_f(i+1)+int_edif_f(i+2), int_edif_f(i+1)+int_edif_f(i))
+                
+                ! Compute pointwise value of int(eddif_y*f)dz at (i+1/2) -- this
+                ! is reused later
+                diffuse1(i) = 0.5_dp*max(int_edif_f(i+1)+int_edif_f(i+2), int_edif_f(i+1)+int_edif_f(i))
+                tmp4 = impcon*dy_outer_inv*dy_inner_inv*diffuse1(i)                
+
                 M1_upper(i) = M1_upper(i) - tmp4/zetamult(i+1)
                 M1_diag(i)  = M1_diag(i)  + tmp4/zetamult(i)
         
-                tmp4 = (1.0_dp-impcon)*tmp1*tmp2*int_edif_f_old(i+1)
-                !tmp4 = (1.0_dp-impcon)*tmp1*tmp2*&
+                !tmp4 = (1.0_dp-impcon)*dy_outer_inv*dy_inner_inv*int_edif_f_old(i+1)
+                !tmp4 = (1.0_dp-impcon)*dy_outer_inv*dy_inner_inv*&
                 !        0.5_dp*minmod(int_edif_f_old(i+1)+int_edif_f_old(i+2), int_edif_f_old(i+1)+int_edif_f_old(i))
-                RHS(i)      = RHS(i) + tmp4/zetamult_old(i+1)*Cbar(i+1)
-                RHS(i)      = RHS(i) - tmp4/zetamult_old(i)*Cbar(i)
+                !RHS(i)      = RHS(i) + tmp4/zetamult_old(i+1)*Cbar(i+1)
+                !RHS(i)      = RHS(i) - tmp4/zetamult_old(i)*Cbar(i)
 
             END IF
-
-            tmp2 = 1.0_dp/(ys_temp(i)-ys_temp(i-1))
+            
+            ! Redefine dy_inner_inv
+            dy_inner_inv = 1.0_dp/(ys_temp(i)-ys_temp(i-1))
             IF(i>1) THEN
 
-                !tmp4 = impcon*tmp1*tmp2*int_edif_f(i)
-                tmp4 = impcon*tmp1*tmp2*0.5_dp*max(int_edif_f(i)&
-                        +int_edif_f(i+1), int_edif_f(i)+int_edif_f(i-1))
-                !tmp4 = impcon*tmp1*tmp2*0.25_dp*(int_edif_f(i)&
-                !        +int_edif_f(i+1)+ int_edif_f(i)+int_edif_f(i-1))
-                !IF((water-bed(i))>=1.0_dp*(water-bed(i-1))) THEN
-                !    tmp4 = impcon*tmp1*tmp2*0.5_dp*(int_edif_f(i+1)+int_edif_f(i))
-                !ELSEIF((water-bed(i))<=1.0_dp*(water-bed(i-1))) THEN
-                !    tmp4 = impcon*tmp1*tmp2*0.5_dp*(int_edif_f(i)+int_edif_f(i-1))
-                !END IF
-                !tmp4 = impcon*tmp1*tmp2*&
-                !        0.5_dp*minmod(int_edif_f(i) + int_edif_f(i+1), int_edif_f(i)+int_edif_f(i-1))
+                tmp4 = impcon*dy_outer_inv*dy_inner_inv*diffuse1(i-1) 
                 M1_diag(i)  = M1_diag(i)  + tmp4/zetamult(i)
                 M1_lower(i) = M1_lower(i) - tmp4/zetamult(i-1)
 
-                tmp4 = (1.0_dp-impcon)*tmp1*tmp2*int_edif_f_old(i)
-                !tmp4 = (1.0_dp-impcon)*tmp1*tmp2*&
+                !tmp4 = (1.0_dp-impcon)*dy_outer_inv*dy_inner_inv*int_edif_f_old(i)
+                !tmp4 = (1.0_dp-impcon)*dy_outer_inv*dy_inner_inv*&
                 !        minmod(int_edif_f_old(i) + int_edif_f_old(i+1), int_edif_f_old(i)+int_edif_f_old(i-1))
-                RHS(i) = RHS(i) - tmp4/zetamult_old(i)*Cbar(i)
-                RHS(i) = RHS(i) + tmp4/zetamult_old(i-1)*Cbar(i-1)
+                !RHS(i) = RHS(i) - tmp4/zetamult_old(i)*Cbar(i)
+                !RHS(i) = RHS(i) + tmp4/zetamult_old(i-1)*Cbar(i-1)
                     
             END IF
 
-            
-            !! d/dy ( cb*INT(edify*df/dy )dz )
+            ! ADD THE FOLLOWING TERM TO THE MATRIX:
+            ! d/dy ( cb*INT(edify*df/dy )dz )
             IF(i<a) THEN
                 ! Try weighting cb (i+1/2) based on the depths at i and i+1 ---
                 ! a potenial compromise between the centred approach, and just
@@ -580,20 +569,14 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
                 !ELSE
                 !    tmp3 = 0.5_dp
                 !END IF                
-                tmp4 = impcon*tmp1*int_edif_dfdy(i+1) 
-                !tmp4 = impcon*tmp1*0.5_dp*&
-                !        minmod(int_edif_dfdy(i+1) +int_edif_dfdy(i+2), int_edif_dfdy(i+1) + int_edif_dfdy(i))
-                !IF(tmp3==0.0_dp) THEN
-                !    tmp4 = impcon*tmp1*0.5_dp*(int_edif_dfdy(i+1) +int_edif_dfdy(i))
-                !ELSE
-                !    tmp4 = impcon*tmp1*0.5_dp*(int_edif_dfdy(i+1) +int_edif_dfdy(i+2))
-                !END IF 
+                tmp4 = impcon*dy_outer_inv*int_edif_dfdy(i+1) 
+
                 M1_upper(i) = M1_upper(i) - (1.0_dp-tmp3)*tmp4/zetamult(i+1)  ! Note that 1/zetamult(i)*Cbar = cb
                 M1_diag(i)  = M1_diag(i)  - tmp3*tmp4/zetamult(i)
                
-                tmp4 = (1.0_dp-impcon)*tmp1*int_edif_dfdy_old(i+1) 
-                RHS(i) = RHS(i) +  (1.0_dp-tmp3)*tmp4/zetamult_old(i+1)*Cbar(i+1)
-                RHS(i) = RHS(i) +  tmp3*tmp4/zetamult_old(i)*Cbar(i)
+                !tmp4 = (1.0_dp-impcon)*dy_outer_inv*int_edif_dfdy_old(i+1) 
+                !RHS(i) = RHS(i) +  (1.0_dp-tmp3)*tmp4/zetamult_old(i+1)*Cbar(i+1)
+                !RHS(i) = RHS(i) +  tmp3*tmp4/zetamult_old(i)*Cbar(i)
             END IF
     
             IF(i>1) THEN
@@ -619,20 +602,14 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
                 !ELSE
                 !    tmp3 = 0.5_dp
                 !END IF
-                tmp4 = impcon*tmp1*int_edif_dfdy(i)
-                !tmp4 = impcon*tmp1*0.5_dp*&
-                !        minmod(int_edif_dfdy(i)+int_edif_dfdy(i+1), int_edif_dfdy(i) + int_edif_dfdy(i-1))
-                !IF(tmp3==0.0_dp) THEN
-                !    tmp4 = impcon*tmp1*0.5_dp*(int_edif_dfdy(i) +int_edif_dfdy(i-1))
-                !ELSE
-                !    tmp4 = impcon*tmp1*0.5_dp*(int_edif_dfdy(i+1) +int_edif_dfdy(i))
-                !END IF 
+                tmp4 = impcon*dy_outer_inv*int_edif_dfdy(i)
+
                 M1_diag(i)   = M1_diag(i)   + (1.0_dp-tmp3)*tmp4/zetamult(i)  ! Note that 1/zetamult(i)*Cbar = cb
                 M1_lower(i)  = M1_lower(i)  + tmp3*tmp4/zetamult(i-1)
     
-                tmp4 = (1.0_dp-impcon)*tmp1*int_edif_dfdy_old(i)
-                RHS(i) = RHS(i) -  (1.0_dp-tmp3)*tmp4/zetamult_old(i)*Cbar(i)
-                RHS(i) = RHS(i) -  tmp3*tmp4/zetamult_old(i-1)*Cbar(i-1)
+                !tmp4 = (1.0_dp-impcon)*dy_outer_inv*int_edif_dfdy_old(i)
+                !RHS(i) = RHS(i) -  (1.0_dp-tmp3)*tmp4/zetamult_old(i)*Cbar(i)
+                !RHS(i) = RHS(i) -  tmp3*tmp4/zetamult_old(i-1)*Cbar(i-1)
             END IF
         END IF
     END DO
@@ -709,6 +686,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     ! New Cbar
     Cbar = XXX(1:a,1)
 
+    ! Check for nan
     DO i=1,a
         IF((isnan(Cbar(i)))) THEN
             print*, 'Cbar', i, ' is nan right after matrix solve'
@@ -719,69 +697,15 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
         END IF
     END DO
     
-
+    !Check for lapack errors
     IF(info.ne.0) THEN
             print*, 'ERROR: info = ', info, ' in DGTSV, dynamic_sus_dist'
         stop
     END IF
    
 
-    ! Sometimes, the near bed diffusive flux can lead to small negative values
-    ! of Cbed being predicted right near the channel edge. This is because when
-    ! the depth is changing by order of magnitude (e.g. from 1.0e-05 to 1.0e-02)
-    ! outgoing flux from the small depth point [say (cbed*eddvis*slope)(i+1/2)
-    ! ] can be much greater than the amount of suspended sediment over the small
-    ! depth point. In my experience, this often happens at points with a tiny
-    ! depth right next to the dry bank. (e.g. depth(i-1)=0.0)
-    ! A simple 'fix' is to make Cbed = 0.0 if negative, and remove the required
-    ! amount of suspended sediment from the neighbouring point -- equivalent to
-    ! assuming that the flux 'stopped' when the sediment ran out during the last
-    ! time step.
-    !DO i = 1,a
-    !    IF((Cbar(i)*depth(i)<0.0).and.(.FALSE.)) THEN
-    !        ! Clip negligably small Cbar values
-    !        !IF(abs(Cbar(i))<1.0e-10) THEN
-    !        !    Cbar(i) = 0._dp
-    !        !    !goto 21121            
-    !        !    CYCLE
-    !        !END IF
-    !        ! Look at neighbouring points
-    !        IF((i>1).and.(i<a)) THEN
-    !            IF(depth(i-1)>depth(i+1)) THEN
-    !                Cbar(i-1) =(Cbar(i-1)*depth(i-1)+Cbar(i)*depth(i))/depth(i-1)
-    !                Cbar(i) = 0._dp
-    !            ELSE IF(depth(i+1)>depth(i-1)) THEN
-    !                Cbar(i+1) =(Cbar(i+1)*depth(i+1)+Cbar(i)*depth(i))/depth(i+1)
-    !                Cbar(i) = 0._dp
-    !            ELSE IF((depth(i-1)==0._dp).and.(depth(i+1)==0._dp)) THEN
-    !                ! Isolated point
-    !                Cbar(i) = 1.e-012_dp
-    !            END IF
-
-    !        ELSE
-    !            ! Treat boundary values
-    !            IF(i==1) THEN
-    !                IF(depth(i+1)>0._dp) THEN
-    !                    Cbar(i+1) =(Cbar(i+1)*depth(i+1)+Cbar(i)*depth(i))/depth(i+1)
-    !                    Cbar(i) = 1.0e-012_dp
-    !                ELSE
-    !                    ! Isolated point
-    !                    Cbar(i) = 1.e-012_dp
-    !                END IF 
-    !            ELSE IF(i==a) THEN
-    !                IF(depth(i-1)>0._dp) THEN
-    !                    Cbar(i-1) =(Cbar(i-1)*depth(i-1)+Cbar(i)*depth(i))/depth(i-1)
-    !                    Cbar(i) = 1.0e-012_dp
-    !                ELSE
-    !                    Cbar(i)=1.e-12_dp
-    !                END IF
-    !            END IF
-
-    !        END IF
-    !21121 CONTINUE
-    !    END IF
-    !END DO
-    
+    ! Check for negative Cbar values -- clip, and warn if they are not very
+    ! small 
     DO i=1,a
         IF(Cbar(i)<0.0_dp) THEN
             IF(Cbar(i)< -1.0e-012_dp) THEN
@@ -793,28 +717,20 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     END DO
    
  
-    ! STORE the lateral flux of suspended load = -cb*int_edif_dfdy -
-    ! dcb/dy*int_edif_f
+    ! STORE THE LATERAL FLUX OF SUSPENDED LOAD = 
+    ! -cb*int_edif_dfdy - dcb/dy*int_edif_f
     lat_sus_flux = 0.0_dp
     DO i=0,a
         ! Near bed suspended sediment concentration at i+1, i
         IF((i<a).and.(i>0)) THEN
             cbed_tmp1 = Cbar(i+1)/zetamult(i+1) - Cbar(i)/zetamult(i) ! diff(cbed)
-            !cbed_tmp2 = cbed(i)
-            !IF(Cbar_old(i)/zetamult(i)<Cbar_old(i+1)/zetamult(i+1)) THEN
-            !tmp1 = int_edif_f(i+1)
-            tmp1 = 0.5_dp*max(int_edif_f(i+1)+int_edif_f(i+2),&
-                    int_edif_f(i+1)+int_edif_f(i))
-            !tmp1 = 0.25_dp*(int_edif_f(i+1)+int_edif_f(i+2)+&
-            !        int_edif_f(i+1)+int_edif_f(i))
-            IF((water-bed(i+1))>1.0_dp*(water-bed(i))) THEN
+
+            IF(bed(i+1)<bed(i)) THEN
                 cbed_tmp2 = Cbar(i)/zetamult(i)
-                !tmp1 = 0.5_dp*(int_edif_f(i+1)+int_edif_f(i+2))
-            ELSEIF((water-bed(i+1))<=1.0_dp*(water-bed(i))) THEN
+            ELSEIF(bed(i+1)>=bed(i)) THEN
                 cbed_tmp2 = Cbar(i+1)/zetamult(i+1)
-                !tmp1 = 0.5_dp*(int_edif_f(i+1)+int_edif_f(i))
             END IF
-            !cbed_tmp2 = 0.5_dp*(Cbar(i+1)/zetamult(i+1) + Cbar(i)/zetamult(i))
+
         ELSE
             cbed_tmp1 = 0.0_dp
             cbed_tmp2 = 0.0_dp
@@ -822,7 +738,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
         ! Compute lat sus flux at i+1/2
         ! e.g. lat_sus_flux(1) = flux at 1/2 
         !      lat_sus_flux(a+1) = flux at a+1/2
-        lat_sus_flux(i+1) = -tmp1*(cbed_tmp1)/(ys_temp(i+1)-ys_temp(i))
+        lat_sus_flux(i+1) = -diffuse1(i)*(cbed_tmp1)/(ys_temp(i+1)-ys_temp(i))
         lat_sus_flux(i+1) = lat_sus_flux(i+1) -(cbed_tmp2)*int_edif_dfdy(i+1) 
     END DO 
 
