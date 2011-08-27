@@ -614,7 +614,7 @@ DO Q_loop= 1, no_discharges!15
                 !    END IF
                 !END IF
 
-                !IF(.FALSE.) THEN
+                !IF(.TRUE.) THEN
                 !    ! A version of the Delft bank erosion model. 
                 !    ! First check that there is no leakage of bedl, bedu in the
                 !    ! bed solver (possibly could happen due to matrix round off or

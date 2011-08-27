@@ -469,8 +469,8 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
                 ! (denoted 'diffuse1') -- this is reused later
                 diffuse1(0) = 0.0_dp
                 diffuse1(a) = 0.0_dp
-                diffuse1(1:a-1) = 0.5_dp*max(int_edif_f(2:a) + int_edif_f(3:a+1), &
-                                            int_edif_f(2:a) + int_edif_f(1:a-1))
+                diffuse1(1:a-1) = int_edif_f(2:a) !0.5_dp*max(int_edif_f(2:a) + int_edif_f(3:a+1), &
+                                  !          int_edif_f(2:a) + int_edif_f(1:a-1))
             END IF
            
             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
@@ -1081,10 +1081,6 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
             CASE('Rouse')
                  
                 IF((d>arefh).and.(wset/us<1.0e+3_dp)) THEN  !((d*0.3_dp>arefh)) THEN !.and.(us>wset)) THEN
-                    !FIXME: d*0.3_dp > arefh --- this is to be consistent with
-                    !the 'rouse_int' function, which only converges for
-                    !d>2arefh (I apparently built in some safety after a bad
-                    !experience)
 
                     !z_tmp = elevation above bed = at 0.5, 1.5, ... 99.5 * depth/no_subints.0,
                     ! adjusted so z>arefh 
@@ -1103,10 +1099,6 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
                     
                     ! Calculate vertical profile of suspended sediment
                     f = ((z2ratio-1.0_dp)*(d_on_aref_les1_inv))**rouseno
-                    !IF(minval(f)<0._dp) THEN
-                    !    print*, ' MINVAL f < 0._dp'
-                    !    stop
-                    !END IF
 
                     ! Calculate derivative of f. Use this approach:
                     ! df_dy = df/dbedh*dbedh/dy + df/aref*daref/dy + df/dus*dus/dy
@@ -1150,12 +1142,6 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
                     ! Step4: df_dy = df/dbedh*dbedh/dy + df/aref*daref/dy + df/dus*dus/dy
                     df_dy = df_dbedh*dbed_dy + df_darefh*daref_dy + df_dus*dus_dy
 
-                    !DO j=1,no_subints
-                    !    IF(df_dy(j).ne.df_dy(j)) print*, 'df_dy ', j, 'is nan',&
-                    !         i, d,rouseno, df_darefh(j), df_dus(j), df_dbedh(j), f(j), &
-                    !         z2ratio(j)
-                    !END DO
-
                 ELSE
                     !PRINT*, 'ERROR - d< aref in suspended_xsect (int_edify_f)', &
                     !        d, arefh, aref_tmp(i), aref_tmp(i-1), bed_tmp(i), bed_tmp(i-1)
@@ -1163,11 +1149,6 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
                     !z_tmp = elevation above bed = at 0.5, 1.5, ... 99.5 * depth/no_subints.0,
                     z_tmp = bedh+arefh+ (d-arefh)/(2.0_dp)*(gauss_abscissae +1.0_dp)
                     
-                    !z_tmp = bedh+arefh+ (d-arefh)/((no_subints-1)*1.0_dp)*( (/ (j,j=0,no_subints-1) /))
-                    ! adjusted so z>arefh 
-                    !z_tmp = bedh+arefh+ ((d-arefh)/no_subints*1.0_dp)*( (/ (j,j=1,no_subints) /)*1.0_dp-0.5_dp)
-
-                    !z_tmp = bedh+ ((d-bedh)/no_subints*1.0_dp)*( (/ (j,j=1,no_subints) /)*1.0_dp-0.5_dp)
                     ! In these shallow waters, define things so there is no
                     ! lateral flux of suspended load -- hmm, actually, not such
                     ! a good idea?
