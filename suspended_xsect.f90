@@ -35,7 +35,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     REAL(dp), INTENT(OUT):: lat_sus_flux 
     REAL(dp), INTENT(INOUT):: int_edif_f, int_edif_dfdy, sed_lag_scale , zetamult
     ! int_edif_f, int_edif_dfdy = 2 integrals that appear in the lateral diffusive flux
-    ! sed_lag_scale = used to estimate derivative terms, e.g. dCbar/dx = (Cbar - Cbar_ideal)/sed_lag_scale
+    ! sed_lag_scale = used to estimate derivative terms, e.g. d(U*d*Cbar)/dx = (U*d*Cbar - (U*d*Cbar)_ideal)/sed_lag_scale
     ! cb = Near bed suspended sediment concentration, 
     ! Cbar = Depth averaged suspended sediment concentration
     REAL(dp), INTENT(IN OUT):: cb, Cbar

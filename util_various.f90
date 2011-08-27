@@ -1090,7 +1090,7 @@ END FUNCTION maxmod
 REAL(dp) FUNCTION compute_area(nos, water,bed,ys,l,u)
     ! Used to compute the cross-sectional area.
     ! nos = number of points in cross-section (including dry regions)
-    ! Water = water elevation
+    ! water = water elevation
     ! ys,bed = y and z coordinates of cross-section
     ! l,u = indices of lower wet point and the upper wet point on the
     ! cross-section
