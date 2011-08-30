@@ -944,6 +944,71 @@ SUBROUTINE basic_slope_limit(nos,ys,bed,failure_slope, remesh,limit_fail)
 END SUBROUTINE basic_slope_limit
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+SUBROUTINE basic_jump_limit(nos,ys,bed,bedjump, remesh,limit_fail)
+    ! Purpose: Basic routine to limit the absolute value of the difference between bed points to be <=bedjump 
+    ! Input: The channel geometry, and the bedjump at which the bank 'fails', and
+    ! limit_fail = a number from (0-1], which can be used to make the failure
+    ! happen over more time.
+    ! Output: The updated channel geometry
+    INTEGER, INTENT(IN):: nos
+    REAL(dp), INTENT(IN):: ys(nos), bedjump, limit_fail
+    REAL(dp), INTENT(IN OUT):: bed(nos)
+    LOGICAL, INTENT(IN):: remesh
+
+    !Local variables
+    REAL(dp):: hss(nos), tmp
+    INTEGER:: i
+
+    IF((remesh.eqv..FALSE.)) THEN
+        !FIXME: At present, this is only valid(mass conserving) with a uniform mesh
+        hss = bed
+        
+        ! Move from centre of channel to left bank
+        !DO i=nos/2,2,-1 !nos/2,2,-1
+        ! Move from left bank to the channel centre
+        DO i=2,floor(nos*0.5_dp), 1 !nos/2,2,-1
+            IF(abs(bed(i)-bed(i-1))>bedjump) THEN
+                !print*, '.'
+                IF(bed(i)>bed(i-1)) THEN
+                    ! Note the 'explicit' nature of the computation:
+                    ! bed(post_failure) = bed(pre_failure) +
+                    !                     failure_amount(pre_failure)
+                    tmp = (bed(i)-(bed(i-1) + bedjump ))*limit_fail
+                    hss(i) = hss(i)-tmp*0.5_dp
+                    hss(i-1) = hss(i-1) + tmp*0.5_dp    
+                ELSE
+                    tmp = (bed(i-1)-(bed(i) + bedjump))*limit_fail
+                    hss(i) = hss(i)+tmp*0.5_dp
+                    hss(i-1) = hss(i-1) - tmp*0.5_dp    
+
+                END IF
+                
+            END IF
+        END DO
+        ! Move from centre of channel to right bank
+        !DO i=nos/2,nos-1,1 !nos/2,nos-1,1
+        ! Move from right bank to the channel centre
+        DO i=nos-1,ceiling(nos*0.5_dp), -1 !nos/2,nos-1,1
+            IF(abs(bed(i)-bed(i+1))>bedjump) THEN
+                IF(bed(i)>bed(i+1)) THEN
+                    tmp = (bed(i)-(bed(i+1) + bedjump ))*limit_fail
+                    hss(i) = hss(i)-tmp*0.5_dp
+                    hss(i+1) = hss(i+1) + tmp*0.5_dp    
+                ELSE
+                    tmp = (bed(i+1)-(bed(i) + bedjump ))*limit_fail
+                    hss(i) = hss(i)+tmp*0.5_dp
+                    hss(i+1) = hss(i+1) - tmp*0.5_dp    
+                END IF
+            END IF
+        END DO
+
+    !Reset the bed
+    bed = hss
+    END IF
+END SUBROUTINE basic_jump_limit
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 SUBROUTINE critical_slope_wasting(dT, nos,ys,bed,failure_slope, rate)
     ! Purpose: Basic routine to limit the absolute value of the lateral slope.
@@ -960,6 +1025,7 @@ SUBROUTINE critical_slope_wasting(dT, nos,ys,bed,failure_slope, rate)
     INTEGER:: i
     REAL(dp):: flux(nos), slope, bed_pred(nos), flux_cor(nos)
 
+    !bed =0.5_dp*( bed(1:nos) + bed(nos:1:-1))
     ! Determine rate of mass failure at i+1/2
     DO i=1,nos-1
         slope = (bed(i+1)-bed(i))/(ys(i+1)-ys(i))
@@ -981,7 +1047,8 @@ SUBROUTINE critical_slope_wasting(dT, nos,ys,bed,failure_slope, rate)
 
     ! New value of the flux = 0.5*(predictor + corrector)
     flux = 0.5_dp*(flux + flux_cor) 
-    
+   
+    print*, count(abs(flux(1:nos-1))>0.0_dp) 
     ! d(bed)/dT = -d(flux)/dy
     bed(2:nos-1) = bed(2:nos-1) - dT*(flux(2:nos-1) - flux(1:nos-2))/(0.5_dp*(ys(3:nos)-ys(1:nos-2)))
     bed(1) = bed(1)             - dT*(flux(1)                      )/(ys(2)-ys(1))
@@ -1006,6 +1073,7 @@ SUBROUTINE critical_bedjump_wasting(dT, nos,ys,bed,failure_jump, rate)
     ! Local variables
     INTEGER:: i
     REAL(dp):: flux(nos), jump, bed_pred(nos), flux_cor(nos)
+
 
     ! Determine rate of mass failure at i+1/2
     DO i=1,nos-1
