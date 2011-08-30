@@ -45,7 +45,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
 
     ! LOCAL VARIABLES
     INTEGER:: i, info, j
-    LOGICAL:: halt, xderivative_operator_splitting=.FALSE.
+    LOGICAL:: halt, xderivative_operator_splitting=.TRUE.
     REAL(dp):: depth(0:a+1), eddif_y(0:a+1), eddif_z(a), vd(0:a+1), ys_temp(0:a+1)
     REAL(dp):: M1_lower(a), M1_diag(a), M1_upper(a), M1_upper2(a), M1_lower2(a)
     REAL(dp):: RHS(a), dy_all(a), depthlast(0:a+1), zetamult_old(0:a+1),&
@@ -472,6 +472,12 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
                 diffuse1(a) = 0.0_dp
                 diffuse1(1:a-1) = 0.5_dp*max(int_edif_f(2:a) + int_edif_f(3:a+1), &
                                             int_edif_f(2:a) + int_edif_f(1:a-1))
+                ! Here, we try to weight 'diffuse1' by the depth, biasing towards
+                ! higher depths
+                !diffuse1(1:a-1) = ((int_edif_f(2:a) + int_edif_f(3:a+1))*depth(2:a)**1 + &
+                !                   (int_edif_f(2:a) +int_edif_f(1:a-1))*depth(1:a-1)**1  &
+                !                  )/(depth(2:a)**1+depth(1:a-1)**1)
+                
                 ! Compute pointwise value of int(eddif_y*dfdy)dz at (i+1/2)
                 ! (denoted 'diffuse2') -- this is reused later
                 diffuse2(0) = 0.0_dp
@@ -479,6 +485,12 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
                 DO j=1,a-1
                     diffuse2(j) = 0.5_dp*minmod(int_edif_dfdy(j+1)+int_edif_dfdy(j+2), &
                                                   int_edif_dfdy(j+1)+int_edif_dfdy(j))
+                    ! Here we try to weight diffuse2 by the depth, biasing
+                    ! towards lower depths
+                    !diffuse2(j) =( (int_edif_dfdy(j+1)+int_edif_dfdy(j+2))*depth(j)**1 + &
+                    !               (int_edif_dfdy(j+1)+int_edif_dfdy(j))*depth(j+1)**1   &
+                    !             )/(depth(j+1)**1+depth(j)**1)
+ 
                 END DO
 
                 ! Compute the weighting of cb(i+1/2) = (1-cb_weight)*cb(i+1) + cb_weight*cb(i)
@@ -490,6 +502,9 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
                     ELSE
                         cb_weight(j) = 0.5_dp
                     END IF
+
+                    ! Try to weight toward the cbed associated with the shallower depth
+                    !cb_weight(j) = 1.0_dp - depth(j+1)**1/(depth(j)**1+depth(j+1)**1)
                 END DO
 
             END IF

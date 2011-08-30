@@ -369,8 +369,9 @@ SUBROUTINE update_bed(a, dT, water, Q, bed,ys,Area, bottom, ff,recrd, E, D,C,rmu
             IF(iii==2) bed = bedlast + (-dqbeddx + Qd - Qe)*mor*dT/(1._dp-voidf)
 
         ELSE !!USE POINTS WHICH MOVE IN THE DIRECTION OF THE VECTOR D-E
-        !    print*, 'FIXME: This is not consistent with the new definition of Qe (30/12/2010), which already includes sllength'
-        !    stop
+            print*, 'FIXME: Use of normmov is not consistent with the new definition of Qe &
+                             (30/12/2010), which already includes sllength'
+            stop
         !    bed=bed+( Qd - Qe*cos(atan(slopes)))*mor*dT/(1._dp-voidf)
         !    ys=ys+Qe*sin(atan(slopes))*mor*dT/(1._dp-voidf)
 
