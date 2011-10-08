@@ -530,27 +530,17 @@ DO Q_loop= 1, num_simulations!15
 
             !! CALCULATE THE CROSS-SECTIONAL SUSPENDED LOAD DISTRIBUTION
             IF(susdist) THEN
-                !! Adjust the erosion factor if erosion is normal to the bed
-                !IF(norm) THEN
-                !    sllength = sqrt(1._dp+ slopes**2)
-                !ELSE
-                !    sllength=1._dp
-                !END IF
                 !Record old value of C for file output
                 Clast=C  
                 lat_sus_flux = 0.0_dp ! Preset to zero
+
                 ! Evolve the suspended sediment concentration one timestep
                 ! (from i-1 to i)
-                !print*, DT1
-                !DO jj=1,1
-                !water_tmp  = waterlast+1.0*jj/(1.0)*(water-waterlast)
-
                 call dynamic_sus_dist(u-l+1, DT1, ys(l:u), bed(l:u), water, waterlast, Q, tau(l:u), vel(l:u), wset, & 
                                         0.5_dp*(Qe(l:u)+Qelast(l:u)), lambdacon, rho,rhos, g, d50, bedl,bedu, ysl, ysu, C(l:u),&
                                         Cbar(l:u), Qbed(l:u), sed_lag_scale, j, a_ref(l:u), sus_vert_prof,&
                                         edify_model, x_len_scale, sconc, lat_sus_flux(l:u+1), bedlast(l:u), int_edif_f(l:u+1), &
                                         int_edif_dfdy(l:u+1), zetamult((l-1):(u+1)), too_steep(l:u))
-                !END DO
 
                 ! Set C in dry parts of the channel to zero
                 ! This is not done earlier, because we needed to store the old
@@ -700,8 +690,6 @@ DO Q_loop= 1, num_simulations!15
                 IF((evolve_bed).and.(tmp/(DT1*writfreq)<1.0e-12_dp)) THEN
                     print*, 'Converged due to small bed changes'
                     goto 373 !Converged: Go to the end of this loop
-                    !exit
-                    !sconc = sconc*0.5_dp
                 END IF
                 bedold=bed
             END IF
