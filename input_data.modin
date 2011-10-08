@@ -31,15 +31,15 @@ waterM = 0.0 !Initial water elevation (m) and mean water elevation
 TR=0.0 !Tidal range. If it is set to zero then the discharge is constant, otherwise the continuity based method is used.
 Width = 400.0 !Width of computational domain (m)
 
-no_discharges = 1
+num_simulations = 1 ! Number of simulations, each with its own discharge/susconc value
 Discharges = 2100.   !2100.   2100.   2100.   2100.   2100.   2100. 
 susconcs =   1.0e-03 !5.0e-04 2.0e-04 1.0e-04 7.0e-05 5.0e-05 2.0e-06
 !manning=.true. !Do we use a manning friction factor? If not, then we use a Darcy Weisbach friction factor, calculated as f=man_n**2*8.*9.8 -i.e., the equivalent manning friction value if the depth were 1 everywhere. Hence, the variable man_n is used to set either a manning or darcy friction. Same deal for vegetation drag
-friction_type = 'ks' !'manning'!, 'darcy', 'vanrijn', 'ks'
-rough_coef =0.01 ! A value depending on the friction type. if 'manning' = Mannings n for the basic bed, if 'ks' = value of ks, if 'darcy' = f, etc, if 'vanrijn', then the value is not used.
-grain_friction_type  = 'vanrijn' ! 'vanrijn', 'colebrook', 'onethird' -- model for bed shear acting on grains 
+friction_type = 'manning' !'manning'!, 'darcy', 'vanrijn', 'ks'
+rough_coef =0.03 ! A value depending on the friction type. if 'manning' = Mannings n for the basic bed, if 'ks' = value of ks, if 'darcy' = f, etc, if 'vanrijn', then the value is not used.
+grain_friction_type  = 'vanrijn' ! 'vanrijn', 'colebrook', 'onethird', 'one' -- model for bed shear acting on grains 
 man_nveg = 0.3 !Mannings n for vegetated regions
-veg_ht = 9.0e+20 !Height at which vegetation is assumed to occur.
+veg_ht = 9.0e+20 !Height at which vegetation is assumed to occur. Set to a very large number for no vegetation
 lambdacon=0.24 !Dimensionless eddy viscosity constant
 rho = 1026.0 ! Density of water (kg/m^3)
 tbston=.true. !When true (false) this term switches on (off) the sqrt(1+slopes^2) in the bed shear equation: tau*sqrt(1+slopes^2) = rho g Sf h + d/dy ... If .false., then it is replaced with 1. This effects both the shear calculation, and the 'roughmult' friction factor estimation

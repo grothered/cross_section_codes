@@ -27,9 +27,9 @@ REAL(dp):: wslope, ar, Q, t, &
             ysl,ysu,bedl, bedu, wdthx, TR, storer(9), tmp, tmp2, a_ref, &
             failure_slope, x_len_scale, sus_flux, sed_lag_scale, Clast, &
             lat_sus_flux, int_edif_f, int_edif_dfdy, zetamult
-INTEGER::  remesh_freq, no_discharges, too_steep, morbl, morbu
+INTEGER::  remesh_freq, num_simulations, too_steep, morbl, morbu
 REAL(dp):: discharges(1000), susconcs(1000)
-LOGICAL::  flag, susdist, sus2d, readin, geo, remesh, norm, vertical, & 
+LOGICAL::  compute_twice, susdist, sus2d, readin, geo, remesh, norm, vertical, & 
             tbston, normmov, Qbedon, susQbal, talmon,&
              variable_timestep, high_order_shear, high_order_bedload, &
             taucrit_slope_reduction, evolve_bed
@@ -42,7 +42,7 @@ NAMELIST /inputdata/ nos,writfreq,jmax, layers, hlim, mor, mu, &
                 g, kvis, norm, &
                 vertical, lambdacon, alpha, tbston, normmov, sus2d, &
                 Qbedon, susQbal, TR, talmon, variable_timestep, & 
-                friction_type, no_discharges, &
+                friction_type, num_simulations, &
                 discharges, susconcs, high_order_shear, &
                 high_order_bedload, grain_friction_type, &
                 resus_type, bedload_type, sus_vert_prof, edify_model, &
@@ -77,19 +77,19 @@ READ(*,nml=inputdata)
 PRINT inputdata
 
 ! Test that the inputs of discharges, susconcs seem okay
-IF(size(discharges) < no_discharges) THEN
+IF(size(discharges) < num_simulations) THEN
     print*, 'Error: the discharges vector can be at most of length ', &
              size(discharges)
     stop
 END IF 
 
-IF((minval(discharges(1:no_discharges))<0.0_dp).OR. & 
-   (minval(susconcs(1:no_discharges))<0.0_dp)) THEN
+IF((minval(discharges(1:num_simulations))<0.0_dp).OR. & 
+   (minval(susconcs(1:num_simulations))<0.0_dp)) THEN
     print*, 'Error: Discharges or susconcs are specified incorrectly. &
             Possibly there are not enough values'
     stop
-ELSE IF((maxval(discharges(no_discharges+1:1000))>0.0_dp).OR. & 
-   (minval(susconcs(no_discharges+1:1000))>0.0_dp)) THEN
+ELSE IF((maxval(discharges(num_simulations+1:1000))>0.0_dp).OR. & 
+   (minval(susconcs(num_simulations+1:1000))>0.0_dp)) THEN
     print*, 'Error: Discharges or susconcs are specified incorrectly. &
             Possibly there are too many values'
     stop
@@ -128,7 +128,7 @@ ALLOCATE(ys(nos),bed(nos),dists(nos),tau(nos),ks(nos),tbst(nos),&
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !LOOP OVER DIFFERENT VALUES OF DISCHARGE
 
-DO Q_loop= 1, no_discharges!15 
+DO Q_loop= 1, num_simulations!15 
 
     ! Set suspended sediment concentration for this discharge
     sconc= susconcs(Q_loop) 
@@ -160,8 +160,8 @@ DO Q_loop= 1, no_discharges!15
         close(80)
     ELSE
         !Define the channel geometry. Note that for most of my boundary
-        !conditions to be valid, we need the cross section edges not to ever
-        !be sumberged. 
+        !conditions to be valid, we need the edges of the computational domain
+        !to not to ever be sumberged. 
         DO i =1,nos
         
             ! Cross-channel distance, 'y' coordinate
@@ -264,7 +264,7 @@ DO Q_loop= 1, no_discharges!15
     !!!!!!!!!!!!!!
     DO j=1, jmax 
 
-        ! Print out to console/check if converged
+        ! Print out to console
         22222 IF( mod(j-1,writfreq).eq.0 ) THEN 
                 PRINT*, j, l,u, Q/Area, t, ((Q/Area)*abs(Q/Area)*rmult),&
                      DT1, ys(u)-ys(l)+wdthx, maxval(C), C(nos/2),&
@@ -277,10 +277,11 @@ DO Q_loop= 1, no_discharges!15
             DO jj= 0, layers
 
                 multa=1._dp
+                
                 IF(taucrit_slope_reduction.eqv..TRUE.) THEN 
-
-                    IF((j.eq.1).and.(i.eq.1).and.(jj==0)) print*, 'WARNING: Critical shear on a slope is reduced'
                     ! Compute slope-related reduction in critical shear stress
+                    IF((j.eq.1).and.(i.eq.1).and.(jj==0)) print*, 'WARNING: Critical shear on a slope is reduced'
+                    
                     aa= mu**2*(mu*lifttodrag-1._dp)/(mu*lifttodrag+1._dp)
                     bb= -2._dp*mu**2*lifttodrag*cos(atan(slopes(i)))*mu/(1._dp+mu*lifttodrag) 
                     cc= mu**2*cos(atan(slopes(i)))**2 - sin(atan(slopes(i)))**2
@@ -301,8 +302,8 @@ DO Q_loop= 1, no_discharges!15
             END DO 
         END DO
 
-        !!Update taucrit_dep -- the value of taucrit in sediment buried at a
-        !certain depth
+        ! taucrit_dep = the value of taucrit in sediment buried at a
+        ! certain depth
         DO  i= 1, nos
             DO n= 1, layers
                 taucrit_dep(i,n)= max(min(taucrit_dep(i,n), bed(i)),bed(i)-lincrem*n) !So sediments buried at a certain depth will have their critical shear increase. 
@@ -310,7 +311,7 @@ DO Q_loop= 1, no_discharges!15
         END DO
 
 
-        !dst - -the distance of any critical shear layer to the surface.
+        !dst = the distance of any critical shear layer to the surface.
         dst(:,0)= 0._dp
         DO i= 1, nos
             DO jj= 1, layers
@@ -388,11 +389,11 @@ DO Q_loop= 1, no_discharges!15
             Q= (discharges(Q_loop)+j*0._dp/500._dp)*(ys(u)-ys(l)+wdthx)*abs((water-waterlast))/dt*10._dp 
         END IF
 
+        ! Sanity checks
         IF(isnan(Q)) THEN
             print*, "Q is nan", Q, Area, Arealast
             stop
         END IF
-
         IF((Q/Area)>5.) THEN
             print*, "Q/A>5", Q/Area, Q, Area, Arealast, j,  dt, water, waterlast, width, t, dt!, l, u, water-bed(l:u)
             !stop     
@@ -450,9 +451,9 @@ DO Q_loop= 1, no_discharges!15
             !(sqrt(1._dp+( (bedu-bed(u))/(ysu-ys(u)))**2) + sqrt(1._dp+slopes(u)**2) )
        
             ! During the first time step, we compute friction and shear twice,
-            ! because each depends on the other. Note the need to compute twice
-            ! with flag=.TRUE. 
-            IF(j==1) flag=.TRUE.            
+            ! because each depends on the other. Indicate the need to compute twice
+            ! with compute_twice=.TRUE. 
+            IF(j==1) compute_twice=.TRUE.            
             
             ! CALCULATE FRICTION on bed 'i' with vel 'i-1'
             1987 call calc_friction(friction_type, grain_friction_type, rough_coef, water, u-l+1,&
@@ -483,10 +484,10 @@ DO Q_loop= 1, no_discharges!15
             !Following Abdel-Fattah et al 2004
             tau_g(l:u) = rho*vel(l:u)**2*(f_g(l:u)/8._dp)*sign(1._dp+0._dp*tau(l:u), tau(l:u))
           
-            IF((j==1).AND.(flag)) THEN
+            IF((j==1).AND.(compute_twice)) THEN
                 ! Compute friction and shear again on the very first
                 ! time-step. 
-                flag=.FALSE.
+                compute_twice=.FALSE.
                 GOTO 1987
             END IF
       
@@ -544,7 +545,7 @@ DO Q_loop= 1, no_discharges!15
                 !DO jj=1,1
                 !water_tmp  = waterlast+1.0*jj/(1.0)*(water-waterlast)
 
-                call dynamic_sus_dist(u-l+1, DT1/10.0_dp, ys(l:u), bed(l:u), water, waterlast, Q, tau(l:u), vel(l:u), wset, & 
+                call dynamic_sus_dist(u-l+1, DT1, ys(l:u), bed(l:u), water, waterlast, Q, tau(l:u), vel(l:u), wset, & 
                                         0.5_dp*(Qe(l:u)+Qelast(l:u)), lambdacon, rho,rhos, g, d50, bedl,bedu, ysl, ysu, C(l:u),&
                                         Cbar(l:u), Qbed(l:u), sed_lag_scale, j, a_ref(l:u), sus_vert_prof,&
                                         edify_model, x_len_scale, sconc, lat_sus_flux(l:u+1), bedlast(l:u), int_edif_f(l:u+1), &
