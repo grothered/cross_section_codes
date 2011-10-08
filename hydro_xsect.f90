@@ -136,7 +136,6 @@ SUBROUTINE shear(nn,ys,bed,water,wslope,taus,ks, f,NNN,slopes, counter, Q, vegdr
 
     !Take care of the case in which there are not enough points to use the LDM
     IF (nn<=5) THEN 
-        !print*, 'nn = ', nn
         ! rho f/8 U^2 + rho*vegdrag*d *U^2 = rho g Sf d
         ! Solve for U^2, then multiply by rho f/8 to get taus
         taus(1:nn) = rho*f/8._dp*(rho*g*(water-bed(1:nn))*wslope)& 
