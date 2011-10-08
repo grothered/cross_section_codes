@@ -31,7 +31,7 @@ waterM = 0.0 !Initial water elevation (m) and mean water elevation
 TR=0.0 !Tidal range. If it is set to zero then the discharge is constant, oth
 Width = 100.0 !Width of computational domain (m)
 
-no_discharges=1 ! Number of different discharge simulations
+num_simulations=1 ! Number of different discharge simulations
 Discharges = 29.4 ! Discharge values
 susconcs = 1.0e-03 !suspended sediment concentration(m^3/m^3) for each discha
 friction_type = 'manning'!, 'darcy', 'vanrijn'

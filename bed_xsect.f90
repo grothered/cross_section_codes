@@ -1048,7 +1048,7 @@ SUBROUTINE critical_slope_wasting(dT, nos,ys,bed,failure_slope, rate)
     ! New value of the flux = 0.5*(predictor + corrector)
     flux = 0.5_dp*(flux + flux_cor) 
    
-    print*, count(abs(flux(1:nos-1))>0.0_dp) 
+    !print*, count(abs(flux(1:nos-1))>0.0_dp) 
     ! d(bed)/dT = -d(flux)/dy
     bed(2:nos-1) = bed(2:nos-1) - dT*(flux(2:nos-1) - flux(1:nos-2))/(0.5_dp*(ys(3:nos)-ys(1:nos-2)))
     bed(1) = bed(1)             - dT*(flux(1)                      )/(ys(2)-ys(1))
