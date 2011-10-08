@@ -20,7 +20,7 @@
 !Algorithm options
 !!!!!!!!!!!!!!!!!!!!!
 
-nos = 2000 ! Number of spatial grid points
+nos = 1000 ! Number of spatial grid points
 writfreq = 2000 !24*5*5 ! The output is written every writfreq 'th timestep
 jmax= 1200000 !1382400 !24*5*2*45*4*4*4*4*5 ! The number of time steps
 t = 0.00 ! Starting time (s)
@@ -29,11 +29,11 @@ variable_timestep=.FALSE. !Do we use a variable time-step? Can cause problems
 
 waterM = 0.0 !Initial water elevation (m) and mean water elevation
 TR=0.0 !Tidal range. If it is set to zero then the discharge is constant, oth
-Width = 100.0 !Width of computational domain (m)
+Width = 100 !Width of computational domain (m)
 
 num_simulations=1 ! Number of different discharge simulations
 Discharges = 29.4 ! Discharge values
-susconcs = 1.0e-03 !suspended sediment concentration(m^3/m^3) for each discha
+susconcs = 5.0e-05 !suspended sediment concentration(m^3/m^3) for each discha
 friction_type = 'manning'!, 'darcy', 'vanrijn'
 rough_coef=0.027 ! Friction coefficient corresponding to the friction_type mo
 grain_friction_type='vanrijn' !'colebrook'!'vanrijn'
@@ -60,7 +60,7 @@ d50 = 0.000149 !0.000062 ! median grain size for bedload formula (m)
 g = 9.8 !Gravity (m/s^2)
 kvis = 1.0E-06 !Kinematic viscosity of water. 
 alpha=0.000228 !The constant for the erosion formula E= alpha*(tau-taue)/sqrt
-Qbedon=.TRUE. !Is bedload active
+Qbedon=.FALSE. !Is bedload active
 bedload_type='vanrijn'
 talmon=.TRUE. !Do we use a talmon lateral bedload closure?
 resus_type = 'vanrijn'! ! 'cohesive', 'vanrijn', 'smithmac'
