@@ -177,7 +177,7 @@ test_susdist<-function(ys, bed, water, Cbed, Es, wset, qby, aref, ustar, num_z =
     # to debug (code twice!) -- I actually found a fundamental bug this way.  An
     # important aspect is that this routine is coded independently of the
     # original model (so we do not copy-and-paste previous errors), and uses
-    # slightly different calculation procedures. 
+    # significantly different calculation procedures. 
 
     # This R code actually uses a method which is much less efficient than the
     # fortran code, such that to get the R code to agree well with the fortran

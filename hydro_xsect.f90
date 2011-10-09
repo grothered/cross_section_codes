@@ -400,9 +400,9 @@ END SUBROUTINE shear
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-SUBROUTINE calc_shear(a, dT, water, Q, bed,ys,Area, bottom, ff,recrd, E, D,C,rmu,inuc,tau,NN,counter &
-            ,slopes, hlim,mor,taucrit_dep,layers, taucrit_dep_ys, nos, taucrit, vegdrag, susdist, rho, Qe, & 
-            Qbed, rhos, voidf, d50, g, kvis, norm, vertical, lambdacon, tbston, ysl,ysu,bedl,bedu, & 
+SUBROUTINE calc_shear(a, dT, water, Q, bed,ys,Area, bottom, ff,rmu,inuc,tau,NN,counter &
+            ,slopes, hlim,mor,nos, vegdrag, susdist, rho, & 
+            rhos, voidf, d50, g, kvis, norm, vertical, lambdacon, tbston, ysl,ysu,bedl,bedu, & 
             high_order_shear) 
     ! A routine which calculates the shear over the cross-section
     ! It uses the routine 'shear' above.
@@ -421,10 +421,6 @@ SUBROUTINE calc_shear(a, dT, water, Q, bed,ys,Area, bottom, ff,recrd, E, D,C,rmu
     ! Area = the cross-sectional area
     ! bottom = the average bed elevation
     ! ff = the darcy-weisbach friction factor
-    ! recrd = a useful parameter to record things (might not be used here)
-    ! E = the cross-sectionally integrated rate of erosion
-    ! D = the cross-sectionally integrated rate of depositiona
-    ! C = the near bed suspended sediment concentration
     ! rmu = the 'roughness multiplier' -- defined so that the friction slope Sf = rmu * (Q/Area)^2
     !                                  -- so in some sense rmu = (f/8)/mean_depth
     ! inuc = non-uniform convective intertia multiplier term for interaction with a 1D unsteady solver
@@ -434,11 +430,7 @@ SUBROUTINE calc_shear(a, dT, water, Q, bed,ys,Area, bottom, ff,recrd, E, D,C,rmu
     ! slopes = dbed/dy
     ! hlim = do not compute the shear if the average depth is less than hlim
     ! mor = morphological factor (for timestep accelleration)
-    ! taucrit_dep = z coordinate of critical shear stress bed layers (at certain depths from the bed surface)
-    ! layers = number of taucrit layers
-    ! taucrit_dep_ys = y coordinates of taucrit_dep
     ! nos = number of points in taucrit_dep_ys
-    ! taucrit = the critical shear stress at every point in taucrit_dep
     ! vegdrag = vegetation drag coefficient
     ! susdist = logical variable -- is lateral variation in C allowed (true) or not (false)
     ! rho = density of water
@@ -460,19 +452,17 @@ SUBROUTINE calc_shear(a, dT, water, Q, bed,ys,Area, bottom, ff,recrd, E, D,C,rmu
     ! interior derivatives in the 'shear' routine
 
 
-    INTEGER, INTENT(IN)::a,counter,layers, nos
+    INTEGER, INTENT(IN)::a,counter,nos
     REAL(dp), INTENT(IN)::water,Q, Area, bottom, ff, hlim,mor, vegdrag, dt, rho, rhos, voidf,&
          d50, g, kvis, lambdacon, ysl,ysu,bedl,bedu 
-    REAL(dp), INTENT(IN OUT):: bed, recrd, E, D,rmu,inuc,tau, NN, ys,C,taucrit_dep, taucrit_dep_ys, slopes, & 
-        taucrit, Qe, Qbed
+    REAL(dp), INTENT(IN OUT):: bed, rmu,inuc,tau, NN, ys,slopes
     LOGICAL, INTENT(IN):: susdist, norm, vertical, tbston, high_order_shear
-    DIMENSION bed(a),ys(a), ff(a),recrd(a),tau(a), NN(a),slopes(a),taucrit_dep(nos,layers),C(a),taucrit_dep_ys(nos), & 
-        taucrit(nos,0:layers), vegdrag(a), Qe(a), Qbed(a) ! 
+    DIMENSION bed(a),ys(a), ff(a),tau(a), NN(a),slopes(a), vegdrag(a)! 
     
     INTEGER::i, j, bgwet, up,  jj,  info,ii, n(a)
     REAL(dp)::wslope,  Qelocal, tt, corfact
     REAL(dp):: kkkk(a), tbst(a), f(a)  
-    REAL(dp)::dst(a,0:(layers+1)), vel(a), Qb(a),& 
+    REAL(dp)::vel(a), Qb(a),& 
         bedlast(a), sinsl(a), mu_d, Qtemp, useful(a), Ceq(a) 
     !logical::writ_tau=.TRUE.  !This will write out the cross sectional taus-- will lead to massive files if you're not careful. 
     LOGICAL::  dry(a)
