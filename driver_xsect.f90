@@ -465,7 +465,7 @@ DO Q_loop= 1, num_simulations!15
                             water-Area/(ys(u)-ys(l)+wdthx),f(l:u),&
                             rmult,inuc, tau(l:u),& 
                             NN(l:u),j,slopes(l:u), hlim, &
-                            u-l+1, vegdrag(l:u), susdist, rho & 
+                            u-l+1, vegdrag(l:u), rho & 
                             ,rhos, voidf, d50, g, kvis, norm, vertical, lambdacon, tbston &
                             ,ysl,ysu,bedl,bedu, high_order_shear) 
 

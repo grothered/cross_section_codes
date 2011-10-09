@@ -401,7 +401,7 @@ END SUBROUTINE shear
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 SUBROUTINE calc_shear(a, dT, water, Q, bed,ys,Area, bottom, ff,rmu,inuc,tau,NN,counter &
-            ,slopes, hlim,nos, vegdrag, susdist, rho, & 
+            ,slopes, hlim,nos, vegdrag, rho, & 
             rhos, voidf, d50, g, kvis, norm, vertical, lambdacon, tbston, ysl,ysu,bedl,bedu, & 
             high_order_shear) 
     ! A routine which calculates the shear over the cross-section
@@ -431,7 +431,6 @@ SUBROUTINE calc_shear(a, dT, water, Q, bed,ys,Area, bottom, ff,rmu,inuc,tau,NN,c
     ! hlim = do not compute the shear if the average depth is less than hlim
     ! nos = number of points in taucrit_dep_ys
     ! vegdrag = vegetation drag coefficient
-    ! susdist = logical variable -- is lateral variation in C allowed (true) or not (false)
     ! rho = density of water
     ! Qe = rate of resuspension
     ! Qbed = bedload flux 
@@ -455,7 +454,7 @@ SUBROUTINE calc_shear(a, dT, water, Q, bed,ys,Area, bottom, ff,rmu,inuc,tau,NN,c
     REAL(dp), INTENT(IN)::water,Q, Area, bottom, ff, hlim, vegdrag, dt, rho, rhos, voidf,&
          d50, g, kvis, lambdacon, ysl,ysu,bedl,bedu 
     REAL(dp), INTENT(IN OUT):: bed, rmu,inuc,tau, NN, ys,slopes
-    LOGICAL, INTENT(IN):: susdist, norm, vertical, tbston, high_order_shear
+    LOGICAL, INTENT(IN):: norm, vertical, tbston, high_order_shear
     DIMENSION bed(a),ys(a), ff(a),tau(a), NN(a),slopes(a), vegdrag(a)! 
     
     INTEGER::i, j, bgwet, up,  jj,  info,ii, n(a)
