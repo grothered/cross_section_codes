@@ -9,19 +9,19 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!
-SUBROUTINE calc_resus_bedload(a, dT, water, Q, bed,ys,Area, ff,recrd, E, C, wset, rmu,a2, inuc,tau,vel & 
+SUBROUTINE calc_resus_bedload(a, dT, water, Q, bed,ys,Area, ff,recrd, E, C, wset, a2, tau,vel & 
     ,counter,slopes, hlim,mor,taucrit_dep,layers, taucrit_dep_ys, nos, taucrit, rho, Qe, Qbed, rhos,& 
-    voidf, dsand, d50, g, kvis, norm, vertical,alpha, tbston, Qbedon, ysl,ysu,bedl,bedu, resus_type, bedload_type, a_ref) 
+    voidf, dsand, d50, g, kvis, norm, alpha, Qbedon, ysl,ysu,bedl,bedu, resus_type, bedload_type, a_ref) 
     ! Purpose: Calculate the rate of resuspension and bedload transport over a
     ! cross-section
 
     INTEGER, INTENT(IN)::a,a2,counter,layers, nos
     REAL(dp), INTENT(IN)::water,Q, Area, ff, hlim,mor, dt, rho, rhos, voidf, dsand, d50, g, & 
         kvis, alpha, wset, a_ref
-    REAL(dp), INTENT(IN OUT):: bed, recrd, E, rmu,inuc,tau,vel,  ys,C,taucrit_dep, taucrit_dep_ys, slopes, taucrit,& 
+    REAL(dp), INTENT(IN OUT):: bed, recrd, E, tau,vel,  ys,C,taucrit_dep, taucrit_dep_ys, slopes, taucrit,& 
          Qe, Qbed
     REAL(dp), INTENT(IN):: ysl,ysu,bedl,bedu 
-    LOGICAL, INTENT(IN):: norm, vertical, tbston, Qbedon
+    LOGICAL, INTENT(IN):: norm, Qbedon
     CHARACTER(LEN=20), INTENT(IN):: resus_type, bedload_type
     DIMENSION bed(a),ys(a), ff(a),recrd(a),tau(a),vel(a), slopes(a),taucrit_dep(nos,layers),C(a),& 
                 taucrit_dep_ys(nos), taucrit(nos,0:layers),  Qe(a), Qbed(a), a_ref(a) ! 
@@ -210,20 +210,20 @@ END SUBROUTINE calc_resus_bedload
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-SUBROUTINE update_bed(a, dT, water, Q, bed,ys,Area, bottom, recrd, E, D,C,rmu,a2, inuc,tau,taug,NN, &
-    counter,slopes, hlim,mor,taucrit_dep,layers, taucrit_dep_ys, nos, taucrit, vegdrag, susdist,rho, Qe, Qbed, & 
-    wset,dqbeddx, rhos, voidf, d50, g, kvis, norm, vertical, lambdacon, tbston, Qbedon, normmov,sus2d,ysl, & 
+SUBROUTINE update_bed(a, dT, water, Q, bed,ys,Area, recrd, E, D,C,a2, tau,taug,&
+    counter,slopes, hlim,mor,taucrit_dep,layers, taucrit_dep_ys, nos, taucrit, rho, Qe, Qbed, & 
+    wset,dqbeddx, rhos, voidf, d50, g, norm, Qbedon, normmov,sus2d,ysl, & 
     ysu,bedl,bedu,iii, bedlast, talmon, high_order_bedload, too_steep)
     ! Purpose: Solve the sediment continuity equation to update the channel bed.
 
     INTEGER, INTENT(IN)::a,a2,counter,layers, nos, iii, too_steep
-    REAL(dp), INTENT(IN)::water,Q, Area, bottom, hlim,mor, vegdrag, dt, rho, Qbed, Qe, dqbeddx, &
-        rhos, voidf, d50, g, kvis,wset, lambdacon, ysl,ysu, bedlast, taug,C !QbedI, dQbedI
-    REAL(dp), INTENT(IN OUT):: bed, recrd, E, D,rmu,inuc,tau, NN, ys,taucrit_dep, taucrit_dep_ys, slopes, & 
+    REAL(dp), INTENT(IN)::water,Q, Area, hlim,mor, dt, rho, Qbed, Qe, dqbeddx, &
+        rhos, voidf, d50, g, wset, ysl,ysu, bedlast, taug,C !QbedI, dQbedI
+    REAL(dp), INTENT(IN OUT):: bed, recrd, E, D,tau, ys,taucrit_dep, taucrit_dep_ys, slopes, & 
         taucrit, bedu, bedl
-    LOGICAL, INTENT(IN):: susdist, norm, vertical, tbston, Qbedon, normmov, sus2d, talmon, high_order_bedload
-    DIMENSION bed(a),ys(a), recrd(0:a),tau(a),taug(a), NN(a),slopes(a),taucrit_dep(nos,layers),C(a),&
-        taucrit_dep_ys(nos),taucrit(nos,0:layers), vegdrag(a), Qbed(a), Qe(a), dqbeddx(a), bedlast(a), too_steep(a) ! 
+    LOGICAL, INTENT(IN):: norm, Qbedon, normmov, sus2d, talmon, high_order_bedload
+    DIMENSION bed(a),ys(a), recrd(0:a),tau(a),taug(a), slopes(a),taucrit_dep(nos,layers),C(a),&
+        taucrit_dep_ys(nos),taucrit(nos,0:layers), Qbed(a), Qe(a), dqbeddx(a), bedlast(a), too_steep(a) ! 
 
     INTEGER::i, j, bgwet, up, bfall, jj,dstspl, jjj, minX,maxX, storindex(a), info,ii, indd(a,layers), n(a), b(1)
     REAL(dp):: val, tmp1,dt_on_lambda 
@@ -250,14 +250,8 @@ SUBROUTINE update_bed(a, dT, water, Q, bed,ys,Area, bottom, recrd, E, D,C,rmu,a2
         sllength=1._dp
     END IF
 
-    !!!!!!!!!!!!Check is we should apply the LDM
-    !Don't update if the water is very shallow. This is pragmatic as the hydro
-    !solver is not very good in this region 
-    IF((water-bottom<0.0_dp).OR.(a<2)) THEN 
-    !        tau=0._dp+0._dp*bed
-    !        E=0._dp
-    !        D=0._dp
-    !        rmu=maxval(ff)
+    !!!!!!!!!!!!Check if we have enough points 
+    IF(a<2) THEN 
             RETURN
     END IF
 

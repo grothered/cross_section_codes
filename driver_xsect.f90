@@ -494,12 +494,12 @@ DO Q_loop= 1, num_simulations!15
             ! with shear 'i'
             call calc_resus_bedload(u-l+1,DT1,water,Q,bed(l:u),ys(l:u),Area,&
                                     f(l:u),qby((l-1):u),E,&
-                                    C(l:u),wset, rmult,2,inuc, tau_g(l:u),& 
+                                    C(l:u),wset, 2,tau_g(l:u),& 
                                     vel(l:u), j,slopes(l:u), hlim, mor, taucrit_dep(l:u,1:layers),&
                                      layers, taucrit_dep_ys(l:u) & 
                                     ,u-l+1, taucrit(l:u, 0:layers) , rho, Qe(l:u) & 
-                                    , Qbed(l:u), rhos, voidf, dsand, d50, g, kvis, norm, vertical,alpha, &
-                                    tbston, Qbedon, ysl,ysu,bedl,bedu, resus_type, bedload_type, a_ref(l:u)) 
+                                    , Qbed(l:u), rhos, voidf, dsand, d50, g, kvis, norm, alpha, &
+                                    Qbedon, ysl,ysu,bedl,bedu, resus_type, bedload_type, a_ref(l:u)) 
         
             !! UPDATE TIME
             IF(iii.eq.1) t=t+DT1
@@ -580,13 +580,13 @@ DO Q_loop= 1, num_simulations!15
                 ! Update the bed from i to i+1, using the rates of erosion and
                 ! deposition calculated from bed i. 
                 call update_bed(u-l+1,DT1,water,Q,bed(l:u),ys(l:u),Area, &
-                                 water- Area/(ys(u)-ys(l)+wdthx),qby((l-1):u),E,D, &
-                                C(l:u),rmult,2,inuc, tau(l:u),tau_g(l:u),& 
-                                NN(l:u),j,slopes(l:u), hlim, mor, taucrit_dep(l:u,1:layers), &
+                                qby((l-1):u),E,D, &
+                                C(l:u),2,tau(l:u),tau_g(l:u),& 
+                                j,slopes(l:u), hlim, mor, taucrit_dep(l:u,1:layers), &
                                 layers, taucrit_dep_ys(l:u) & 
-                                ,u-l+1, taucrit(l:u, 0:layers) , vegdrag(l:u), susdist, rho, &
+                                ,u-l+1, taucrit(l:u, 0:layers) , rho, &
                                 Qe(l:u), Qbed(l:u), wset, dqbeddx(l:u), rhos, voidf, d50, g, &
-                                kvis, norm, vertical, lambdacon, tbston,&
+                                norm, &
                                 Qbedon, normmov, sus2d, ysl, ysu, bedl,bedu, iii, bedlast(l:u), &
                                 talmon, high_order_bedload, too_steep) 
 
