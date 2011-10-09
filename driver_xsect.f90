@@ -464,10 +464,10 @@ DO Q_loop= 1, num_simulations!15
             call calc_shear(u-l+1,DT1,water,Q,bed(l:u),ys(l:u),Area, &
                             water-Area/(ys(u)-ys(l)+wdthx),f(l:u),&
                             rmult,inuc, tau(l:u),& 
-                            NN(l:u),j,slopes(l:u), hlim, mor, &
+                            NN(l:u),j,slopes(l:u), hlim, &
                             u-l+1, vegdrag(l:u), susdist, rho & 
-                            , rhos, voidf, d50, g, kvis, norm, vertical, lambdacon, tbston &
-                            , ysl,ysu,bedl,bedu, high_order_shear) 
+                            ,rhos, voidf, d50, g, kvis, norm, vertical, lambdacon, tbston &
+                            ,ysl,ysu,bedl,bedu, high_order_shear) 
 
             ! Calculate depth-averaged velocity
             vel = 0._dp 
