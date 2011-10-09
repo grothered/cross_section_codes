@@ -9,22 +9,22 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!
-SUBROUTINE calc_resus_bedload(a, dT, water, Q, bed,ys,Area, bottom, ff,recrd, E, D,C, wset, rmu,a2, inuc,tau,vel,NN & 
-    ,counter,slopes, hlim,mor,taucrit_dep,layers, taucrit_dep_ys, nos, taucrit, vegdrag, susdist, rho, Qe, Qbed, rhos,& 
+SUBROUTINE calc_resus_bedload(a, dT, water, Q, bed,ys,Area, bottom, ff,recrd, E, C, wset, rmu,a2, inuc,tau,vel & 
+    ,counter,slopes, hlim,mor,taucrit_dep,layers, taucrit_dep_ys, nos, taucrit, rho, Qe, Qbed, rhos,& 
     voidf, dsand, d50, g, kvis, norm, vertical,alpha, tbston, Qbedon, ysl,ysu,bedl,bedu, resus_type, bedload_type, a_ref) 
     ! Purpose: Calculate the rate of resuspension and bedload transport over a
     ! cross-section
 
     INTEGER, INTENT(IN)::a,a2,counter,layers, nos
-    REAL(dp), INTENT(IN)::water,Q, Area, bottom, ff, hlim,mor, vegdrag,dt, rho, rhos, voidf, dsand, d50, g, & 
+    REAL(dp), INTENT(IN)::water,Q, Area, bottom, ff, hlim,mor, dt, rho, rhos, voidf, dsand, d50, g, & 
         kvis, alpha, wset, a_ref
-    REAL(dp), INTENT(IN OUT):: bed, recrd, E, D,rmu,inuc,tau,vel, NN, ys,C,taucrit_dep, taucrit_dep_ys, slopes, taucrit,& 
+    REAL(dp), INTENT(IN OUT):: bed, recrd, E, rmu,inuc,tau,vel,  ys,C,taucrit_dep, taucrit_dep_ys, slopes, taucrit,& 
          Qe, Qbed
     REAL(dp), INTENT(IN):: ysl,ysu,bedl,bedu 
-    LOGICAL, INTENT(IN):: susdist, norm, vertical, tbston, Qbedon
+    LOGICAL, INTENT(IN):: norm, vertical, tbston, Qbedon
     CHARACTER(LEN=20), INTENT(IN):: resus_type, bedload_type
-    DIMENSION bed(a),ys(a), ff(a),recrd(a),tau(a),vel(a), NN(a),slopes(a),taucrit_dep(nos,layers),C(a),& 
-                taucrit_dep_ys(nos), taucrit(nos,0:layers), vegdrag(a), Qe(a), Qbed(a), a_ref(a) ! 
+    DIMENSION bed(a),ys(a), ff(a),recrd(a),tau(a),vel(a), slopes(a),taucrit_dep(nos,layers),C(a),& 
+                taucrit_dep_ys(nos), taucrit(nos,0:layers),  Qe(a), Qbed(a), a_ref(a) ! 
 
     INTEGER::i, j, bgwet, up,  jj,  info,ii, n(a)
     REAL(dp)::wslope,  Qelocal, tt, corfact, useme, dgravel
