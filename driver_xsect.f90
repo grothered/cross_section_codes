@@ -493,7 +493,7 @@ DO Q_loop= 1, num_simulations!15
             ! CALCULATE RATES OF RESUSPENSION AND BEDLOAD TRANSPORT on bed 'i'
             ! with shear 'i'
             call calc_resus_bedload(u-l+1,DT1,water,Q,bed(l:u),ys(l:u),Area,&
-                                     water-Area/(ys(u)-ys(l)+wdthx),f(l:u),qby((l-1):u),E,&
+                                    f(l:u),qby((l-1):u),E,&
                                     C(l:u),wset, rmult,2,inuc, tau_g(l:u),& 
                                     vel(l:u), j,slopes(l:u), hlim, mor, taucrit_dep(l:u,1:layers),&
                                      layers, taucrit_dep_ys(l:u) & 
