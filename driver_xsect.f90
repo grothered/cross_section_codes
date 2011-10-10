@@ -13,7 +13,7 @@ IMPLICIT NONE
 INTEGER:: nos, i,j, l, u, n, layers, ii, ind(1), indlast, Q_loop, jj, &
           writfreq, jmax, iii, iii2
 REAL(dp):: wslope, ar, Q, t, &
-           ys,bed, water, waterM, dists, tau,ks,tbst, Qe, Qbed, Qd, &
+           ys,bed, water, waterM, dists, tau,ks,tbst, Qe, Qbed,qb_G, Qd, &
             f, aa, bb, cc, multa, bedold, Qelast, &
             qby,v, bedlast, hss, tss, ddd, hss2, handy, dqbeddx, &
             epsl,epsu, slopes, E, D, C, rmult,Area, inuc, NN,&
@@ -51,7 +51,7 @@ NAMELIST /inputdata/ nos,writfreq,jmax, layers, hlim, mor, mu, &
 
 ALLOCATABLE ys(:), bed(:), dists(:), tau(:),ks(:),tbst(:),& 
             qby(:), bedlast(:), hss(:), tss(:),  hss2(:), Qe(:),& 
-            Qbed(:), Qd(:),f(:),slopes(:), NN(:),C0(:),Qelast(:),&
+            Qbed(:),qb_G(:), Qd(:),f(:),slopes(:), NN(:),C0(:),Qelast(:),&
             taucrit_dep(:,:), C(:),bedold(:), &
             taucrit_dep_ys(:) ,dst(:,:), taucrit(:,:), slpmx(:,:), &
             vegdrag(:), ysold(:), dqbeddx(:), sllength(:), vel(:), &
@@ -118,7 +118,7 @@ ALLOCATE(ys(nos),bed(nos),dists(nos),tau(nos),ks(nos),tbst(nos),&
          NN(nos), C0(nos),taucrit_dep(nos, layers), C(nos), &
          taucrit_dep_ys(nos),dst(nos,0:(layers+1)), &
          taucrit(nos, 0:layers), slpmx(nos,0:(layers+1)), vegdrag(nos),&
-         ysold(nos) ,  Qbed(nos), dqbeddx(nos),sllength(nos), &
+         ysold(nos) , Qbed(nos),qb_G(0:nos+1), dqbeddx(nos),sllength(nos), &
          vel(nos), tau_g(nos), f_g(nos), Cbar(nos), bedold(nos), a_ref(nos),&
          Clast(nos), lat_sus_flux(nos+1), int_edif_f(nos+1), &
          int_edif_dfdy(nos+1) , zetamult(0:nos+1), too_steep(nos)) 
@@ -494,12 +494,12 @@ DO Q_loop= 1, num_simulations!15
             ! with shear 'i'
             call calc_resus_bedload(u-l+1,DT1,water,Q,bed(l:u),ys(l:u),Area,&
                                     f(l:u),qby((l-1):u),E,&
-                                    C(l:u),wset, 2,tau_g(l:u),& 
+                                    C(l:u),wset, 2,tau(l:u), tau_g(l:u),& 
                                     vel(l:u), j,slopes(l:u), hlim, mor, taucrit_dep(l:u,1:layers),&
                                      layers, taucrit_dep_ys(l:u) & 
                                     ,u-l+1, taucrit(l:u, 0:layers) , rho, Qe(l:u) & 
-                                    , Qbed(l:u), rhos, voidf, dsand, d50, g, kvis, norm, alpha, &
-                                    Qbedon, ysl,ysu,bedl,bedu, resus_type, bedload_type, a_ref(l:u)) 
+                                    , Qbed(l:u),qb_G((l-1):(u+1)), rhos, voidf, dsand, d50, g, kvis, norm, alpha, &
+                                    Qbedon,talmon, ysl,ysu,bedl,bedu, resus_type, bedload_type, a_ref(l:u)) 
         
             !! UPDATE TIME
             IF(iii.eq.1) t=t+DT1
@@ -585,8 +585,8 @@ DO Q_loop= 1, num_simulations!15
                                 j,slopes(l:u), hlim, mor, taucrit_dep(l:u,1:layers), &
                                 layers, taucrit_dep_ys(l:u) & 
                                 ,u-l+1, taucrit(l:u, 0:layers) , rho, &
-                                Qe(l:u), Qbed(l:u), wset, dqbeddx(l:u), rhos, voidf, d50, g, &
-                                norm, &
+                                Qe(l:u), Qbed(l:u),qb_G((l-1):(u+1)), wset, dqbeddx(l:u),&
+                                rhos, voidf, d50, g, norm, &
                                 Qbedon, normmov, sus2d, ysl, ysu, bedl,bedu, iii, bedlast(l:u), &
                                 talmon, high_order_bedload, too_steep) 
 

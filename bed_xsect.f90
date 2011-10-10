@@ -9,29 +9,29 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!
-SUBROUTINE calc_resus_bedload(a, dT, water, Q, bed,ys,Area, ff,recrd, E, C, wset, a2, tau,vel & 
-    ,counter,slopes, hlim,mor,taucrit_dep,layers, taucrit_dep_ys, nos, taucrit, rho, Qe, Qbed, rhos,& 
-    voidf, dsand, d50, g, kvis, norm, alpha, Qbedon, ysl,ysu,bedl,bedu, resus_type, bedload_type, a_ref) 
+SUBROUTINE calc_resus_bedload(a, dT, water, Q, bed,ys,Area, ff,recrd, E, C, wset, a2, tau,tau_g,vel & 
+    ,counter,slopes, hlim,mor,taucrit_dep,layers, taucrit_dep_ys, nos, taucrit, rho, Qe, Qbed,qb_G, rhos,& 
+    voidf, dsand, d50, g, kvis, norm, alpha, Qbedon,talmon, ysl,ysu,bedl,bedu, resus_type, bedload_type, a_ref) 
     ! Purpose: Calculate the rate of resuspension and bedload transport over a
     ! cross-section
 
     INTEGER, INTENT(IN)::a,a2,counter,layers, nos
     REAL(dp), INTENT(IN)::water,Q, Area, ff, hlim,mor, dt, rho, rhos, voidf, dsand, d50, g, & 
-        kvis, alpha, wset, a_ref
-    REAL(dp), INTENT(IN OUT):: bed, recrd, E, tau,vel,  ys,C,taucrit_dep, taucrit_dep_ys, slopes, taucrit,& 
-         Qe, Qbed
+        kvis, alpha, wset, a_ref, ys,vel,slopes, tau,tau_g
+    REAL(dp), INTENT(IN OUT):: bed, recrd, E, C,taucrit_dep, taucrit_dep_ys, taucrit,& 
+         Qe, Qbed,qb_G
     REAL(dp), INTENT(IN):: ysl,ysu,bedl,bedu 
-    LOGICAL, INTENT(IN):: norm, Qbedon
+    LOGICAL, INTENT(IN):: norm, Qbedon,talmon
     CHARACTER(LEN=20), INTENT(IN):: resus_type, bedload_type
-    DIMENSION bed(a),ys(a), ff(a),recrd(a),tau(a),vel(a), slopes(a),taucrit_dep(nos,layers),C(a),& 
-                taucrit_dep_ys(nos), taucrit(nos,0:layers),  Qe(a), Qbed(a), a_ref(a) ! 
+    DIMENSION bed(a),ys(a), ff(a),recrd(a),tau(a),tau_g(a), vel(a), slopes(a),taucrit_dep(nos,layers),C(a),& 
+                taucrit_dep_ys(nos), taucrit(nos,0:layers),  Qe(a), Qbed(a),qb_G(0:a+1), a_ref(a) ! 
 
     INTEGER::i, j, bgwet, up,  jj,  info,ii, n(a)
     REAL(dp)::wslope,  Qelocal, tt, corfact, useme, dgravel
     REAL(dp):: kkkk(a), tbst(a), f(a)  
     REAL(dp)::sllength(a),    dst(a,0:(layers+1)), Qb(a), & 
         bedlast(a), sinsl(a), mu_d, Qtemp, useful(a), Ceq(a) 
-    REAL(dp)::writout(a2), d_star, c_a, k_scr, f_cs, si, tmp
+    REAL(dp)::writout(a2), d_star, c_a, k_scr, f_cs, si, tmp,tmp1
     !logical::writ_tau=.TRUE.  !This will write out the cross sectional taus-- will lead to massive files if you're not careful. 
     LOGICAL::  dry(a)
 
@@ -99,7 +99,7 @@ SUBROUTINE calc_resus_bedload(a, dT, water, Q, bed,ys,Area, ff,recrd, E, C, wset
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         IF(mor>0._dp) THEN
 
-          1456  IF ((abs(tau(i))>taucrit(i, jj)).and.(.true.)) THEN !At least some erosion through this layer occurs
+          1456  IF ((abs(tau_g(i))>taucrit(i, jj)).and.(.true.)) THEN !At least some erosion through this layer occurs
                     
                     SELECT CASE (resus_type)
                         CASE('cohesive') 
@@ -107,14 +107,14 @@ SUBROUTINE calc_resus_bedload(a, dT, water, Q, bed,ys,Area, ff,recrd, E, C, wset
                             !meters per second of SOLID material, i.e. not
                             !accounting for porosity, which is accounted for
                             !later. 
-                            Qelocal=  (alpha/rhos)*( abs(tau(i))-taucrit(i,jj) )**1._dp*& 
+                            Qelocal=  (alpha/rhos)*( abs(tau_g(i))-taucrit(i,jj) )**1._dp*& 
                                       (taucrit(i,jj)**(-.5_dp))*sllength(i) 
                                 !min(taucrit(i,jj)**(-.5_dp), 50._dp)*sllength(i) 
                         CASE('vanrijn')
                             ! vanrijn 2007 reference concentration method
                             d_star = (d50*((rhos/rho-1._dp)*g/kvis**2)**(1._dp/3._dp))  !Van Rijn d_star parameter
                             c_a = 0.015_dp*max(dsand/d50,1.0_dp)*d50/(a_ref(i)*d_star**0.3_dp)* & 
-                                    (max(0._dp,abs(tau(i))-taucrit(i,jj))/taucrit(i,jj))**1.5_dp ! Van Rijn reference concentration, in m^3/m^3     
+                                    (max(0._dp,abs(tau_g(i))-taucrit(i,jj))/taucrit(i,jj))**1.5_dp ! Van Rijn reference concentration, in m^3/m^3     
                             !IF(c_a>150.0_dp) THEN
                                  
                             !END IF
@@ -122,7 +122,7 @@ SUBROUTINE calc_resus_bedload(a, dT, water, Q, bed,ys,Area, ff,recrd, E, C, wset
                             
                         CASE('smithmac')
                             !Based on description in Garcia and Parker
-                            tmp = 2.4e-03_dp*(max(0._dp,abs(tau(i))-taucrit(i,jj))/taucrit(i,jj))
+                            tmp = 2.4e-03_dp*(max(0._dp,abs(tau_g(i))-taucrit(i,jj))/taucrit(i,jj))
                             c_a = 0.65_dp*tmp/(1.0_dp+tmp)
                             Qelocal = wset*c_a*sllength(i) !/rhos !Rate of erosion in m/s of SOLID material
 
@@ -147,11 +147,11 @@ SUBROUTINE calc_resus_bedload(a, dT, water, Q, bed,ys,Area, ff,recrd, E, C, wset
                     !But, if we were already in a higher shear layer, then we
                     !better move the points down to reflect that fact.
 
-                END IF !tau>taucrit 
+                END IF !tau_g>taucrit 
                     
 
                 IF((Qe(i)<0._dp).OR.(isnan(Qe(i)))) THEN 
-                    print*, "erosion < 0 or nan", taucrit(i, jj), tau(i), Qe(i)
+                    print*, "erosion < 0 or nan", taucrit(i, jj), tau_g(i), Qe(i)
                     print*, ".........."
                     !print*, i, jj, ys(i), hs(i), taucrit_dep_ys(indd(i,:)), taucrit_dep(indd(i,:), jj), & 
                     !    taucrit_dep(indd(i,:), jj+1)  
@@ -171,7 +171,7 @@ SUBROUTINE calc_resus_bedload(a, dT, water, Q, bed,ys,Area, ff,recrd, E, C, wset
        !!Bedload - note it is predefined to be zero, so there is no need to
        !change it if tau<taucrit.
         useme=(rhos-rho)*g*d50
-        IF( (abs(tau(i))>taucrit(i,0)).AND.(Qbedon)) THEN
+        IF( (abs(tau_g(i))>taucrit(i,0)).AND.(Qbedon)) THEN
             !Qb(i)= C(i)/rhos*(water-bed(i))*sqrt(tau(i)/(rho*ff(i)/8._dp))*mor
             !Qb(i)=0._dp!5._dp*Qe(i)
             SELECT CASE (bedload_type)
@@ -184,14 +184,14 @@ SUBROUTINE calc_resus_bedload(a, dT, water, Q, bed,ys,Area, ff,recrd, E, C, wset
                     !go.
                     Qbed(i)= 0.5_dp*max(dsand/d50,1._dp)*d50*&
                             (d50*((rhos/rho-1._dp)*g/kvis**2)**(1._dp/3._dp))**(-0.3_dp)*& 
-                            rho**(-.5_dp)*(abs(tau(i)))**(.5_dp)*&
-                            ( abs(tau(i))-taucrit(i,0))/taucrit(i,0)*sign(1._dp, tau(i)) &
+                            rho**(-.5_dp)*(abs(tau_g(i)))**(.5_dp)*&
+                            ( abs(tau_g(i))-taucrit(i,0))/taucrit(i,0)*sign(1._dp, tau_g(i)) &
                             *sllength(i)                 
                 CASE('mpm')
                 ! Meyer-Peter and Muller
-                    Qbed(i) = 8.0_dp*((abs(tau(i))-taucrit(i,0))/useme)**(1.5_dp)*sign(1._dp,tau(i))&
+                    Qbed(i) = 8.0_dp*((abs(tau_g(i))-taucrit(i,0))/useme)**(1.5_dp)*sign(1._dp,tau_g(i))&
                                 *sqrt(useme/rho*d50**2._dp)*sllength(i)
-                !Qbed(i) = 8.0_dp*(abs(tau(i))/useme-0.047_dp)**(1.5_dp)*sign(1._dp,tau(i))&
+                !Qbed(i) = 8.0_dp*(abs(tau_g(i))/useme-0.047_dp)**(1.5_dp)*sign(1._dp,tau_g(i))&
                 !            *sqrt(useme/rho*d50**2._dp)*sllength(i)
                 CASE DEFAULT
                     PRINT*, 'ERROR: bedload_type was not correctly specified in calc_resus_bedload'
@@ -200,6 +200,57 @@ SUBROUTINE calc_resus_bedload(a, dT, water, Q, bed,ys,Area, ff,recrd, E, C, wset
 
     END DO
     
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    ! COMPUTE qb_G, a downslope transport coefficient 
+    ! Qby = -qb_G*d(bed)/dy
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    qb_G=0._dp
+    
+    IF(Qbedon) THEN
+        ! Calculate downslope bedload transport coefficients
+        tmp1 = (rho*g*(rhos/rho-1._dp)*d50) ! A constant in the lateral bedload formula
+        DO i=1, a
+            IF(abs(tau_g(i))>taucrit(i,0)) THEN
+                !Choose downslope bedload relation
+                !Note that if tau_g>taucrit, then tau>0, so we will not divide by
+                !zero
+                IF(talmon.eqv..FALSE.) THEN
+                    ! Simple downslope bedslope relation 
+                    qb_G(i)= -abs(Qbed(i))*sqrt(abs(taucrit(i,0))/tau_g(i))
+                ELSE 
+                ! Talmon (1995) relation
+                    qb_G(i)=-abs(Qbed(i))*sqrt(tmp1/tau(i)) &
+                                    *1._dp/9._dp*(max(water-bed(i),0._dp)/d50)**.3_dp 
+                END IF
+            ELSE !tmp1>0
+                qb_G(i)=0._dp
+            END IF !tmp1>0
+        END DO
+        
+        qb_G(0)=0._dp
+        qb_G(a+1)=0._dp
+        ! qbh_approx takes the values of qb_G at y(i), and replaces them with the
+        ! values at y(i+1/2) calculated using parabolic interpolation with slope
+        ! based upwinding, or standard linear interpolation. 
+        ! Note that there is 1 less output point than input
+        ! point. Hence, there is a funny organisation of arguments.
+        call qbh_approx(a,ys,qb_G(0:a),qb_G(a+1),bed, bedl, bedu, ysl, ysu, 2)                
+    END IF !Qbedon
+
+    IF(.TRUE.) THEN
+        IF(counter.eq.1) print*, 'WARNING: EDGE BEDLOAD VALUES DROPPED TO ZERO'
+        qb_G(0) = 0.0_dp
+        qb_G(a) = 0.0_dp
+    END IF
+    
+    IF(.FALSE.) THEN
+        IF(counter.eq.1) print*, 'WARNING: qb_G(i+1/2) set to zero if taug(i) or taug(i+1) < taucrit'
+        DO i=1,a-1
+           IF((tau_g(i)<=taucrit(i,0)).AND.(tau_g(i+1)<=taucrit(i+1,0))) qb_G(i)=0._dp
+        END DO 
+    END IF
+   
+ 
     !!Total erosion - useful for the 1d sus sed 
     E=.5_dp*(sum( (Qe(2:a-1)*(ys(3:a)-ys(1:a-2)))) & 
         + Qe(1)*(ys(2)-ys(1) +1._dp*((water-bed(1))/(bedl-bed(1))*(ys(1)-ysl) )) & 
@@ -212,18 +263,18 @@ END SUBROUTINE calc_resus_bedload
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 SUBROUTINE update_bed(a, dT, water, Q, bed,ys,Area, recrd, E, D,C,a2, tau,taug,&
     counter,slopes, hlim,mor,taucrit_dep,layers, taucrit_dep_ys, nos, taucrit, rho, Qe, Qbed, & 
-    wset,dqbeddx, rhos, voidf, d50, g, norm, Qbedon, normmov,sus2d,ysl, & 
+    qb_G, wset,dqbeddx, rhos, voidf, d50, g, norm, Qbedon, normmov,sus2d,ysl, & 
     ysu,bedl,bedu,iii, bedlast, talmon, high_order_bedload, too_steep)
     ! Purpose: Solve the sediment continuity equation to update the channel bed.
 
     INTEGER, INTENT(IN)::a,a2,counter,layers, nos, iii, too_steep
     REAL(dp), INTENT(IN)::water,Q, Area, hlim,mor, dt, rho, Qbed, Qe, dqbeddx, &
-        rhos, voidf, d50, g, wset, ysl,ysu, bedlast, taug,C !QbedI, dQbedI
+        rhos, voidf, d50, g, wset, ysl,ysu, bedlast, taug,C, qb_G !QbedI, dQbedI
     REAL(dp), INTENT(IN OUT):: bed, recrd, E, D,tau, ys,taucrit_dep, taucrit_dep_ys, slopes, & 
         taucrit, bedu, bedl
     LOGICAL, INTENT(IN):: norm, Qbedon, normmov, sus2d, talmon, high_order_bedload
     DIMENSION bed(a),ys(a), recrd(0:a),tau(a),taug(a), slopes(a),taucrit_dep(nos,layers),C(a),&
-        taucrit_dep_ys(nos),taucrit(nos,0:layers), Qbed(a), Qe(a), dqbeddx(a), bedlast(a), too_steep(a) ! 
+        taucrit_dep_ys(nos),taucrit(nos,0:layers), Qbed(a), qb_G(0:a+1), Qe(a), dqbeddx(a), bedlast(a), too_steep(a) ! 
 
     INTEGER::i, j, bgwet, up, bfall, jj,dstspl, jjj, minX,maxX, storindex(a), info,ii, indd(a,layers), n(a), b(1)
     REAL(dp):: val, tmp1,dt_on_lambda 
@@ -232,7 +283,7 @@ SUBROUTINE update_bed(a, dT, water, Q, bed,ys,Area, recrd, E, D,C,a2, tau,taug,&
     REAL(dp)::vinext,vi, vilast, epsl, epsu , mxslopes(a), erode, newslope(a), slim,p1, w1,w2,eqspc,dsts(a), dsts2(a), taud(a) &
         , sllength(a), hlast1,hlast2, storeys(a), C_diag(a),C_upper(a),C_lower(a), C_out(a),dDdy(a), dst(a,0:(layers+1)), taucinc,& 
         Bdist,p11,p12,taucrit_depnew(nos,layers),edvis(a),dedvisdy(a),edvisd(a),dedvisddy(a),d2hdy2(a),rnd(a),hss2_deriv(a), & 
-        h_diag(0:a+1), h_upper(0:a+1), h_lower(0:a+1), h_rhs2(0:a+1), vel(a), qb_G(0:a+1), sinf(a), bednew(a),&
+        h_diag(0:a+1), h_upper(0:a+1), h_lower(0:a+1), h_rhs2(0:a+1), vel(a), sinf(a), bednew(a),&
         hss22(a),bedlast_tmp(a), sinsl(a), mu_d, Qtemp, useful(a), Ceq(a), h_lower2(0:a+1),h_upper2(0:a+1), &
         ecu, zetamult(a), upper(a), lower(a), diag(a), rhs(a), dyf(a), upper2(a), lower2(a), diag2(a),rhs2(a), &
         edvisy(a), dum1(a), dum2(a), dum3(a), dum4(a),spec(a),homo(a), sllength2(a)  
@@ -306,52 +357,6 @@ SUBROUTINE update_bed(a, dT, water, Q, bed,ys,Area, recrd, E, D,C,a2, tau,taug,&
     ! SOLVE FOR THE UPDATED GEOMETRY
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     bedlast_tmp=bed
-    qb_G=0._dp
-    
-    IF(Qbedon) THEN
-        ! Calculate downslope bedload transport coefficients
-        ! Qby = -qb_G*d(bed)/dy
-        tmp1 = (rho*g*(rhos/rho-1._dp)*d50) ! A constant in the lateral bedload formula
-        DO i=1, a
-            IF(abs(taug(i))>taucrit(i,0)) THEN
-                !Choose downslope bedload relation
-                !Note that if taug>taucrit, then tau>0, so we will not divide by
-                !zero
-                IF(talmon.eqv..FALSE.) THEN
-                    ! Simple downslope bedslope relation 
-                    qb_G(i)= -abs(Qbed(i))*sqrt(abs(taucrit(i,0))/tau(i))
-                ELSE 
-                ! Talmon (1995) relation
-                    qb_G(i)=-abs(Qbed(i))*sqrt(tmp1/tau(i)) &
-                                    *1._dp/9._dp*(max(water-bed(i),0._dp)/d50)**.3_dp 
-                END IF
-            ELSE !tmp1>0
-                qb_G(i)=0._dp
-            END IF !tmp1>0
-        END DO
-        
-        qb_G(0)=0._dp
-        qb_G(a+1)=0._dp
-        ! qbh_approx takes the values of qb_G at y(i), and replaces them with the
-        ! values at y(i+1/2) calculated using parabolic interpolation with slope
-        ! based upwinding, or standard linear interpolation. 
-        ! Note that there is 1 less output point than input
-        ! point. Hence, there is a funny organisation of arguments.
-        call qbh_approx(a,ys,qb_G(0:a),qb_G(a+1),bed, bedl, bedu, ysl, ysu, 2)                
-    END IF !Qbedon
-
-    IF(.TRUE.) THEN
-        IF(counter.eq.1) print*, 'WARNING: EDGE BEDLOAD VALUES DROPPED TO ZERO'
-        qb_G(0) = 0.0_dp
-        qb_G(a) = 0.0_dp
-    END IF
-    
-    IF(.FALSE.) THEN
-        IF(counter.eq.1) print*, 'WARNING: qb_G(i+1/2) set to zero if taug(i) or taug(i+1) < taucrit'
-        DO i=1,a-1
-           IF((tau(i)<=taucrit(i,0)).AND.(tau(i+1)<=taucrit(i+1,0))) qb_G(i)=0._dp
-        END DO 
-    END IF
 
     !Next we check if qb_G =0 everywhere. If so, then there is no point solving the
     !matrix equation.
