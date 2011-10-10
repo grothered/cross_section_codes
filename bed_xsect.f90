@@ -203,6 +203,7 @@ SUBROUTINE calc_resus_bedload(a, dT, water, Q, bed,ys,Area, ff,recrd, E, C, wset
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     ! COMPUTE qb_G, a downslope transport coefficient 
     ! Qby = -qb_G*d(bed)/dy
+    ! qb_G is evaluated at y+1/2
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     qb_G=0._dp
     
@@ -352,7 +353,6 @@ SUBROUTINE update_bed(a, dT, water, Q, bed,ys,Area, recrd, E, D,C,a2, tau,taug,&
         END DO
     END IF
 
-
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     ! SOLVE FOR THE UPDATED GEOMETRY
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -371,70 +371,9 @@ SUBROUTINE update_bed(a, dT, water, Q, bed,ys,Area, recrd, E, D,C,a2, tau,taug,&
             print*, 'FIXME: Use of normmov is not consistent with the new definition of Qe &
                              (30/12/2010), which already includes sllength'
             stop
-        !    bed=bed+( Qd - Qe*cos(atan(slopes)))*mor*dT/(1._dp-voidf)
-        !    ys=ys+Qe*sin(atan(slopes))*mor*dT/(1._dp-voidf)
-
-        !    IF(.true.) THEN !Turn on/off undercutting
-        !        !Now Undercut as needed
-        !        !!March back from the centre toward the left bank (i=1)
-        !        DO i= floor(a/2._dp), 2, -1 !Found that this could produce spikes. 
-        !            !March back from the left edge to the centre
-        !            !do i= 2, floor(a/2._dp) !This can also produce spikes
-        !            DO j= 1, i-1
-        !                !Look to see if i has undercut i-j
-        !                IF(ys(i)<ys(i-j)) THEN
-        !                    CONTINUE !Do nothing until we find a point that i has not undercut
-        !                ELSE 
-        !                    IF(j==1) GOTO 1010  !So in this case there was no undercutting
-        !                    
-        !                    DO jj=1, j-1 !So in this case we have undercut j-1 points
-        !                        ys(i-j+jj) = ys(i-j)+ (ys(i)-ys(i-j))/(1._dp*(j))*jj
-        !                        !bed(i-j+jj)= minval(bed((i-j+1):(i)))
-
-        !                        !Should we sort the bed here also?
-        !                        b=maxloc( bed( (i-j+jj):(i-1) ) ) !The location of the max height between i-(j-jj) and i-1 
-        !                        jjj=b(1)
-        !                        bed( (/i-(j-jj), i-j+jj+jjj-1/) ) = bed( (/i-j+jj+jjj-1, i-(j-jj)/)) !So we swap the max height and the i-(j-jj) height 
-        !                    END DO
-        !                    GOTO 1010
-        !                END IF
-
-        !            END DO
-        !           
-        !           1010 CONTINUE
-        !        END DO 
-        !        
-        !        !!March back from the centre toward the right bank (i=a)
-        !        DO i= floor(a/2._dp)+1, a !Found that this can produce spikes
-        !            !March back from the right edge to the centre
-        !            !do i= a, floor(a/2._dp)+1, -1 !This can also produce spikes
-        !            !Look to see if we have undercut point i+j
-        !            DO j= 1, a-i
-        !                IF(ys(i)>ys(i+j)) THEN
-        !                    CONTINUE !No need to do anything until we find a point that we have not undercut
-        !                ELSE 
-        !                    IF(j==1) GOTO 1011  !So in this case there was no undercutting
-        !                    !If we got here with j>1, then there is undercutting to do 
-        !                    DO jj=1, j-1
-        !                        ys(i+jj) = ys(i)+ (ys(i+j)-ys(i))/(1._dp*(j))*jj
-        !                        !bed((i+1):(i+jj-1)) = minval(bed(i:i+jj-1))
-        !                        !Should we sort the bed here also?
-        !                        b=minloc(bed( (i+jj): (i+(j-1)) ) ) !The location of the min height between i+jj and i+(j-1) 
-        !                        jjj=b(1)
-        !                        bed( (/i+jj, i+jj+jjj-1/)) = bed((/i+jj+jjj-1, i+jj/)) !So we swap the min height and the i+jj height 
-        !                    END DO
-
-        !                    GOTO 1011
-        !                END IF
-        !            END DO
-        !            1011 CONTINUE
-        !        END DO       
-        !    END IF  !Turn off the undercutting
-
         END IF !If normmov.eqv..false.
 
     ELSE !IF(maxval(abs(qb_G)).EQ.0._dp)
-
         
         !
         h_lower2=0._dp
