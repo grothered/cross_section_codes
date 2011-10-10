@@ -643,8 +643,10 @@ DO Q_loop= 1, num_simulations!15
                 ! difficult problem of allowing infinite banks otherwise
                 !IF(mod(j,1)==0)
                 !call basic_slope_limit(nos,ys,bed,failure_slope, remesh, 1.0_dp)
-                !call basic_jump_limit(nos,ys,bed,0.5_dp, remesh, 1.0_dp)
-                call critical_slope_wasting(DT1, nos,ys,bed,failure_slope, 1.0e-06_dp)
+                call basic_jump_limit(nos,ys,bed,0.5_dp, remesh, 1.0_dp)
+                !do ii=1,100
+                !call critical_slope_wasting(DT1, nos,ys,bed,failure_slope, 1.0e-06_dp)
+                !end do
                 !call critical_bedjump_wasting(DT1, nos,ys,bed,2.0_dp, 1.0e-05_dp)
                 !Update Cbar to reflect changes in the bed.
                 !DO i=1,nos
