@@ -504,7 +504,9 @@ DO Q_loop= 1, num_simulations!15
             !! UPDATE TIME
             IF(iii.eq.1) t=t+DT1
 
-
+            !Qe(l+1:u-1) = 0.5_dp*Qe(l+1:u-1) + 0.25_dp*(Qe(l:u-2) + Qe(l+2:u))
+            !Qe(l) = 0.75_dp*Qe(l) + 0.25_dp*Qe(l+1)
+            !Qe(u) = 0.75_dp*Qe(u) + 0.25_dp*Qe(u-1)
             ! Calculate total sediment flux at time = t, 
             ! We will use this to compute the x derivative terms
             ! in dynamic_sus_dist and update_bed
