@@ -216,7 +216,7 @@ SUBROUTINE calc_resus_bedload(a, dT, water, Q, bed,ys,Area, ff,recrd, E, C, wset
                 !zero
                 IF(talmon.eqv..FALSE.) THEN
                     ! Simple downslope bedslope relation 
-                    qb_G(i)= -abs(Qbed(i))*sqrt(abs(taucrit(i,0))/tau_g(i))
+                    qb_G(i)= -abs(Qbed(i))*sqrt(abs(taucrit(i,0))/tau(i))
                 ELSE 
                 ! Talmon (1995) relation
                     qb_G(i)=-abs(Qbed(i))*sqrt(tmp1/tau(i)) &
