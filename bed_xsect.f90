@@ -296,11 +296,11 @@ SUBROUTINE update_bed(a, dT, water, Q, bed,ys,Area, recrd, E, D,C,a2, tau,taug,&
     LOGICAL:: crazy_check=.false., dry(a), cnan
 
     !! Adjust the erosion factor if erosion is normal to the bed
-    IF(norm) THEN
-        sllength = sqrt(1._dp+ slopes(1:a)**2)
-    ELSE
-        sllength=1._dp
-    END IF
+    !IF(norm) THEN
+    !    sllength = sqrt(1._dp+ slopes(1:a)**2)
+    !ELSE
+    !    sllength=1._dp
+    !END IF
 
     !!!!!!!!!!!!Check if we have enough points 
     IF(a<2) THEN 
