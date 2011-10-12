@@ -606,7 +606,7 @@ DO Q_loop= 1, num_simulations!15
                 !    END IF
                 !END IF
 
-                !IF(.TRUE.) THEN
+                IF(.TRUE.) THEN
                 !    ! A version of the Delft bank erosion model. 
                 !    ! First check that there is no leakage of bedl, bedu in the
                 !    ! bed solver (possibly could happen due to matrix round off or
@@ -622,28 +622,28 @@ DO Q_loop= 1, num_simulations!15
                 !    END IF
                 !    ! If erosion is occuring at the channel margins,
                 !    ! then assign it to the neighbouring dry bed point
-                !    IF((bed(l)<bedlast(l)).AND.(l>1)) THEN
+                    IF((bed(l)<bedlast(l)).AND.(l>1)) THEN
                 !        !IF( abs(bed(l) - bed(l-1))/(ys(l)-ys(l-1))>1.0_dp) THEN
                 !        !IF( abs(tau_g(l))>taucrit(l,0)) THEN
-                !            bed(l-1) = bed(l-1) - (bedlast(l) - bed(l))
-                !            bed(l) = bedlast(l)
-                !        !END IF
-                !    END IF
-                !    IF((bed(u)<bedlast(u)).AND.(u<nos)) THEN
+                            bed(l-1) = bed(l-1) - (bedlast(l) - bed(l))
+                            bed(l) = bedlast(l)
+                        !END IF
+                    END IF
+                    IF((bed(u)<bedlast(u)).AND.(u<nos)) THEN
                 !        !IF( abs(bed(u+1) - bed(u))/(ys(u+1)-ys(u))>1.0_dp) THEN
                 !        !IF( abs(tau_g(u))>taucrit(u,0)) THEN
-                !            bed(u+1) = bed(u+1) - (bedlast(u) - bed(u))
-                !            bed(u) = bedlast(u)
-                !        !END IF
-                !    END IF
-                !END IF
+                            bed(u+1) = bed(u+1) - (bedlast(u) - bed(u))
+                            bed(u) = bedlast(u)
+                        !END IF
+                    END IF
+                END IF
                
      
                 ! BASIC LIMITING OF THE CHANNEL SLOPE -- to circumvent the numerically
                 ! difficult problem of allowing infinite banks otherwise
                 !IF(mod(j,1)==0)
                 !call basic_slope_limit(nos,ys,bed,failure_slope, remesh, 1.0_dp)
-                call basic_jump_limit(nos,ys,bed,0.5_dp, remesh, 1.0_dp)
+                !call basic_jump_limit(nos,ys,bed,0.5_dp, remesh, 1.0_dp)
                 !do ii=1,100
                 !call critical_slope_wasting(DT1, nos,ys,bed,failure_slope, 1.0e-06_dp)
                 !end do

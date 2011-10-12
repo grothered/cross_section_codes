@@ -1103,17 +1103,13 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
                  
                 IF((d>arefh).and.(wset/us<1.0e+3_dp)) THEN  !((d*0.3_dp>arefh)) THEN !.and.(us>wset)) THEN
 
-                    !z_tmp = elevation above bed = at 0.5, 1.5, ... 99.5 * depth/no_subints.0,
-                    ! adjusted so z>arefh 
-                    !z_tmp = bedh+arefh+ (d-arefh)/((no_subints-1)*1.0_dp)*( (/ (j,j=0,no_subints-1) /))
+                    !z_tmp = elevation above bed at gauss integration points 
                     z_tmp = bedh+arefh+ (d-arefh)/(2.0_dp)*(gauss_abscissae +1.0_dp)
                     ! Useful shorthand variables, which save computation
                     ! This routine is computationally demanding, so it is worth
                     ! making some effort.
-                    !z2surf= water-z_tmp ! Distance from z_tmp to the surface
                     z2bed_inv = 1.0_dp/(z_tmp-bedh) ! Inverse of above, reuse below
                     z2ratio = d*z2bed_inv ! A ratio that comes up a lot
-                    !z2ratio(no_subints)=1.0_dp ! Round-off can spoil this otherwise, and introduce singularities later.
                     rouseno = wset/(0.4_dp*us) ! Rouse number
                     arefh_inv = 1.0_dp/arefh
                     d_on_aref_les1_inv = 1.0_dp/(d/arefh -1.0_dp) ! Useful term
