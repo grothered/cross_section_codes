@@ -20,11 +20,11 @@
 !Algorithm options
 !!!!!!!!!!!!!!!!!!!!!
 
-nos = 4000 ! Number of spatial grid points
+nos = 1000 ! Number of spatial grid points
 writfreq = 2000 !24*5*5 ! The output is written every writfreq 'th timestep
 jmax= 1200000 !1382400 !24*5*2*45*4*4*4*4*5 ! The number of time steps
 t = 0.00 ! Starting time (s)
-dT = 300.00 !Time step (s)
+dT = 100.00 !Time step (s)
 variable_timestep=.FALSE. !Do we use a variable time-step? Can cause problems
 
 waterM = 0.0 !Initial water elevation (m) and mean water elevation
@@ -72,14 +72,14 @@ x_len_scale=10000.0 ! x length scale. In dynamic_sus_dist dC/dx ~=(C-k*C)/x_l
 susQbal= .FALSE. ! DEPRECIATED: Is there a balance between the lateral flux o
 integrated_load_flux=-1.0 !DEPRECIATED: The total flux (suspended load + bedl
 sus2d = .false. !Do we use a fully 2d suspended sediment - this is only appli
-norm=.false. !Is erosion to be directed normal to the bed?
+norm=.TRUE. !Is erosion to be directed normal to the bed?
 vertical=.true. ! POORLY TESTED .false. CASE: Is the vertical shear method (S
 evolve_bed=.TRUE. ! Do we evolve the bed? If FALSE, hydrodynamics, erosion an
 
 readin = .FALSE. !Do we read the initial conditions from a file?
 geo = .false. ! RARELY USE .true. ANYMORE: Do we use the 'geotech' algorithm 
 smax= 200.0 ! DEPRECIATED: The max slope when geo=.true. A bit outdated
-remesh=.FALSE. !Do we remesh
+remesh=.TRUE. !Do we remesh
 remesh_freq= 5000 !How many time steps before we consider remesh (only active
 normmov=.false. !Do the bed points actually shift with the D-E vector? This i
 

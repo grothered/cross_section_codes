@@ -402,7 +402,7 @@ END SUBROUTINE shear
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 SUBROUTINE calc_shear(a, dT, water, Q, bed,ys,Area, bottom, ff,rmu,inuc,tau,NN,counter &
             ,slopes, hlim,nos, vegdrag, rho, & 
-            rhos, voidf, d50, g, kvis, norm, vertical, lambdacon, tbston, ysl,ysu,bedl,bedu, & 
+            rhos, voidf, d50, g, kvis, vertical, lambdacon, tbston, ysl,ysu,bedl,bedu, & 
             high_order_shear) 
     ! A routine which calculates the shear over the cross-section
     ! It uses the routine 'shear' above.
@@ -438,7 +438,6 @@ SUBROUTINE calc_shear(a, dT, water, Q, bed,ys,Area, bottom, ff,rmu,inuc,tau,NN,c
     ! d50 = median sediment size
     ! g = gravity
     ! kvis = kinematic viscosity
-    ! norm = logical -- is resuspension/bedload treated as occuring normal to the bed (true) or in the vertical (false)
     ! vertical = logical -- do we use the 'shear' routine, or one based on Pizzuto (1991)
     ! lambdacon = dimensionless eddy viscosity
     ! tbston = logical -- do we retain the sqrt(1+(dbed/dy)^2) term in the shear routine (true) or treat it as 1 (false)
@@ -454,7 +453,7 @@ SUBROUTINE calc_shear(a, dT, water, Q, bed,ys,Area, bottom, ff,rmu,inuc,tau,NN,c
     REAL(dp), INTENT(IN)::water,Q, Area, bottom, ff, hlim, vegdrag, dt, rho, rhos, voidf,&
          d50, g, kvis, lambdacon, ysl,ysu,bedl,bedu 
     REAL(dp), INTENT(IN OUT):: bed, rmu,inuc,tau, NN, ys,slopes
-    LOGICAL, INTENT(IN):: norm, vertical, tbston, high_order_shear
+    LOGICAL, INTENT(IN):: vertical, tbston, high_order_shear
     DIMENSION bed(a),ys(a), ff(a),tau(a), NN(a),slopes(a), vegdrag(a)! 
     
     INTEGER::i, j, bgwet, up,  jj,  info,ii, n(a)

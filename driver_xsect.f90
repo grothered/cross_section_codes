@@ -111,6 +111,7 @@ OPEN(11,file="qby")
 OPEN(12,file="a_ref")
 OPEN(13,file="timestepping_stats")
 OPEN(14,file='Fl')
+
 ! Allocate memory for arrays
 ALLOCATE(ys(nos),bed(nos),dists(nos),tau(nos),ks(nos),tbst(nos),& 
          qby(0:nos), bedlast(nos),hss(nos),tss(nos),hss2(nos),Qe(nos),&
@@ -309,27 +310,6 @@ DO Q_loop= 1, num_simulations
         END IF
 
         DO iii=1, 1 !This can be used to try fancy time stepping techniques
-            !IF(iii==1) bedlast=bed
-            !f(l)=f(l+1)
-            !f(u)=f(u-1)
-            !slopes(l)=(bed(l+1)-bed(l))/(ys(l+1)-ys(l))
-            !slopes(u)=(bed(u-1)-bed(u))/(ys(u-1)-ys(u))
-
-            !!With the slopes at the edge: How about we extrapolate the wetted boundary
-            !location, and use this to calculate the slope at the numerical boundaries
-
-            !slopes(l) = (bed(l+1) - water )/&
-            !(ys(l+1) - (ys(l) - (water-bed(l))/(bedl-bed(l))*(ys(l)-ysl) ) )
-
-            !slopes(u) = (bed(u-1) - water )/&
-            !(ys(u-1) - (ys(u) + (water-bed(u))/(bedu-bed(u))*(ysu-ys(u)) ) )
-            !slopes(l)= (slopes(l)*sqrt(1._dp+slopes(l)**2) +&
-            !(bedl-bed(l))/(ysl-ys(l))*sqrt(1._dp+( (bedl-bed(l))/(ysl-ys(l)))**2) )/  &
-            !(sqrt(1._dp+( (bedl-bed(l))/(ysl-ys(l)))**2) + sqrt(1._dp+slopes(l)**2) )
-            !
-            !slopes(u)= (slopes(u)*sqrt(1._dp+slopes(u)**2) +&
-            !(bedu-bed(u))/(ysu-ys(u))*sqrt(1._dp+( (bedu-bed(u))/(ysu-ys(u)))**2) )/  &
-            !(sqrt(1._dp+( (bedu-bed(u))/(ysu-ys(u)))**2) + sqrt(1._dp+slopes(u)**2) )
        
             ! During the first time step, we compute friction and shear twice,
             ! because each depends on the other. Indicate the need to compute twice
@@ -347,7 +327,7 @@ DO Q_loop= 1, num_simulations
                             rmult,inuc, tau(l:u),& 
                             NN(l:u),j,slopes(l:u), hlim, &
                             u-l+1, vegdrag(l:u), rho & 
-                            ,rhos, voidf, d50, g, kvis, norm, vertical, lambdacon, tbston &
+                            ,rhos, voidf, d50, g, kvis, vertical, lambdacon, tbston &
                             ,ysl,ysu,bedl,bedu, high_order_shear) 
 
             ! Calculate depth-averaged velocity
@@ -384,30 +364,6 @@ DO Q_loop= 1, num_simulations
         
             !! UPDATE TIME
             IF(iii.eq.1) t=t+DT1
-
-            !Qe(l+1:u-1) = 0.5_dp*Qe(l+1:u-1) + 0.25_dp*(Qe(l:u-2) + Qe(l+2:u))
-            !Qe(l) = 0.75_dp*Qe(l) + 0.25_dp*Qe(l+1)
-            !Qe(u) = 0.75_dp*Qe(u) + 0.25_dp*Qe(u-1)
-            ! Calculate total sediment flux at time = t, 
-            ! We will use this to compute the x derivative terms
-            ! in dynamic_sus_dist and update_bed
-            ! e.g. dQbed/dx = (Qbed - sed_lag_scale*Qbed)/x_len_scale
-            ! e.g. dCbar/dx = (Cbar - sed_lag_scale*Cbar)/x_len_scale
-            !sus_flux = sum( & 
-            !        (Qbed(l:u)+(Cbar(l:u)/rhos)*abs(vel(l:u))*max(water-bed(l:u),0._dp) )*& ! Total load
-            !        ( ( (/ ys(l+1:u), ysu /) - (/ ysl, ys(l:u-1) /) )*0.5_dp) &  ! dy
-            !              )
-            !
-            !IF(sus_flux > 1.0e-12_dp) THEN
-            !    sed_lag_scale = 1.0_dp*((sconc*Q)/sus_flux)
-            !    ! Prevent very high or low values
-            !    sed_lag_scale = min(max(sed_lag_scale,0.666_dp),1.5_dp) 
-            !    !IF(mod(j,1000).eq.1) PRINT*, 'sed_lag_scale = ', sed_lag_scale
-            !    !print*, sed_lag_scale                        
-            !ELSE
-            !    sed_lag_scale = 1.0_dp
-            !END IF
-            !IF(mod(j,1000).eq.1) print*, 'sus_flux is:', sus_flux, ' desired flux is:', sconc*Q
 
 
             !! CALCULATE THE CROSS-SECTIONAL SUSPENDED LOAD DISTRIBUTION
