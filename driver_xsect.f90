@@ -726,23 +726,26 @@ DO Q_loop= 1, num_simulations!15
 
         !! REMESHING. If the points are becoming too spaced apart, we might have to do this
         IF(remesh) THEN
-            print*, 'ERROR: REMESHING PRESENTLY NOT SUPPORTED'
-            stop
+            !print*, 'ERROR: REMESHING PRESENTLY NOT SUPPORTED'
+            !stop
             IF(mod(j, remesh_freq).EQ.0) THEN
                 ysold=ys !Predefine
-                !call refit(ys, bed, nos) !Remesh so things are more even.
+
+                !Remesh so there are more points near the channel banks.
+                call refit(ys, bed, nos) 
 
                 ! Find where heights has changed
                 !call active_zone(nos-2, bed(2:nos-1), bedold(2:nos-1), morbl, morbu, 6)
-                !print*, morbl+morbu, morbl, morbu
                 ! Redefine ys
                 !call reset_ys(nos-2, ys(2:nos-1), morbl, morbu, 0.1_dp, 5.0_dp)
-                ! Also remesh old timestep records of the bed
+
+
+                ! Re-interpolate other important variables
                 call interp3(ysold, bedlast,ys,nos)
                 call interp3(ysold, bedold, ys, nos)
-                ! Also remesh the suspended sediment concentration.
                 call interp3(ysold, C, ys, nos)
                 call interp3(ysold, Cbar, ys, nos)
+
                 !Now fix up the layers
                 DO jj=1, layers
                     call interp(ysold,  taucrit_dep(:,jj),ys, nos) !Beware the risk that this could cause 'leakage'

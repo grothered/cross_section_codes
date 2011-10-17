@@ -171,13 +171,11 @@ SUBROUTINE refit(ys,bed,a)
     INTEGER, INTENT(IN):: a
     REAL(dp), INTENT (IN OUT)::ys(a), bed(a)
 
-    INTEGER:: dstspl,i,j, bankl, bankr, num_bank_pts, tmp(1), n1, n2, num_pts(5)
-    REAL(dp):: dsts(a),dsts2(a),eqspc(a),p1,newxs(a),newys(a),w2,w1, wdth,&
-                av,mxch(a),b,newxs2(a), tmpR, res_pts(6), high_res_width, bank_old
+    INTEGER:: i,j, bankl, bankr, tmp(1), n1, n2, num_pts(5)
+    REAL(dp):: slope_c(a),newxs(a), slope_f(a),&
+               tmpR, res_pts(6), high_res_width, bank_old
     SAVE res_pts ! This will record the boundaries between zones of different resolutions
     DATA res_pts /6*0.0_dp/
-    LOGICAL:: okay, reint
-    
     
     !Check the input data
     DO i= 1, a
@@ -187,19 +185,22 @@ SUBROUTINE refit(ys,bed,a)
     END IF
     END DO
 
-    ! Bed slope
-    dsts(2:a-1) = ((bed(3:a)-bed(2:a-1))/(ys(3:a) - ys(1:a-2))*(ys(2:a-1) - ys(1:a-2)) + &
-                   (bed(2:a-1)-bed(1:a-2))/(ys(2:a-1) - ys(1:a-2))*(ys(3:a) - ys(2:a-1)) )/ &
-                   (ys(3:a) - ys(1:a-2))
-    dsts(1) = 0._dp
-    dsts(a) = 0._dp
+    ! Bed slope, forward estimate
+    slope_f(1:a-1) = (bed(2:a)-bed(1:a-1))/(ys(2:a)-ys(1:a-1))
+    ! Bed slope, centred estimate
+    slope_c(2:a-1) = (slope_f(2:a-1)*(ys(2:a-1) - ys(1:a-2)) + &
+                      slope_f(1:a-2)*(ys(3:a) - ys(2:a-1)) )/ &
+                     (ys(3:a) - ys(1:a-2))
+    slope_c(1) = 0._dp
+    slope_c(a) = 0._dp
 
     ! Find location of the maximum slope on the left half of the channel
-    tmp = maxloc(abs(dsts(2:a/2))) + 1
+    ! We assume that the mid-regions of the channel are near a/2
+    tmp = maxloc(abs(slope_c(2:a/2))) + 1
     bankl=tmp(1)
 
     ! Same on the right half of the channel
-    tmp = maxloc(abs(dsts(a/2:a))) + a/2 -1
+    tmp = maxloc(abs(slope_c(a/2:a))) + a/2 -1
     bankr=tmp(1)
 
     ! Check whether we need to remesh
