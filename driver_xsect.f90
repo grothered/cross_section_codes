@@ -128,7 +128,7 @@ ALLOCATE(ys(nos),bed(nos),dists(nos),tau(nos),ks(nos),tbst(nos),&
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !LOOP OVER DIFFERENT VALUES OF DISCHARGE
 
-DO Q_loop= 1, num_simulations!15 
+DO Q_loop= 1, num_simulations
 
     ! Set suspended sediment concentration for this discharge
     sconc= susconcs(Q_loop) 
@@ -190,28 +190,16 @@ DO Q_loop= 1, num_simulations!15
 
     !!!Calculate area
     IF(l>0) THEN
-        DO i= 1,nos-1
-            Area= Area+ max(water-0.5_dp*(bed(i)+bed(i+1)), 0._dp)&
-                 *(ys(i+1)-ys(i))
-        END DO
+        Area = compute_area(nos, water, bed, ys, l, u)
     ELSE
         print*, "Totally Dry at start"
         stop
     END IF
 
-    ! Calculate slopes -- note how it is a distance weighted average of the
-    ! 1eft and right slopes
-    slopes(2:nos-1)= ((bed(3:nos)-bed(2:nos-1))/(ys(3:nos)-ys(2:nos-1))*(ys(2:nos-1)- & 
-        ys(1:nos-2)) + (bed(2:nos-1)-bed(1:nos-2))/(ys(2:nos-1)-ys(1:nos-2)) & 
-        *(ys(3:nos)-ys(2:nos-1))) /(ys(3:nos)-ys(1:nos-2))
 
-    slopes(1)= (bed(2)-bed(1))/(ys(2)-ys(1))
-    slopes(nos)= (bed(nos)-bed(nos-1))/(ys(nos)-ys(nos-1))
-
-
-    !!!!!!!!!!!!!!
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !THE MAIN LOOP
-    !!!!!!!!!!!!!!
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     DO j=1, jmax 
 
         ! Print out to console
@@ -221,69 +209,12 @@ DO Q_loop= 1, num_simulations!15
                     rmult*(Area)/wet_width, f(nos/2), sed_lag_scale
               END IF
 
+        ! Calculate slopes
+        call compute_slope(nos, slopes, bed, ys)
 
-
-        ! taucrit_dep = the value of taucrit in sediment buried at a
-        ! certain depth
-        DO  i= 1, nos
-            DO n= 1, layers
-                taucrit_dep(i,n)= max(min(taucrit_dep(i,n), bed(i)),bed(i)-lincrem*n) !So sediments buried at a certain depth will have their critical shear increase. 
-            END DO !N 
-        END DO
-
-
-        !dst = the distance of any critical shear layer to the surface.
-        dst(:,0)= 0._dp
-        DO i= 1, nos
-            DO jj= 1, layers
-                dst(i, jj)=max((bed(i)-taucrit_dep(i,jj) ), 0._dp)
-                ! print*, hs(i), taucrit_dep(i, 1), dst(i, 1)
-            END DO
-        END DO
-
-
-        ! Here either the geotech routine is used, or just the slope is calculated
-        IF(geo) THEN
-            call geotech(ys, bed,slopes , taucrit_dep_ys,taucrit_dep, dst, nos,nos ,mu, layers, slpmx)
-        ELSE
-            ! Slope term -- note how it is a distance weighted average of the 1eft and right slopes
-            slopes(2:nos-1)= ((bed(3:nos)-bed(2:nos-1))/(ys(3:nos)-ys(2:nos-1))*(ys(2:nos-1)- & 
-            ys(1:nos-2)) + (bed(2:nos-1)-bed(1:nos-2))/(ys(2:nos-1)-ys(1:nos-2)) & 
-            *(ys(3:nos)-ys(2:nos-1))) /(ys(3:nos)-ys(1:nos-2))  
-            
-            slopes(1)= (bed(2)-bed(1))/(ys(2)-ys(1))
-            slopes(nos)= (bed(nos)-bed(nos-1))/(ys(nos)-ys(nos-1))   
-        END IF
-
-        ! Update the critical shear layers to account for any slope effects
-        DO i = 1, nos
-            DO jj= 0, layers
-
-                multa=1._dp
-                
-                IF(taucrit_slope_reduction.eqv..TRUE.) THEN 
-                    ! Compute slope-related reduction in critical shear stress
-                    IF((j.eq.1).and.(i.eq.1).and.(jj==0)) print*, 'WARNING: Critical shear on a slope is reduced'
-                    
-                    aa= mu**2*(mu*lifttodrag-1._dp)/(mu*lifttodrag+1._dp)
-                    bb= -2._dp*mu**2*lifttodrag*cos(atan(slopes(i)))*mu/(1._dp+mu*lifttodrag) 
-                    cc= mu**2*cos(atan(slopes(i)))**2 - sin(atan(slopes(i)))**2
-                    !multa*(critical shear on a flat bed) = critical shear on a slope.
-                    multa= (-bb - sqrt(bb**2-4._dp*aa*cc))/ (2._dp*aa)  
-
-                END IF
-
-                taucrit(i,jj) = erconst*(1._dp+ jj*1._dp)*max(multa,1.0e-01_dp)
-
-                !if(bed(i)>-1.0_dp) taucrit(i,jj) = taucrit(i,jj)*2.0_dp
-
-                IF( isnan(taucrit(i,jj))) THEN
-                    PRINT*, "taucrit(", i,",", jj, ") is nan"
-                    STOP
-                END IF
-
-            END DO 
-        END DO
+        call compute_critical_shear(nos, layers, bed,slopes, taucrit_dep, taucrit,&
+                                    dst, lincrem, mu, lifttodrag, &
+                                    taucrit_slope_reduction, erconst)
 
         ! Note where the slope is overly large, so we can prevent deposition
         ! there
@@ -310,8 +241,7 @@ DO Q_loop= 1, num_simulations!15
         ! Find wetted part of section
         call wet(l,u,nos,water, bed) 
         
-        ! 'Extra' wetted width associated with the corners of the domain -- do
-        ! we really need/ want this?
+        ! Wetted width 
         wet_width=ys(u)-ys(l) 
         IF(l>0) THEN
             IF (u<nos) wet_width = wet_width+ (water-bed(u))/(bed(u+1)-bed(u))*(ys(u+1)-ys(u))

@@ -1122,11 +1122,104 @@ REAL(dp) FUNCTION compute_area(nos, water,bed,ys,l,u)
     compute_area = Area    
 
 END FUNCTION compute_area
-!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!
+SUBROUTINE compute_slope(nos, slopes, bed, ys)
+    ! Compute the lateral bed slope, as a distance weighted average of the right
+    ! facing and left facing slopes.
+    INTEGER, INTENT(IN):: nos
+    REAL(dp), INTENT(IN):: bed(nos), ys(nos)
+    REAL(dp), INTENT(OUT):: slopes(nos)
+
+    REAL(dp):: slope_f(nos), dy_f(nos)
+
+    ! Forward dy value
+    dy_f(1:nos-1) = (ys(2:nos)-ys(1:nos-1))
+    ! Forward estimate of the slope
+    slope_f(1:nos-1) = (bed(2:nos)-bed(1:nos-1))/dy_f(1:nos-1)
+
+    ! Central estimate of the slope
+    slopes(2:nos-1)= (slope_f(2:nos-1)*dy_f(1:nos-2) + & 
+                      slope_f(1:nos-2)*dy_f(2:nos-1)) &
+                      /(ys(3:nos)-ys(1:nos-2))
+
+    slopes(1)= (bed(2)-bed(1))/(ys(2)-ys(1))
+    slopes(nos)= (bed(nos)-bed(nos-1))/(ys(nos)-ys(nos-1))
+
+END SUBROUTINE compute_slope
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+SUBROUTINE compute_critical_shear(nos, layers, bed, slopes, taucrit_dep, taucrit,&
+                                    dst, lincrem, mu, lifttodrag, &
+                                    taucrit_slope_reduction, erconst)
+    ! Compute the critical shear. This also accounts for multiple layers in the
+    ! bed, and can treat the reduction of the critical shear on a slope
+
+    INTEGER, INTENT(IN):: nos, layers
+    LOGICAL, INTENT(IN):: taucrit_slope_reduction
+    REAL(dp), INTENT(IN):: bed(nos), slopes(nos), lincrem, mu, lifttodrag, erconst
+    REAL(dp), INTENT(IN OUT):: taucrit_dep(nos,layers), taucrit(nos, 0:layers), dst(nos,0:layers+1)
+
+    INTEGER:: i, n, jj
+    REAL(dp):: multa, aa, bb, cc
+
+    ! taucrit_dep = the value of taucrit in sediment buried at a
+    ! certain depth
+    DO  i= 1, nos
+        DO n= 1, layers
+            !Sediments buried at a certain depth will have their critical shear increase.
+            taucrit_dep(i,n)= max(min(taucrit_dep(i,n), bed(i)),bed(i)-lincrem*n)  
+        END DO !N 
+    END DO
+
+
+    !dst = the distance of any critical shear layer to the surface.
+    dst(:,0)= 0._dp
+    DO i= 1, nos
+        DO jj= 1, layers
+            dst(i, jj)=max((bed(i)-taucrit_dep(i,jj) ), 0._dp)
+        END DO
+    END DO
+
+
+
+    ! Update the critical shear layers to account for any slope effects
+    DO i = 1, nos
+        DO jj= 0, layers
+
+            
+            IF(taucrit_slope_reduction.eqv..TRUE.) THEN 
+                ! Compute slope-related reduction in critical shear stress
+                !IF((j.eq.1).and.(i.eq.1).and.(jj==0)) print*, 'WARNING: Critical shear on a slope is reduced'
+                
+                aa= mu**2*(mu*lifttodrag-1._dp)/(mu*lifttodrag+1._dp)
+                bb= -2._dp*mu**2*lifttodrag*cos(atan(slopes(i)))*mu/(1._dp+mu*lifttodrag) 
+                cc= mu**2*cos(atan(slopes(i)))**2 - sin(atan(slopes(i)))**2
+                !multa*(critical shear on a flat bed) = critical shear on a slope.
+                multa= (-bb - sqrt(bb**2-4._dp*aa*cc))/ (2._dp*aa)  
+            ELSE
+
+                multa=1._dp
+
+            END IF
+
+            taucrit(i,jj) = erconst*(1._dp+ jj*1._dp)*max(multa,1.0e-01_dp)
+
+            !if(bed(i)>-1.0_dp) taucrit(i,jj) = taucrit(i,jj)*2.0_dp
+
+            IF( isnan(taucrit(i,jj))) THEN
+                PRINT*, "taucrit(", i,",", jj, ") is nan"
+                STOP
+            END IF
+
+        END DO 
+    END DO
+
+END SUBROUTINE compute_critical_shear
 !!!!!!!!!!!!!!!!!!!!!!!
 SUBROUTINE create_initial_geometry( ys, bed, taucrit_dep_ys, taucrit_dep,  &
                                   readin, nos, layers, Width, max_init_depth)
-    ! Subroutine to create the initial cross-sectional geometry,
+    ! Create the initial cross-sectional geometry,
     ! either by reading from some input files, or using a conveniently defined
     ! function
     INTEGER, INTENT(IN):: nos, layers
