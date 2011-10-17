@@ -272,35 +272,6 @@ DO Q_loop= 1, num_simulations!15
               END IF
 
 
-        ! Update the critical shear layers to account for any slope effects
-        DO i = 1, nos
-            DO jj= 0, layers
-
-                multa=1._dp
-                
-                IF(taucrit_slope_reduction.eqv..TRUE.) THEN 
-                    ! Compute slope-related reduction in critical shear stress
-                    IF((j.eq.1).and.(i.eq.1).and.(jj==0)) print*, 'WARNING: Critical shear on a slope is reduced'
-                    
-                    aa= mu**2*(mu*lifttodrag-1._dp)/(mu*lifttodrag+1._dp)
-                    bb= -2._dp*mu**2*lifttodrag*cos(atan(slopes(i)))*mu/(1._dp+mu*lifttodrag) 
-                    cc= mu**2*cos(atan(slopes(i)))**2 - sin(atan(slopes(i)))**2
-                    !multa*(critical shear on a flat bed) = critical shear on a slope.
-                    multa= (-bb - sqrt(bb**2-4._dp*aa*cc))/ (2._dp*aa)  
-
-                END IF
-
-                taucrit(i,jj) = erconst*(1._dp+ jj*1._dp)*max(multa,1.0e-01_dp)
-
-                !if(bed(i)>-1.0_dp) taucrit(i,jj) = taucrit(i,jj)*2.0_dp
-
-                IF( isnan(taucrit(i,jj))) THEN
-                    PRINT*, "taucrit(", i,",", jj, ") is nan"
-                    STOP
-                END IF
-
-            END DO 
-        END DO
 
         ! taucrit_dep = the value of taucrit in sediment buried at a
         ! certain depth
@@ -333,6 +304,36 @@ DO Q_loop= 1, num_simulations!15
             slopes(1)= (bed(2)-bed(1))/(ys(2)-ys(1))
             slopes(nos)= (bed(nos)-bed(nos-1))/(ys(nos)-ys(nos-1))   
         END IF
+
+        ! Update the critical shear layers to account for any slope effects
+        DO i = 1, nos
+            DO jj= 0, layers
+
+                multa=1._dp
+                
+                IF(taucrit_slope_reduction.eqv..TRUE.) THEN 
+                    ! Compute slope-related reduction in critical shear stress
+                    IF((j.eq.1).and.(i.eq.1).and.(jj==0)) print*, 'WARNING: Critical shear on a slope is reduced'
+                    
+                    aa= mu**2*(mu*lifttodrag-1._dp)/(mu*lifttodrag+1._dp)
+                    bb= -2._dp*mu**2*lifttodrag*cos(atan(slopes(i)))*mu/(1._dp+mu*lifttodrag) 
+                    cc= mu**2*cos(atan(slopes(i)))**2 - sin(atan(slopes(i)))**2
+                    !multa*(critical shear on a flat bed) = critical shear on a slope.
+                    multa= (-bb - sqrt(bb**2-4._dp*aa*cc))/ (2._dp*aa)  
+
+                END IF
+
+                taucrit(i,jj) = erconst*(1._dp+ jj*1._dp)*max(multa,1.0e-01_dp)
+
+                !if(bed(i)>-1.0_dp) taucrit(i,jj) = taucrit(i,jj)*2.0_dp
+
+                IF( isnan(taucrit(i,jj))) THEN
+                    PRINT*, "taucrit(", i,",", jj, ") is nan"
+                    STOP
+                END IF
+
+            END DO 
+        END DO
 
         ! Note where the slope is overly large, so we can prevent deposition
         ! there
