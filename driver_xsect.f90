@@ -26,7 +26,7 @@ REAL(dp):: wslope, ar, Q, t, &
             dsand, d50, g, kvis, lambdacon, alpha, &
             ysl,ysu,bedl, bedu, wet_width, TR, storer(9), tmp, tmp2, a_ref, &
             failure_slope, x_len_scale, sus_flux, sed_lag_scale, Clast, &
-            lat_sus_flux, int_edif_f, int_edif_dfdy, zetamult
+            lat_sus_flux, int_edif_f, int_edif_dfdy, zetamult, max_init_depth
 INTEGER::  remesh_freq, num_simulations, too_steep, morbl, morbu
 REAL(dp):: discharges(1000), susconcs(1000)
 LOGICAL::  compute_twice, susdist, sus2d, readin, geo, remesh, norm, vertical, & 
@@ -133,63 +133,12 @@ DO Q_loop= 1, num_simulations!15
     ! Set suspended sediment concentration for this discharge
     sconc= susconcs(Q_loop) 
 
-    !Create the channel geometry
-    If(readin) THEN
-        !Cross-channel distance
-        OPEN(77,file="lnths",status="old")
-        READ(77,*) ys
-        CLOSE(77)
-        
-        ! Bed elevation
-        OPEN(78,file="hes",status="old")
-        READ(78,*) bed
-        CLOSE(78)
-        
-        ! Bed layer cross-channel distance
-        open(79,file="taucrit_dep_lnths")
-        read(79,*) taucrit_dep_ys
-        close(79)
-        
-        ! Bed layer elevation
-        open(80,file="taucrit_deps")
-        read(80,*) taucrit_dep(:,1)
-        ! Predefine the deeper bed layers
-        do i=1, layers
-        taucrit_dep(:,i)= taucrit_dep(:, 1) - i*10._dp
-        end do
-        close(80)
-    ELSE
-        !Define the channel geometry. Note that for most of my boundary
-        !conditions to be valid, we need the edges of the computational domain
-        !to not to ever be sumberged. 
-        DO i =1,nos
-        
-            ! Cross-channel distance, 'y' coordinate
-            ys(i)=Width/(nos*1._dp-1._dp)*(i*1._dp-1._dp) 
-            
-            ! Bed elevation
-            !bed(i)= 1.11_dp -8.01_dp*(abs(-1._dp+1._dp*((ys(i)-Width/2._dp))**6/(Width/2._dp)**6)) !-3.01 !+0.00002*(ys(i)-ys(1))*(ys(i)-nos*ys(1))
-            !bed(i)= -4.1_dp -0.01_dp*(abs(-1._dp+1._dp*((ys(i)-Width/2._dp))**2/(Width/2._dp)**2)) !-3.01 !+0.00002*(ys(i)-ys(1))*(ys(i)-nos*ys(1))
-            !tmp = 40.0 !sqrt(discharges(Q_loop)/2.5_dp)
-            tmp = sqrt(discharges(Q_loop)/2.5_dp)
-            bed(i) =min( max(abs(ys(i)-Width/2._dp)-1.5_dp*tmp,-tmp ),&
-                         0._dp)
-            
-            !!The SERM channel
-            !!IF(handy<=0.75) bed(i)=0.
-            !!IF((handy>0.75).AND.(handy<0.9)) bed(i)= (handy-0.75)
-            !!IF((handy>=0.9).AND.(handy<3.13)) bed(i)= 0.15
-            !!IF(handy>=3.13) bed(i)= (handy-3.13) +0.15
-            
-            ! Bed layers    
-            taucrit_dep(i,:)=-1000._dp
-            taucrit_dep_ys(i)= ys(i)
+    ! Create the initial geometry
+    max_init_depth = sqrt(discharges(Q_loop)/2.5_dp) 
+    call create_initial_geometry( ys, bed, &
+                                  taucrit_dep_ys, taucrit_dep, &
+                                  readin, nos, layers, Width, max_init_depth)
 
-        END DO
-        
-        
-        
-    END IF !.readin.
 
     !!!!!!!!!!!!!!!!!!!!!!
     !INITIALISE VARIABLES

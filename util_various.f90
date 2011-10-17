@@ -1123,4 +1123,77 @@ REAL(dp) FUNCTION compute_area(nos, water,bed,ys,l,u)
 
 END FUNCTION compute_area
 !!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!
+SUBROUTINE create_initial_geometry( ys, bed, taucrit_dep_ys, taucrit_dep,  &
+                                  readin, nos, layers, Width, max_init_depth)
+    ! Subroutine to create the initial cross-sectional geometry,
+    ! either by reading from some input files, or using a conveniently defined
+    ! function
+    INTEGER, INTENT(IN):: nos, layers
+    LOGICAL, INTENT(IN):: readin
+    REAL(dp), INTENT(IN):: Width, max_init_depth
+    REAL(dp), INTENT(IN OUT):: ys(nos), bed(nos), & 
+                              taucrit_dep_ys(nos),&
+                              taucrit_dep(nos, layers)    
+
+    INTEGER:: i
+
+    !Create the channel geometry
+    If(readin) THEN
+        !Cross-channel distance
+        OPEN(77,file="lnths",status="old")
+        READ(77,*) ys
+        CLOSE(77)
+        
+        ! Bed elevation
+        OPEN(78,file="hes",status="old")
+        READ(78,*) bed
+        CLOSE(78)
+        
+        ! Bed layer cross-channel distance
+        open(79,file="taucrit_dep_lnths")
+        read(79,*) taucrit_dep_ys
+        close(79)
+        
+        ! Bed layer elevation
+        open(80,file="taucrit_deps")
+        read(80,*) taucrit_dep(:,1)
+        ! Predefine the deeper bed layers
+        do i=1, layers
+        taucrit_dep(:,i)= taucrit_dep(:, 1) - i*10._dp
+        end do
+        close(80)
+    ELSE
+        !Define the channel geometry. Note that for most of my boundary
+        !conditions to be valid, we need the edges of the computational domain
+        !to not to ever be sumberged. 
+        DO i =1,nos
+        
+            ! Cross-channel distance, 'y' coordinate
+            ys(i)=Width/(nos*1._dp-1._dp)*(i*1._dp-1._dp) 
+            
+            ! Bed elevation
+            !bed(i)= 1.11_dp -8.01_dp*(abs(-1._dp+1._dp*((ys(i)-Width/2._dp))**6/(Width/2._dp)**6)) !-3.01 !+0.00002*(ys(i)-ys(1))*(ys(i)-nos*ys(1))
+            !bed(i)= -4.1_dp -0.01_dp*(abs(-1._dp+1._dp*((ys(i)-Width/2._dp))**2/(Width/2._dp)**2)) !-3.01 !+0.00002*(ys(i)-ys(1))*(ys(i)-nos*ys(1))
+            bed(i) =min( max(abs(ys(i)-Width/2._dp)-1.5_dp*max_init_depth,-max_init_depth),&
+                         0._dp)
+            
+            !!The SERM channel
+            !!IF(handy<=0.75) bed(i)=0.
+            !!IF((handy>0.75).AND.(handy<0.9)) bed(i)= (handy-0.75)
+            !!IF((handy>=0.9).AND.(handy<3.13)) bed(i)= 0.15
+            !!IF(handy>=3.13) bed(i)= (handy-3.13) +0.15
+            
+            ! Bed layers    
+            taucrit_dep(i,:)=-1000._dp
+            taucrit_dep_ys(i)= ys(i)
+
+        END DO
+        
+        
+        
+    END IF 
+
+END SUBROUTINE create_initial_geometry
+
 END MODULE util_various
