@@ -24,7 +24,7 @@ REAL(dp):: wslope, ar, Q, t, &
             erconst, lifttodrag, vegdrag, sconc, rho, ysold, &
             lincrem, wset, voidf, smax, rough_coef, man_nveg, veg_ht,rhos,&
             dsand, d50, g, kvis, lambdacon, alpha, &
-            ysl,ysu,bedl, bedu, wdthx, TR, storer(9), tmp, tmp2, a_ref, &
+            ysl,ysu,bedl, bedu, wet_width, TR, storer(9), tmp, tmp2, a_ref, &
             failure_slope, x_len_scale, sus_flux, sed_lag_scale, Clast, &
             lat_sus_flux, int_edif_f, int_edif_dfdy, zetamult
 INTEGER::  remesh_freq, num_simulations, too_steep, morbl, morbu
@@ -203,6 +203,7 @@ DO Q_loop= 1, num_simulations!15
     water=waterM ! Water elevation
     ! Redefine l and u
     call wet(l,u,nos,water, bed)
+    wet_width=ys(u)-ys(l)
     tau= 0._dp*tau !Set all the shears to zero prior to update
     E=0._dp ! Cross-sectionally integrated resuspension 
     D=0._dp ! Cross-sectionally integrated deposition (from suspension)
@@ -267,8 +268,8 @@ DO Q_loop= 1, num_simulations!15
         ! Print out to console
         22222 IF( mod(j-1,writfreq).eq.0 ) THEN 
                 PRINT*, j, l,u, Q/Area, t, ((Q/Area)*abs(Q/Area)*rmult),&
-                     DT1, ys(u)-ys(l)+wdthx, maxval(C), C(nos/2),&
-                    rmult*(Area)/(ys(u)-ys(l)+wdthx), f(nos/2), sed_lag_scale
+                     DT1, wet_width, maxval(C), C(nos/2),&
+                    rmult*(Area)/wet_width, f(nos/2), sed_lag_scale
               END IF
 
 
@@ -362,10 +363,10 @@ DO Q_loop= 1, num_simulations!15
         
         ! 'Extra' wetted width associated with the corners of the domain -- do
         ! we really need/ want this?
-        wdthx = 0.0
+        wet_width=ys(u)-ys(l) 
         IF(l>0) THEN
-            IF (u<nos) wdthx = wdthx+ (water-bed(u))/(bed(u+1)-bed(u))*(ys(u+1)-ys(u))
-            IF (l>1) wdthx = wdthx+ (water-bed(l))/(bed(l-1)-bed(l))*(ys(l)-ys(l-1))
+            IF (u<nos) wet_width = wet_width+ (water-bed(u))/(bed(u+1)-bed(u))*(ys(u+1)-ys(u))
+            IF (l>1)   wet_width = wet_width+ (water-bed(l))/(bed(l-1)-bed(l))*(ys(l)-ys(l-1))
         END IF
 
         ! Cross sectional area
@@ -387,7 +388,7 @@ DO Q_loop= 1, num_simulations!15
         IF(TR==0._dp) THEN
             Q=discharges(Q_loop)!*(1.0_dp+0.1_dp*sin(2._dp*pi*t/(12.4_dp*3600._dp))) !/50._dp
         ELSE
-            Q= (discharges(Q_loop)+j*0._dp/500._dp)*(ys(u)-ys(l)+wdthx)*abs((water-waterlast))/dt*10._dp 
+            Q= (discharges(Q_loop)+j*0._dp/500._dp)*wet_width*abs((water-waterlast))/dt*10._dp 
         END IF
 
         ! Sanity checks
@@ -463,7 +464,7 @@ DO Q_loop= 1, num_simulations!15
 
             ! CALCULATE BED SHEAR on bed 'i'
             call calc_shear(u-l+1,DT1,water,Q,bed(l:u),ys(l:u),Area, &
-                            water-Area/(ys(u)-ys(l)+wdthx),f(l:u),&
+                            water-Area/(wet_width),f(l:u),&
                             rmult,inuc, tau(l:u),& 
                             NN(l:u),j,slopes(l:u), hlim, &
                             u-l+1, vegdrag(l:u), rho & 
@@ -680,8 +681,8 @@ DO Q_loop= 1, num_simulations!15
                 write(11,*) qby
                 write(12,*) a_ref
                 write(13,*) j, l,u, Q/Area, t-DT1, ((Q/Area)*abs(Q/Area)*rmult),&
-                            DT1, ys(u)-ys(l)+wdthx, maxval(C),C(nos/2), &
-                            rmult*(Area)/(ys(u)-ys(l)+wdthx), f(nos/2)
+                            DT1, wet_width, maxval(C),C(nos/2), &
+                            rmult*Area/wet_width, f(nos/2)
                 write(14,*) lat_sus_flux
                 !write(12,*) taucrit_dep_ys
 
