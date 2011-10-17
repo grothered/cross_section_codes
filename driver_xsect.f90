@@ -464,7 +464,7 @@ DO Q_loop= 1, num_simulations!15
 
             ! CALCULATE BED SHEAR on bed 'i'
             call calc_shear(u-l+1,DT1,water,Q,bed(l:u),ys(l:u),Area, &
-                            water-Area/(wet_width),f(l:u),&
+                            water-Area/wet_width,f(l:u),&
                             rmult,inuc, tau(l:u),& 
                             NN(l:u),j,slopes(l:u), hlim, &
                             u-l+1, vegdrag(l:u), rho & 
