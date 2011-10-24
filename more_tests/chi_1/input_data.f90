@@ -24,7 +24,7 @@ nos = 3200 ! Number of spatial grid points
 writfreq = 2000 !24*5*5 ! The output is written every writfreq 'th timestep
 jmax= 2000001 !2000001 !1382400 !24*5*2*45*4*4*4*4*5 ! The number of time steps
 t = 0.00 ! Starting time (s)
-dT = 2000.00 !Time step (s)
+dT = 300.00 !Time step (s)
 variable_timestep=.FALSE. !Do we change the timestepping for high sediment concentrations? -- this is presently inconsistent with bed layers
 
 waterM = 0.00 !Initial water elevation (m) and mean water elevation
@@ -60,7 +60,7 @@ d50 = 0.00015 !0.000062 ! median grain size for bedload formula (m)
 g = 9.8 !Gravity (m/s^2)
 kvis = 1.0E-06 !Kinematic viscosity of water. 
 alpha=0.000228 !The constant for the erosion formula E= alpha*(tau-taue)/sqrt(taue)
-Qbedon=.FALSE. !Is bedload active
+Qbedon=.TRUE. !Is bedload active
 bedload_type='vanrijn' ! 'mpm', 'vanrijn'
 talmon=.FALSE. !Do we use a talmon lateral bedload closure?
 resus_type = 'vanrijn' ! 'cohesive', 'vanrijn'
@@ -77,7 +77,7 @@ evolve_bed=.TRUE. ! Do we evolve the bed? If FALSE, hydrodynamics, erosion and d
 readin = .FALSE. !Do we read the initial conditions from a file?
 geo = .false. !Do we use the 'geotech' algorithm to prevent steep slopes? This is also a bit outdated
 smax= 200.0 !The max slope when geo=.true. A bit outdated
-remesh=.FALSE. !Do we remesh
+remesh=.TRUE. !Do we remesh
 remesh_freq= 3000 !How many time steps before we consider remesh (only active if remesh=.true.)
 normmov=.false. !Do the bed points actually shift with the D-E vector? This is only supported for pure suspended load without bed layers.
 

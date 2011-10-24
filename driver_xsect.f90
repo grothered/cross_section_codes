@@ -425,7 +425,7 @@ DO Q_loop= 1, num_simulations
                                 layers, taucrit_dep_ys(l:u) & 
                                 ,u-l+1, taucrit(l:u, 0:layers) , rho, &
                                 Qe(l:u), Qbed(l:u),qb_G((l-1):(u+1)), wset, dqbeddx(l:u),&
-                                rhos, voidf, d50, g, norm, &
+                                rhos, voidf, d50, g, &
                                 Qbedon, normmov, sus2d, ysl, ysu, bedl,bedu, iii, bedlast(l:u), &
                                 talmon, high_order_bedload, too_steep) 
 

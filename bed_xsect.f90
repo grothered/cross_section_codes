@@ -4,6 +4,7 @@ MODULE bed_xsect
 
 ! Module with global parameters
 USE global_defs
+USE util_various, only: minmod
 IMPLICIT NONE
 contains
 
@@ -29,8 +30,8 @@ SUBROUTINE calc_resus_bedload(a, dT, water, Q, bed,ys,Area, ff,recrd, E, C, wset
     INTEGER::i, j, bgwet, up,  jj,  info,ii, n(a)
     REAL(dp)::wslope,  Qelocal, tt, corfact, useme, dgravel
     REAL(dp):: kkkk(a), tbst(a), f(a)  
-    REAL(dp)::sllength(a),    dst(a,0:(layers+1)), Qb(a), & 
-        bedlast(a), sinsl(a), mu_d, Qtemp, useful(a), Ceq(a) 
+    REAL(dp)::sllength(a), slope_f(a),   dst(a,0:(layers+1)), Qb(a), & 
+        bedlast(a), slope_minmod(a), mu_d, Qtemp, useful(a), Ceq(a) 
     REAL(dp)::writout(a2), d_star, c_a, k_scr, f_cs, si, tmp,tmp1
     !logical::writ_tau=.TRUE.  !This will write out the cross sectional taus-- will lead to massive files if you're not careful. 
     LOGICAL::  dry(a)
@@ -38,7 +39,14 @@ SUBROUTINE calc_resus_bedload(a, dT, water, Q, bed,ys,Area, ff,recrd, E, C, wset
 
     ! To direct erosion normal to the bed, adjust the erosion factor accordingly.
     IF(norm) THEN
-        sllength = sqrt(1._dp+ slopes(1:a)**2)
+        slope_f(1:a-1) = (bed(2:a)-bed(1:a-1))/( ys(2:a)-ys(1:a-1))
+        DO i=2,a-1
+            slope_minmod(i)=minmod( slope_f(i), slope_f(i-1))
+        END DO
+            slope_minmod(1) = slopes(1)
+            slope_minmod(a) = slopes(a)
+            !sllength = sqrt(1._dp+ slopes(1:a)**2)
+            sllength = sqrt(1._dp+ slope_minmod(1:a)**2)
     ELSE
         sllength=1._dp
     END IF
@@ -264,7 +272,7 @@ END SUBROUTINE calc_resus_bedload
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 SUBROUTINE update_bed(a, dT, water, Q, bed,ys,Area, recrd, E, D,C,a2, tau,taug,&
     counter,slopes, hlim,mor,taucrit_dep,layers, taucrit_dep_ys, nos, taucrit, rho, Qe, Qbed, & 
-    qb_G, wset,dqbeddx, rhos, voidf, d50, g, norm, Qbedon, normmov,sus2d,ysl, & 
+    qb_G, wset,dqbeddx, rhos, voidf, d50, g, Qbedon, normmov,sus2d,ysl, & 
     ysu,bedl,bedu,iii, bedlast, talmon, high_order_bedload, too_steep)
     ! Purpose: Solve the sediment continuity equation to update the channel bed.
 
@@ -273,7 +281,7 @@ SUBROUTINE update_bed(a, dT, water, Q, bed,ys,Area, recrd, E, D,C,a2, tau,taug,&
         rhos, voidf, d50, g, wset, ysl,ysu, bedlast, taug,C, qb_G !QbedI, dQbedI
     REAL(dp), INTENT(IN OUT):: bed, recrd, E, D,tau, ys,taucrit_dep, taucrit_dep_ys, slopes, & 
         taucrit, bedu, bedl
-    LOGICAL, INTENT(IN):: norm, Qbedon, normmov, sus2d, talmon, high_order_bedload
+    LOGICAL, INTENT(IN):: Qbedon, normmov, sus2d, talmon, high_order_bedload
     DIMENSION bed(a),ys(a), recrd(0:a),tau(a),taug(a), slopes(a),taucrit_dep(nos,layers),C(a),&
         taucrit_dep_ys(nos),taucrit(nos,0:layers), Qbed(a), qb_G(0:a+1), Qe(a), dqbeddx(a), bedlast(a), too_steep(a) ! 
 
@@ -295,12 +303,6 @@ SUBROUTINE update_bed(a, dT, water, Q, bed,ys,Area, recrd, E, D,C,a2, tau,taug,&
     INTEGER:: IPV(a+2), iwork(a+2)
     LOGICAL:: crazy_check=.false., dry(a), cnan
 
-    !! Adjust the erosion factor if erosion is normal to the bed
-    !IF(norm) THEN
-    !    sllength = sqrt(1._dp+ slopes(1:a)**2)
-    !ELSE
-    !    sllength=1._dp
-    !END IF
 
     !!!!!!!!!!!!Check if we have enough points 
     IF(a<2) THEN 
