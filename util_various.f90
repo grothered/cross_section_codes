@@ -1180,6 +1180,8 @@ SUBROUTINE compute_critical_shear(nos, layers, bed, slopes, taucrit_dep, taucrit
             dst(i, jj)=max((bed(i)-taucrit_dep(i,jj) ), 0._dp)
         END DO
     END DO
+    dst(:,layers+1)=9.9E+10_dp !The distance to the layer past the last layer -- a convenience 
+
 
 
 

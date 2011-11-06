@@ -1,6 +1,6 @@
 MODULE bed_xsect
 ! Module to compute rates of resuspension, deposition, and bedload transport,
-! and to compute the evolution of the bed
+! and to compute the evolution of the bed on a cross-section
 
 ! Module with global parameters
 USE global_defs
@@ -11,26 +11,29 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!
 SUBROUTINE calc_resus_bedload(a, dT, water, Q, bed,ys,Area, ff,recrd, E, C, wset, a2, tau,tau_g,vel & 
-    ,counter,slopes, hlim,mor,taucrit_dep,layers, taucrit_dep_ys, nos, taucrit, rho, Qe, Qbed,qb_G, rhos,& 
+    ,counter,slopes, hlim,mor,taucrit_dep,layers, taucrit_dep_ys, dst, taucrit, rho, Qe, Qbed,qb_G, rhos,& 
     voidf, dsand, d50, g, kvis, norm, alpha, Qbedon,talmon, ysl,ysu,bedl,bedu, resus_type, bedload_type, a_ref) 
     ! Purpose: Calculate the rate of resuspension and bedload transport over a
     ! cross-section
 
-    INTEGER, INTENT(IN)::a,a2,counter,layers, nos
+    INTEGER, INTENT(IN)::a,a2,counter,layers
     REAL(dp), INTENT(IN)::water,Q, Area, ff, hlim,mor, dt, rho, rhos, voidf, dsand, d50, g, & 
-        kvis, alpha, wset, a_ref, ys,vel,slopes, tau,tau_g
-    REAL(dp), INTENT(IN OUT):: bed, recrd, E, C,taucrit_dep, taucrit_dep_ys, taucrit,& 
-         Qe, Qbed,qb_G
+        kvis, alpha, wset, a_ref, ys,vel,slopes, tau,tau_g, bed,taucrit_dep, taucrit_dep_ys,&
+        C, taucrit, dst
     REAL(dp), INTENT(IN):: ysl,ysu,bedl,bedu 
     LOGICAL, INTENT(IN):: norm, Qbedon,talmon
     CHARACTER(LEN=20), INTENT(IN):: resus_type, bedload_type
-    DIMENSION bed(a),ys(a), ff(a),recrd(a),tau(a),tau_g(a), vel(a), slopes(a),taucrit_dep(nos,layers),C(a),& 
-                taucrit_dep_ys(nos), taucrit(nos,0:layers),  Qe(a), Qbed(a),qb_G(0:a+1), a_ref(a) ! 
+
+    REAL(dp), INTENT(IN OUT):: recrd, E, Qe, Qbed,qb_G
+
+    DIMENSION bed(a),ys(a), ff(a),recrd(a),tau(a),tau_g(a), vel(a), slopes(a),taucrit_dep(a,layers),C(a),& 
+              taucrit_dep_ys(a), dst(a,0:(layers+1)), taucrit(a,0:layers),  Qe(a), Qbed(a), & 
+              qb_G(0:a+1), a_ref(a) ! 
 
     INTEGER::i, j, bgwet, up,  jj,  info,ii, n(a)
     REAL(dp)::wslope,  Qelocal, tt, corfact, useme, dgravel
     REAL(dp):: kkkk(a), tbst(a), f(a)  
-    REAL(dp)::sllength(a), slope_f(a),   dst(a,0:(layers+1)), Qb(a), & 
+    REAL(dp)::sllength(a), slope_f(a),   Qb(a), & 
         bedlast(a), slope_minmod(a), mu_d, Qtemp, useful(a), Ceq(a) 
     REAL(dp)::writout(a2), d_star, c_a, k_scr, f_cs, si, tmp,tmp1
     !logical::writ_tau=.TRUE.  !This will write out the cross sectional taus-- will lead to massive files if you're not careful. 
@@ -40,6 +43,8 @@ SUBROUTINE calc_resus_bedload(a, dT, water, Q, bed,ys,Area, ff,recrd, E, C, wset
     ! To direct erosion normal to the bed, adjust the erosion factor accordingly.
     IF(norm) THEN
         slope_f(1:a-1) = (bed(2:a)-bed(1:a-1))/( ys(2:a)-ys(1:a-1))
+        ! Here we compute the 'erosion factor' using the minmod of the left and
+        ! right slopes 
         DO i=2,a-1
             slope_minmod(i)=minmod( slope_f(i), slope_f(i-1))
         END DO
@@ -60,17 +65,17 @@ SUBROUTINE calc_resus_bedload(a, dT, water, Q, bed,ys,Area, ff,recrd, E, C, wset
         !NOTE THAT DST IS NOT AN ARGUMENT TO SECTUPDATE AT PRESENT -- this confused me
         !before. It means the same thing, although here we have an extra column which
         !accounts for the layer past the last layer -- presumed a long way away!
-        dst(i, 0)=0._dp !The distance to the zeroth layer -- always 0.
+        !dst(i, 0)=0._dp !The distance to the zeroth layer -- always 0.
         !The distance to the shear transition layers, in the vertical
         DO j= 1, layers
-            dst(i, j)=max((bed(i)-taucrit_dep(i,j) ), 0._dp) !The distance from the bed surface to the next shear layer 
+        !    dst(i, j)=max((bed(i)-taucrit_dep(i,j) ), 0._dp) !The distance from the bed surface to the next shear layer 
             !Check for consistency
             IF(bed(i)<taucrit_dep(i,j)) THEN 
                 PRINT*, 'taucrit_dep prob again', i, j, bed(i), taucrit_dep(i,j)        
             END IF
         END DO
 
-        dst(i, layers+1)=9.9E+10_dp !The distance to the layer past the last layer -- a convenience 
+        !dst(i, layers+1)=9.9E+10_dp !The distance to the layer past the last layer -- a convenience 
 
 
         !!!!Now figure out into which layer we will initially erode

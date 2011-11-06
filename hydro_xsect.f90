@@ -864,7 +864,7 @@ SUBROUTINE calc_friction(friction_type, grain_friction_type, rough_coef, water,&
                     f_g(i) = 0.25_dp/(log10( k_sg/(3.71_dp*4.0_dp*max(water-bed(i),20._dp*k_sg)) &
                                   + 2.51_dp/(Re(i)*sqrt(f_glast(i))))  )**2
                     IF(j>1000) THEN
-                        PRINT*,'f_g did not converge in ', j,' iterations' 
+                        PRINT*,'ERROR in CALC_FRICTION: f_g did not converge in ', j,' iterations' 
                         stop
                     END IF
                 END DO

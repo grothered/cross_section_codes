@@ -242,7 +242,7 @@ DO Q_loop= 1, num_simulations
         ! Find wetted part of section
         call wet(l,u,nos,water, bed) 
         
-        ! Wetted width 
+        ! Compute Wetted width 
         wet_width=ys(u)-ys(l) 
         IF(l>0) THEN
             IF (u<nos) wet_width = wet_width+ (water-bed(u))/(bed(u+1)-bed(u))*(ys(u+1)-ys(u))
@@ -357,8 +357,8 @@ DO Q_loop= 1, num_simulations
                                     f(l:u),qby((l-1):u),E,&
                                     C(l:u),wset, 2,tau(l:u), tau_g(l:u),& 
                                     vel(l:u), j,slopes(l:u), hlim, mor, taucrit_dep(l:u,1:layers),&
-                                     layers, taucrit_dep_ys(l:u) & 
-                                    ,u-l+1, taucrit(l:u, 0:layers) , rho, Qe(l:u) & 
+                                     layers, taucrit_dep_ys(l:u), dst(l:u,0:layers+1) & 
+                                    ,taucrit(l:u, 0:layers) , rho, Qe(l:u) & 
                                     , Qbed(l:u),qb_G((l-1):(u+1)), rhos, voidf, dsand, d50, g, kvis, norm, alpha, &
                                     Qbedon,talmon, ysl,ysu,bedl,bedu, resus_type, bedload_type, a_ref(l:u)) 
         
