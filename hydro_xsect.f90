@@ -451,8 +451,8 @@ SUBROUTINE calc_shear(a, dT, water, Q, bed,ys,Area, bottom, ff,rmu,inuc,tau,NN,c
 
     INTEGER, INTENT(IN)::a,counter,nos
     REAL(dp), INTENT(IN)::water,Q, Area, bottom, ff, hlim, vegdrag, dt, rho, rhos, voidf,&
-         d50, g, kvis, lambdacon, ysl,ysu,bedl,bedu 
-    REAL(dp), INTENT(IN OUT):: bed, rmu,inuc,tau, NN, ys,slopes
+         d50, g, kvis, lambdacon, ysl,ysu,bedl,bedu, bed, ys,slopes
+    REAL(dp), INTENT(IN OUT):: rmu,inuc,tau, NN 
     LOGICAL, INTENT(IN):: vertical, tbston, high_order_shear
     DIMENSION bed(a),ys(a), ff(a),tau(a), NN(a),slopes(a), vegdrag(a)! 
     
