@@ -24,6 +24,9 @@ SUBROUTINE calc_resus_bedload(a, dT, water, Q, bed,ys,Area, ff,recrd, E, C, wset
     LOGICAL, INTENT(IN):: norm, Qbedon,talmon
     CHARACTER(LEN=20), INTENT(IN):: resus_type, bedload_type
 
+    ! Output variables - 'recrd' is an optional output, 'E' is the integrated
+    ! resuspension, 'Qe' is the resuspension, 'Qbed' is the bedload, and 'qb_G'
+    ! is a factor in the downslope bedload formual: Qb_y = -qb_G*dh/dy
     REAL(dp), INTENT(IN OUT):: recrd, E, Qe, Qbed,qb_G
 
     DIMENSION bed(a),ys(a), ff(a),recrd(a),tau(a),tau_g(a), vel(a), slopes(a),taucrit_dep(a,layers),C(a),& 
