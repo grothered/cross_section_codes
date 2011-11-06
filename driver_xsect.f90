@@ -210,7 +210,7 @@ DO Q_loop= 1, num_simulations
                 PRINT*, '#   l:', l,' u:', u 
                 PRINT*, '#   Q/A: ', Q/Area, ' Sf: ', ((Q/Area)*abs(Q/Area)*rmult)
                 PRINT*, '#   t: ', t, ' DT1: ', DT1 
-                PRINT*, '#   wet_width: ', wet_width 
+                PRINT*, '#   wet_width: ', wet_width , ' depth_mid: ', water - bed(nos/2)
                 PRINT*, '#   C_max: ', maxval(C), 'C_mid: ', C(nos/2)
                 PRINT*, '#   f_1D: ', rmult*(8.0_dp*g*Area/wet_width), 'f_mid', f(nos/2)
                 PRINT*, '#   sed_lag_scale ', sed_lag_scale

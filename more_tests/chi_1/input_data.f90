@@ -33,7 +33,7 @@ Width = 800.0 !Width of computational domain (m)
 
 num_simulations= 1
 Discharges = 2100.0  !2100.0  2100.0  2100.0  2100.0  2100.0  2100.0 
-susconcs =   2.0e-03 !1.0e-04 8.0e-04 4.0e-04 1.0e-05 6.0e-05  
+susconcs =   1.0e-03 !1.0e-04 8.0e-04 4.0e-04 1.0e-05 6.0e-05  
 friction_type = 'manning' !'manning' !, 'darcy', 'vanrijn'
 rough_coef = 0.039 !0.039 !Mannings n for the basic bed
 grain_friction_type  = 'vanrijn' ! 'vanrijn', 'colebrook', 'onethird' -- model for bed shear acting on grains 

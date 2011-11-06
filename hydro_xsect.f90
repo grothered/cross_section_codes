@@ -698,7 +698,16 @@ SUBROUTINE roughmult(aa,rmu, vel, Q, A, tbst,depths, ys, f, vegdrag, &
         rmu= rmutop/rmubot
     ELSE
         ! Default behaviour if there is no discharge
-        rmu=sum(f)/(8._dp*g*sum(depths)) !The mean value of (f/8g)/depth
+        !rmu=sum(f)/(8._dp*g*sum(depths)) !The mean value of (f/8g)/depth
+        rmutop=0.0_dp
+        DO i=2,aa-1
+            rmutop= rmutop + &
+                    (f(i)/8.0_dp*tbst(i) + vegdrag(i)*depths(i))*0.5_dp*(ys(i+1)-ys(i))
+        END DO
+        !Denominator
+        rmubot=A*g
+        ! (roughness/depth)
+        rmu=rmutop/rmubot 
     END IF
 
     ! Sanity checks
