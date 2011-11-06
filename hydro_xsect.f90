@@ -655,10 +655,17 @@ END SUBROUTINE calc_shear
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 SUBROUTINE roughmult(aa,rmu, vel, Q, A, tbst,depths, ys, f, vegdrag, &
                      counter, ysl, ysu, bedl, bedu,bed,water,g)
-    !This is for calculating the constant that we should multiply the friction
-    !slope in the 1D model by, in order to account for the lateral distribution of
-    !velocity. So it basicaly gives a roughness coefficient, although actually,
-    !we get the (roughness coefficient/ depth) for numerical stability reasons
+    ! Compute:
+    ! integral[ Bed + vegatation shear ] / (1D_velocity^2 *g *width*av_depth)
+    ! Note that this is some sort of averaged version of:
+    ! total friction / av_depth
+
+    ! Purpose: for calculating the constant that we should multiply the friction
+    ! slope in the 1D model by, in order to account for the lateral distribution of
+    ! velocity. 
+    ! So it basicaly gives a roughness coefficient, although actually,
+    ! we get the (roughness coefficient/ depth) for numerical stability reasons
+
     INTEGER, INTENT(IN)::aa, counter
     REAL(dp), INTENT(IN OUT):: rmu
     REAL(dp), INTENT(IN):: vel, Q, A, tbst, depths, ys, f, vegdrag, ysl, ysu,&
@@ -674,23 +681,30 @@ SUBROUTINE roughmult(aa,rmu, vel, Q, A, tbst,depths, ys, f, vegdrag, &
         rmutop=0._dp
         ! Numerator integrated using trapezoidal rule
         DO i=2,aa-1
-            rmutop= rmutop+(f(i)/8._dp*vel(i)**2*tbst(i) + vegdrag(i)*vel(i)**2*depths(i))*(ys(i+1)-ys(i-1))*0.5_dp
+            rmutop= rmutop+ & 
+                    (f(i)/8._dp*vel(i)**2*tbst(i) + vegdrag(i)*vel(i)**2*depths(i))*0.5_dp*&
+                    (ys(i+1)-ys(i-1))
         END DO
-        rmutop=rmutop+ (f(1)/8._dp*vel(1)**2*tbst(1) + vegdrag(1)*vel(1)**2*depths(1))*0.5_dp*(ys(2)-ys(1) &
-             + 2._dp*(water-bed(1))/(bedl-bed(1))*(ys(1)-ysl))
-        rmutop=rmutop+ (f(aa)/8._dp*vel(aa)**2*tbst(aa) + vegdrag(aa)*vel(aa)**2*depths(aa))*0.5_dp*(ys(aa)-ys(aa-1) & 
-            + 2._dp*(water-bed(aa))/(bedu-bed(aa))*(ysu-ys(aa)))
+        rmutop=rmutop+ &
+               (f(1)/8._dp*vel(1)**2*tbst(1) + vegdrag(1)*vel(1)**2*depths(1))*0.5_dp*&
+               (ys(2)-ys(1)+2._dp*(water-bed(1))/(bedl-bed(1))*(ys(1)-ysl))
+        rmutop=rmutop+ &
+               (f(aa)/8._dp*vel(aa)**2*tbst(aa) + vegdrag(aa)*vel(aa)**2*depths(aa))*0.5_dp*&
+               (ys(aa)-ys(aa-1) +2._dp*(water-bed(aa))/(bedu-bed(aa))*(ysu-ys(aa)))
 
         !Denominator 
         rmubot= (Q/A)**2*A*g  
         ! (roughness/depth)
         rmu= rmutop/rmubot
     ELSE
+        ! Default behaviour if there is no discharge
         rmu=sum(f)/(8._dp*g*sum(depths)) !The mean value of (f/8g)/depth
     END IF
 
+    ! Sanity checks
     IF(rmu.eq.0._dp) THEN
         print*, "rmu is zero", abs(Q), aa, sum(f), maxval(vel), minval(vel)
+        stop
     END IF
 
     IF(isnan(rmu)) THEN
@@ -700,6 +714,7 @@ SUBROUTINE roughmult(aa,rmu, vel, Q, A, tbst,depths, ys, f, vegdrag, &
             print*, tbst
             print*, "..."
             print*, ys
+            stop
     END IF
 
 END SUBROUTINE roughmult

@@ -206,14 +206,14 @@ DO Q_loop= 1, num_simulations
         ! Print out to console
         22222 IF( mod(j-1,writfreq).eq.0 ) THEN 
                 PRINT*, '#################'
-                PRINT*, '# Step:', j
-                PRINT*, '# l:', l,' u:', u 
-                PRINT*, '# Q/A: ', Q/Area, ' Sf: ', ((Q/Area)*abs(Q/Area)*rmult)
-                PRINT*, '# t: ', t, ' DT1: ', DT1 
-                PRINT*, '# wet_width: ', wet_width 
-                PRINT*, '# C_max: ', maxval(C), 'C_mid: ', C(nos/2)
-                PRINT*, '# f_1D: ', rmult*(Area)/wet_width, 'f_mid', f(nos/2)
-                PRINT*, '# sed_lag_scale ', sed_lag_scale
+                PRINT*, '# Output Step:', j
+                PRINT*, '#   l:', l,' u:', u 
+                PRINT*, '#   Q/A: ', Q/Area, ' Sf: ', ((Q/Area)*abs(Q/Area)*rmult)
+                PRINT*, '#   t: ', t, ' DT1: ', DT1 
+                PRINT*, '#   wet_width: ', wet_width 
+                PRINT*, '#   C_max: ', maxval(C), 'C_mid: ', C(nos/2)
+                PRINT*, '#   f_1D: ', rmult*(8.0_dp*g*Area/wet_width), 'f_mid', f(nos/2)
+                PRINT*, '#   sed_lag_scale ', sed_lag_scale
                 PRINT*, '################'
               END IF
 
