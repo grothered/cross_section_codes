@@ -24,10 +24,14 @@ inputdata.modin -- a fortran namelist which contains input constants.
 
 makefile -- to stick it all together
 
-We also rely on a blas and lapack library to support various matrix
-computations. A slatec library is also used, presently (3/7/2011) only for its
+We also rely on a lapack library to support various matrix
+computations. 
+
+A slatec library is also used, presently (3/7/2011) only for its
 cubic spline interpolation, which is used in remeshing (often I run the code
-with a static mesh, and so slatec is not used at all).
+with a static mesh, and so slatec is not used at all). For gfortran, the source
+for this can be downloaded from (11/2011):
+http://joachimwuttke.de/slatec4gfortran/
 
 
 There are also utility codes for plotting / analysis / various checks.
