@@ -451,16 +451,18 @@ SUBROUTINE update_bed(a, dT, water, Q, bed,ys,Area, recrd, E, D,C,a2, tau,taug,&
         h_lower2(0)=0._dp
         h_lower(0)=0._dp !This will be zero - though it is included in the in the above implicit terms,it will be zero there (dbeddyH(1,0)=0
         !h_lower(0)=dt_on_lambda*impcon*(2._dp/(ys_tmp(2)-ys_tmp(0)))*(qb_G(0)*dbeddyH(1,0))
-        h_diag(0)=dt_on_lambda*impcon*(2._dp/(ys_tmp(2)-ys_tmp(0)))*(qb_G(0)*dbeddyH(2,0))
-        h_upper(0)=dt_on_lambda*impcon*(2._dp/(ys_tmp(2)-ys_tmp(0)))*(qb_G(0)*dbeddyH(3,0))
-        h_upper2(0)=dt_on_lambda*impcon*(2._dp/(ys_tmp(2)-ys_tmp(0)))*(qb_G(0)*dbeddyH(4,0))
+        tmp1=dt_on_lambda*impcon*(2._dp/(ys_tmp(2)-ys_tmp(0)))
+        h_diag(0)=tmp1*(qb_G(0)*dbeddyH(2,0))
+        h_upper(0)=tmp1*(qb_G(0)*dbeddyH(3,0))
+        h_upper2(0)=tmp1*(qb_G(0)*dbeddyH(4,0))
         h_rhs2(0)= - (1._dp-impcon)/impcon*( h_diag(0)*bed_tmp(0)+h_upper(0)*bed_tmp(1) +h_upper2(0)*bed_tmp(2))
         !Correct h_diag
         h_diag(0)=1._dp+h_diag(0)
 
-        h_lower2(a+1)=dt_on_lambda*impcon*(2._dp/(ys_tmp(a+1)-ys_tmp(a-1)))*( - qb_G(a)*dbeddyH(1,a))
-        h_lower(a+1)=dt_on_lambda*impcon*(2._dp/(ys_tmp(a+1)-ys_tmp(a-1)))*( - qb_G(a)*dbeddyH(2,a))
-        h_diag(a+1)=dt_on_lambda*impcon*(2._dp/(ys_tmp(a+1)-ys_tmp(a-1)))*( - qb_G(a)*dbeddyH(3,a))
+        tmp1=dt_on_lambda*impcon*(2._dp/(ys_tmp(a+1)-ys_tmp(a-1)))
+        h_lower2(a+1)=tmp1*( - qb_G(a)*dbeddyH(1,a))
+        h_lower(a+1)=tmp1*( - qb_G(a)*dbeddyH(2,a))
+        h_diag(a+1)=tmp1*( - qb_G(a)*dbeddyH(3,a))
         h_upper(a+1)=0._dp !This will be zero, because dhdy(4,a) will be zero.
         h_upper2(a+1)=0._dp
         h_rhs2(a+1)=- (1._dp-impcon)/impcon*( h_diag(a+1)*bed_tmp(a+1)+h_lower(a+1)*bed_tmp(a) +h_lower2(a+1)*bed_tmp(a-1))
