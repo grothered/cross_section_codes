@@ -1,6 +1,6 @@
 #I'll try a makefile
 
-model: global_defs.o util_various.o bed_xsect.o suspended_xsect.o hydro_xsect.o Pizzutotry_correction.o driver_xsect.f90
+xsect: global_defs.o util_various.o bed_xsect.o suspended_xsect.o hydro_xsect.o Pizzutotry_correction.o driver_xsect.f90
 	gfortran  -ffpe-trap=invalid,zero,overflow -fbounds-check -o $@ $^ /usr/lib/liblapack.a libslatec.a
 
 hydro_xsect.o: hydro_xsect.f90 Pizzutotry_correction.o global_defs.o
@@ -22,3 +22,5 @@ global_defs.o: global_defs.f90
 	gfortran -c  -ffpe-trap=invalid,zero,overflow -fbounds-check    $^
 
 
+clean: *.o *.mod
+	rm *.o *.mod
