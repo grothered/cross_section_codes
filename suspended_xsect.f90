@@ -42,7 +42,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     ! cb = Near bed suspended sediment concentration, 
     ! Cbar = Depth averaged suspended sediment concentration
     REAL(dp), INTENT(IN OUT):: cb, Cbar
-    CHARACTER(20), INTENT(IN):: sus_vert_prof, edify_model
+    CHARACTER(char_len), INTENT(IN):: sus_vert_prof, edify_model
     DIMENSION ys(a), bed(a), tau(a),vel(a), Qe(a), cb(a), Cbar(a),Qbed(a), a_ref(a), lat_sus_flux(a+1), bedlast(a), &
               int_edif_f(a+1), int_edif_dfdy(a+1), zetamult(0:a+1), too_steep(a)
 
@@ -985,7 +985,7 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
     !   int_edif_dfdy = Integral_{a_ref}^{water_surface} ( edify*df/dy) dz
     !
     INTEGER, INTENT(IN):: a 
-    CHARACTER(len=20), INTENT(IN):: edify_model, sus_vert_prof
+    CHARACTER(char_len), INTENT(IN):: edify_model, sus_vert_prof
     REAL(dp), INTENT(IN):: ys, bed, ysl, ysu, bedl, bedu, ustar, water, wset, a_ref
     REAL(dp), INTENT(OUT):: int_edif_f, int_edif_dfdy
     DIMENSION ys(a), bed(a), ustar(a), int_edif_f(a+1), int_edif_dfdy(a+1), a_ref(a)

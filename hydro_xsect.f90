@@ -734,7 +734,7 @@ SUBROUTINE calc_friction(friction_type, grain_friction_type, rough_coef, water,&
                             a, bed, vel, man_nveg,d50,veg_ht, rhos, rho, g, f,&
                             vegdrag,f_g, dsand, counter, a_ref) 
     INTEGER, INTENT(IN):: a, counter
-    CHARACTER(LEN=20), INTENT(IN):: friction_type, grain_friction_type
+    CHARACTER(char_len), INTENT(IN):: friction_type, grain_friction_type
     REAL(dp), INTENT(IN):: rough_coef, water, man_nveg, d50, veg_ht, rhos, rho, g, dsand
     REAL(dp), INTENT(IN):: bed, vel
     REAL(dp), INTENT(IN OUT):: f, vegdrag, f_g, a_ref

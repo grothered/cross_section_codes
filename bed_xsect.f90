@@ -22,7 +22,7 @@ SUBROUTINE calc_resus_bedload(a, dT, water, Q, bed,ys,Area, ff,recrd, E, C, wset
         C, taucrit, dst
     REAL(dp), INTENT(IN):: ysl,ysu,bedl,bedu 
     LOGICAL, INTENT(IN):: norm, Qbedon,talmon
-    CHARACTER(LEN=20), INTENT(IN):: resus_type, bedload_type
+    CHARACTER(char_len), INTENT(IN):: resus_type, bedload_type
 
     ! Output variables - 'recrd' is an optional output, 'E' is the integrated
     ! resuspension, 'Qe' is the resuspension, 'Qbed' is the bedload, and 'qb_G'

@@ -33,7 +33,7 @@ LOGICAL::  compute_twice, susdist, sus2d, readin, geo, remesh, norm, vertical, &
             tbston, normmov, Qbedon, susQbal, talmon,&
              variable_timestep, high_order_shear, high_order_bedload, &
             taucrit_slope_reduction, evolve_bed
-CHARACTER(LEN=20):: friction_type, grain_friction_type, resus_type, &
+CHARACTER(char_len):: friction_type, grain_friction_type, resus_type, &
                     bedload_type, sus_vert_prof, edify_model
 NAMELIST /inputdata/ nos,writfreq,jmax, layers, hlim, mor, mu, &
                 erconst,lifttodrag,sconc,rho,lincrem,wset, voidf, t, dt, &
