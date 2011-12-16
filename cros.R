@@ -3,9 +3,9 @@
 get<-function(l, gz=F, ...){
 
 	if(!gz){
-		a=which(dir()=="taus")
-		b=which(dir()=="bed")
-		c=which(dir()=="ys")
+		a=which(dir()=="taus.cst")
+		b=which(dir()=="bed.cst")
+		c=which(dir()=="ys.cst")
 
 	
 	
@@ -19,9 +19,9 @@ get<-function(l, gz=F, ...){
 #	zz=min(, floor(length(ts)/l), floor(length(misc)/l) )
 
 		}else{
-		a=which(dir()=="taus.gz")
-		b=which(dir()=="bed.gz")
-		c=which(dir()=="ys.gz")
+		a=which(dir()=="taus.cst.gz")
+		b=which(dir()=="bed.cst.gz")
+		c=which(dir()=="ys.cst.gz")
 
 	
 	#x2=scan(gzfile('bed.gz', open="rb"))
@@ -289,13 +289,13 @@ curv<-function(coords,widths,windowmult,windowconst){
 
 get_extra<-function(l){
         # Function to get a range of output variables
-		taug_file=which(dir()=="taug")
-		Cbed_file=which(dir()=="Cbed")
-		vel_file=which(dir()=="vel")
-        Qe_file = which(dir()=='qe')
-        Qbed_file = which(dir()=='Qbed')
-        qb_G_file = which(dir()=='qby')
-        aref_file = which(dir()=='a_ref')
+		taug_file=which(dir()=="taug.cst")
+		Cbed_file=which(dir()=="Cbed.cst")
+		vel_file=which(dir()=="vel.cst")
+        Qe_file = which(dir()=='qe.cst')
+        Qbed_file = which(dir()=='Qbed.cst')
+        qb_G_file = which(dir()=='qby.cst')
+        aref_file = which(dir()=='a_ref.cst')
         #time_file = which(dir()=='time')
 
 	
