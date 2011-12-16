@@ -20,7 +20,7 @@ bed_xsect.f90 -- contains routines to compute rates of sediment transport and
 util_various.f90 -- contains various utility routines that did not sit neatly
     elsewhere
 
-inputdata.modin -- a fortran namelist which contains input constants. 
+xsect_data.modin -- a fortran namelist which contains input constants. 
 
 makefile -- to stick it all together
 
