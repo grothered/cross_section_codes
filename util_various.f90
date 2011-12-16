@@ -1290,5 +1290,44 @@ SUBROUTINE create_initial_geometry( ys, bed, taucrit_dep_ys, taucrit_dep,  &
     END IF 
 
 END SUBROUTINE create_initial_geometry
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+SUBROUTINE read_real_table(input_file, storage_array, nrows, ncols)
+    ! Routine to read a table (with a given number of columns) into a
+    ! real array 
+    CHARACTER(char_len), INTENT(in):: input_file
+    INTEGER, INTENT(in):: ncols
+    INTEGER, INTENT(out)::nrows
+    REAL(dp), ALLOCATABLE, INTENT(inout):: storage_array(:,:)
 
+    INTEGER:: i, iost
+    REAL(dp):: tmp1
+
+    OPEN(77,file=input_file, status="old")
+
+    ! Count the number of lines in the file, and assign to 'nrows'
+    i=0 ! The counter
+    DO
+        READ(77,*,iostat=iost) tmp1
+        !print*, 'tmp1 ', tmp1
+        IF(iost<0) THEN
+            ! We have reached the end of the file, record the number of rows
+            nrows=i
+            ! Go back to the start of the file
+            REWIND(77)
+            EXIT
+        END IF
+        i=i+1
+    END DO
+    
+    ! Allocate array holding boundary information
+    print*, "READING FILE: ", input_file, '; Record length is ', i
+    ALLOCATE(storage_array(nrows,ncols))
+    READ(77,*) storage_array
+    CLOSE(77)
+END SUBROUTINE read_real_table
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 END MODULE util_various
