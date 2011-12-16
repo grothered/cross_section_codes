@@ -1071,11 +1071,11 @@ Criver, wset, wetwidth2,wetwidth_old2, D2,D2_old, third)
     FL_old=Q_old*C_old
     !Useful for limiter, Hundsdorfer
     do i=2,n2+3
-    if((FL_old(i+1).ne.FL_old(i)).and.((FL_old(i).ne.FL_old(i-1)))) THEN
-    theta(i)=(FL_old(i)-FL_old(i-1))/(FL_old(i+1)-FL_old(i))  
-    ELSE
-    theta(i)=(FL_old(i)-FL_old(i-1)+eeps)/(FL_old(i+1)-FL_old(i) +eeps)  
-    END IF
+        if((FL_old(i+1).ne.FL_old(i)).and.((FL_old(i).ne.FL_old(i-1)))) THEN
+            theta(i)=(FL_old(i)-FL_old(i-1))/(FL_old(i+1)-FL_old(i))  
+        ELSE
+            theta(i)=(FL_old(i)-FL_old(i-1)+eeps)/(FL_old(i+1)-FL_old(i) +eeps)  
+        END IF
     end do
 
     !Calculate fluxes, with limiting -- 3rd order without limiting
@@ -1135,14 +1135,14 @@ Criver, wset, wetwidth2,wetwidth_old2, D2,D2_old, third)
     Fl_old=QH*Cpred
     !Useful for limiter
     do i=2,n2+3
-    if((FL_old(i+1).ne.FL_old(i)).and.((FL_old(i).ne.FL_old(i-1)))) THEN
-    theta(i)=(FL_old(i)-FL_old(i-1))/(FL_old(i+1)-FL_old(i))  
-    ELSE
-    theta(i)=(FL_old(i)-FL_old(i-1)+eeps)/(FL_old(i+1)-FL_old(i) +eeps)  
-    END IF
+        if((FL_old(i+1).ne.FL_old(i)).and.((FL_old(i).ne.FL_old(i-1)))) THEN
+            theta(i)=(FL_old(i)-FL_old(i-1))/(FL_old(i+1)-FL_old(i))  
+        ELSE
+            theta(i)=(FL_old(i)-FL_old(i-1)+eeps)/(FL_old(i+1)-FL_old(i) +eeps)  
+        END IF
 
-    if(theta(i).eq.0._dp) print*, 'zero theta'
-    if(isnan(theta(i))) print*, 'nan theta'
+        if(theta(i).eq.0._dp) print*, 'zero theta'
+        if(isnan(theta(i))) print*, 'nan theta'
     end do
 
     !Calculate fluxes, with limiting -- 3rd order without limiting
@@ -1396,11 +1396,11 @@ Criver, wset, wetwidth2,wetwidth_old2, D2,D2_old, third)
     FL_old=Q_old*C_old
     !Useful for limiter, Hundsdorfer
     do i=2,n2+3
-    if((FL_old(i+1).ne.FL_old(i)).and.((FL_old(i).ne.FL_old(i-1)))) THEN
-    theta(i)=(FL_old(i)-FL_old(i-1))/(FL_old(i+1)-FL_old(i))  
-    ELSE
-    theta(i)=(FL_old(i)-FL_old(i-1)+eeps)/(FL_old(i+1)-FL_old(i) +eeps)  
-    END IF
+        if((FL_old(i+1).ne.FL_old(i)).and.((FL_old(i).ne.FL_old(i-1)))) THEN
+            theta(i)=(FL_old(i)-FL_old(i-1))/(FL_old(i+1)-FL_old(i))  
+        ELSE
+            theta(i)=(FL_old(i)-FL_old(i-1)+eeps)/(FL_old(i+1)-FL_old(i) +eeps)  
+        END IF
     end do
 
     !Calculate fluxes, with limiting -- 3rd order without limiting
