@@ -1745,15 +1745,7 @@ subroutine susconc_up35(n2,DT, A2, QH2, QH2_old, delX,C2, U2, Qe2,Qe2_old, Qd2, 
     FL_old=Q_old*C_old
     !Useful for limiter, Hundsdorfer
     DO i=2,n2+3
-        !if(abs(FL_old(i+1)-FL_old(i))>1.0E-12_dp) THEN
         theta(i)=(FL_old(i)-FL_old(i-1))/(FL_old(i+1)-FL_old(i))  
-        !ELSE
-        !        if(abs(FL_old(i)-FL_old(i-1))>1.0E-12_dp) THEN
-        !!        theta(i)=1.0E+9_dp !(FL_old(i)-FL_old(i-1))/(FL_old(i+1)-FL_old(i) +eeps)  
-        !        else
-        !        theta(i)= 1._dp !1._dp !(FL_old(i)-FL_old(i-1)+eeps)/(FL_old(i+1)-FL_old(i) +eeps)  
-        !        end if
-        !END IF
         !Catch special cases - theta = nan or 0
         IF(isnan(theta(i))) THEN
             IF(FL_old(i).NE.FL_old(i-1)) THEN

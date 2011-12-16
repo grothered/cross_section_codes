@@ -1,8 +1,8 @@
 # Makefile for the xsect codes.
 
 # Options for compiler optimization or testing
-# compiler_options =  -O3 
-compiler_options = -ffpe-trap=invalid,zero,overflow -fbounds-check -g -pg
+compiler_options =  -O3 
+#compiler_options = -ffpe-trap=invalid,zero,overflow -fbounds-check -g -pg
 
 # Clean up at the end of the make
 clean: xsect q2d
