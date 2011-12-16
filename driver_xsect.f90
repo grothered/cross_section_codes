@@ -98,19 +98,19 @@ END IF
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! Open files which will later be written to
 
-OPEN(1,file="taus")
-OPEN(2,file="bed")
-OPEN(3,file="ys")
-OPEN(4,file="taug")
-OPEN(5,file="water")
-OPEN(7,file="qe")
-OPEN(8,file="Qbed")
-OPEN(9,file="Cbed")
-OPEN(10,file="vel")
-OPEN(11,file="qby")
-OPEN(12,file="a_ref")
-OPEN(13,file="timestepping_stats")
-OPEN(14,file='Fl')
+OPEN(1,file="taus.cst")
+OPEN(2,file="bed.cst")
+OPEN(3,file="ys.cst")
+OPEN(4,file="taug.cst")
+OPEN(5,file="water.cst")
+OPEN(7,file="qe.cst")
+OPEN(8,file="Qbed.cst")
+OPEN(9,file="Cbed.cst")
+OPEN(10,file="vel.cst")
+OPEN(11,file="qby.cst")
+OPEN(12,file="a_ref.cst")
+OPEN(13,file="timestepping_stats.cst")
+OPEN(14,file='Fl.cst')
 
 ! Allocate memory for arrays
 ALLOCATE(ys(nos),bed(nos),dists(nos),tau(nos),ks(nos),tbst(nos),& 
