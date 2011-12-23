@@ -593,6 +593,17 @@ SUBROUTINE set_geo(bed, ys, waters,recrds,fs,a,b,hlim, readin, water_m, water_mt
         END DO !i
     END DO !j
 
+    IF(maxval(bed)>5.0E+04_dp) THEN
+        print*, 'ERROR: The maximum bed value is > 50000m. This is pretty big! &
+                At present the code puts side walls of height 100000m on the &
+                edge of each cross-section to prevent water flowing out. These should never &
+                become inundated. As your bed is getting close to this number, I thought it &
+                appropriate to throw an error in case the flow is going to get near 100000m. &
+                If it is not, then change the code to stop this error -- &
+                otherwise, increase the height of the side walls in the code &
+                below'
+                stop
+    END IF
     bed(1,:)= 1.0E+05_dp  !Side wall, to prevent water flowing outside of the cross-section
     bed(a,:)= 1.0E+05_dp  !Side Wall
 
@@ -1301,8 +1312,9 @@ SUBROUTINE read_real_table(input_file, storage_array, nrows, ncols)
     INTEGER, INTENT(out)::nrows
     REAL(dp), ALLOCATABLE, INTENT(inout):: storage_array(:,:)
 
-    INTEGER:: i, iost
+    INTEGER:: i, iost, offset
     REAL(dp):: tmp1
+    REAL(dp), ALLOCATABLE:: tmp2(:)
 
     OPEN(77,file=input_file, status="old")
 
@@ -1321,10 +1333,20 @@ SUBROUTINE read_real_table(input_file, storage_array, nrows, ncols)
         i=i+1
     END DO
     
-    ! Allocate array holding boundary information
+    ! Read file into temporary vector 
     print*, "READING FILE: ", input_file, '; Record length is ', i
+    ALLOCATE(tmp2(nrows*ncols))
+    READ(77,*) tmp2
+
+    ! Allocate array holding boundary information
     ALLOCATE(storage_array(nrows,ncols))
-    READ(77,*) storage_array
+    offset=0
+    DO i=1,nrows
+       storage_array(i,:) = tmp2(1+offset:ncols + offset) 
+       offset=offset+ncols
+    END DO
+    !print*, storage_array(:,1), storage_array(:,2)    
+
     CLOSE(77)
 END SUBROUTINE read_real_table
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

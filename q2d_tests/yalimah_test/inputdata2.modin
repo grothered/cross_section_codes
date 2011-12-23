@@ -14,7 +14,7 @@ bedwrite = 100 !20000 !Write bed geometry every hswrite'th timestep
 readin=.true. !Do we read in initial geometry data from a file? 
 
 mouthread = .true. !Do we read in a time series of mouth water levels - of length dlength
-boundary_downstream_file='mouth' ! name of input file for downstream boundary condition 
+boundary_downstream_file='mouth_new' ! name of input file for downstream boundary condition 
 
 Qb = -0.0 !The river discharge (m^3/s)
 tr = 2.0 !The tide range in the case that mouthread=.false. (m)

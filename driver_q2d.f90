@@ -244,7 +244,15 @@ DO j= 1, jmax
     waters_avg_old=waters_avg
 
     !Print out info so we can track the progress
-    IF(mod(j-1,writfreq*5).eq.0) PRINT*,'status', t/3600., j, longt1, delT, cfl1, cfl!, "hours"!, C(1:5)
+    IF(mod(j-1,writfreq*5).eq.0) THEN
+                ! PRINT*,'status', t/3600., j, longt1, delT, cfl1, cfl!, "hours"!, C(1:5)
+                PRINT*, '#################'
+                PRINT*, '# Output Step:', j
+                PRINT*, '#   Time (hrs):', t/3600._dp 
+                PRINT*, '#   Long timestep: ', longt1, ' Hydrodynamic timestep: ', delT
+                PRINT*, '#   cfl_local: ', cfl1, 'cfl: ', cfl 
+                PRINT*, '################'
+    END IF
 
     !!!Pre-set some variables
     incount= 0 !A convenient flag to determine how often we recalculate the geometry within the small hydrodynamic time step
