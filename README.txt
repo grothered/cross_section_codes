@@ -7,12 +7,16 @@ This source tree contains routines for 2 programs:
    Pizzutotry_correction.f90, st_venant_solver.f90, susconc6.f90,
    util_various.f90
 
+   It produces output files with extensions of the form .0DO, .1DO, .2DO.
+
 2) A single cross-section morphodynamic/hydrodynamic model.
 
    The main program is driver_xsect.f90
    It depends on bed_xsect.f90, global_defs.f90, hydro_xsect.f90,
    Pizzutotry_correction.f90, susconc_xsect.f90,
    util_various.f90
+
+   It produces output files with extensions of the form .cst
 
 
 Summaries of these routines, and other important files, are as follows:

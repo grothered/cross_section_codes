@@ -593,8 +593,8 @@ SUBROUTINE set_geo(bed, ys, waters,recrds,fs,a,b,hlim, readin, water_m, water_mt
         END DO !i
     END DO !j
 
-    bed(1,:)= 100. !Side wall!
-    bed(a, :)= 100. !Side Wall!
+    bed(1,:)= 1.0E+05_dp  !Side wall, to prevent water flowing outside of the cross-section
+    bed(a,:)= 1.0E+05_dp  !Side Wall
 
     DO j = 1, b
         DO i= 1, a

@@ -254,11 +254,14 @@ SUBROUTINE calc_resus_bedload(a, dT, water, Q, bed,ys,Area, ff,recrd, E, C, wset
         call qbh_approx(a,ys,qb_G(0:a),qb_G(a+1),bed, bedl, bedu, ysl, ysu, 2)                
     END IF !Qbedon
 
-    IF(.TRUE.) THEN
-        IF(counter.eq.1) print*, 'WARNING: EDGE BEDLOAD VALUES DROPPED TO ZERO'
-        qb_G(0) = 0.0_dp
-        qb_G(a) = 0.0_dp
-    END IF
+    ! Here we ensure that there is no lateral bedload transport at y(1/2) and
+    ! y(a+1/2). This is reasonable because y(0) and y(a+1) are both dry, so
+    ! shouldn't have downslope bedload transport into the channel 
+    !IF(.TRUE.) THEN
+        !IF(counter.eq.1) print*, 'WARNING: EDGE BEDLOAD VALUES DROPPED TO ZERO'
+    qb_G(0) = 0.0_dp
+    qb_G(a) = 0.0_dp
+    !END IF
     
     IF(.FALSE.) THEN
         IF(counter.eq.1) print*, 'WARNING: qb_G(i+1/2) set to zero if taug(i) or taug(i+1) < taucrit'
