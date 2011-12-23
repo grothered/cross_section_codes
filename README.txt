@@ -29,13 +29,13 @@ susconc6.f90 -- contains solvers for the concentration of suspended sediment in
 driver_xsect.f90 -- contains the main program to run everything for the single
     cross-section case
 
-global_defs.f90 -- contains dp, pi (global parameters)
+global_defs.f90 -- contains dp, pi etc (global parameters)
 
 hydro_xsect.f90 -- contains routines for single cross-section hydrodynamics,
     e.g. shear, calc_friction, rough_mult, 
 
 Pizzutotry_correction.f90 -- countains an alternative hydrodynamic routine to
-    the one used in hydro_xsect.f90 Presently (3/7/2011) this code is outdated and
+    the one used in hydro_xsect.f90. Presently (3/7/2011) this code is outdated and
     not used much or tested.
 
 suspended_xsect.f90 -- contains routines for single cross-section suspended
