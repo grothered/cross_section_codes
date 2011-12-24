@@ -2,6 +2,12 @@
 
 # Options for compiler optimization or testing
 compiler_options =  -O3 
+#compiler_options = -fbounds-check -g -pg
+
+# Alternative to check for NaN's / overflow / underflow
+# This one is a problem with the 1D suspended sediment routine, because the
+# latter deliberately uses NaNs to detect overflow/underflow -- and I don't
+# know a better method to use in the algorithm.
 #compiler_options = -ffpe-trap=invalid,zero,overflow -fbounds-check -g -pg
 
 # Clean up at the end of the make
