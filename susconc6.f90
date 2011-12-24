@@ -2010,12 +2010,15 @@ subroutine susconc_up35(n2,DT, A2, QH2, QH2_old, delX,C2, U2, Qe2,Qe2_old, Qd2, 
         PRINT*, 'info .ne. 0 in susconc_up35 , cor step', info
     END IF
 
-    !Hundsdorfer states that the use of eeps in theta (for the limiter) can allow
-    !negative values of order eps. Let's get rid of them 
+    ! Hundsdorfer states that the use of eps in theta (for the limiter) can allow
+    ! negative values of order eps. Let's get rid of them in a mass conservative
+    ! way, by taking the sediment from the upwind cross-section.
     DO i=1, n2
         IF((i>1).AND.(i<n2)) THEN
             IF(C2(i)<0._dp) THEN
                 ii=int(sign(1._dp, U2(i)))
+                ! Note the different indexing of A vs C2 -- because the former
+                ! has 2 'ghost' points on each boundary. 
                 C2(i-ii)=C2(i-ii)-A(i+2)*C2(i)/A(i-ii+2)
                 C2(i)=0._dp
             END IF
@@ -2055,8 +2058,6 @@ subroutine susconc_up35(n2,DT, A2, QH2, QH2_old, delX,C2, U2, Qe2,Qe2_old, Qd2, 
                 END IF
             END IF
         END DO
-        !         
-        !        stop
     END IF
 
     !DO i=1, n
@@ -2064,7 +2065,7 @@ subroutine susconc_up35(n2,DT, A2, QH2, QH2_old, delX,C2, U2, Qe2,Qe2_old, Qd2, 
     !END DO
 
     DO i = 1, n2
-    Flag=isnan(C2(i))
+        Flag=isnan(C2(i))
         IF(Flag) THEN
             PRINT*, "sedconc is NAN"
             PRINT*, U2
