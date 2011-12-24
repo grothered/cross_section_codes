@@ -312,22 +312,30 @@ DO j= 1, jmax
     Q2H=Q2H_dT/DT !The conservative 'mean' discharge throughout the last time step, evaluated spatially at 1/2, 3/2, 5/2, ... i.e. halfway between the cross-sections
     Q2H(0)= delX/DT*(Asav(1)-Area_old(1))*2._dp + Q2H(1) !Note the use of (Asav(1)-Area_old(1))*2 here--This should be Area(1)-Area_old(1) - except that Area(1) is not correct, because it has not yet adjusted for the change in Y(1) due to the boundary condition. However, Asav(1) has adjusted, and should be halfway between Area_old and Area. So this works quite well.
     Q2=0.5_dp*(Q2H(1:b)+Q2H(0:(b-1))) !Q2H, evaluated spatially at 1, 2, 3, 4, ... i.e. at the cross-sections
+    
+    !!Define 'limited' version of Q2
     Q2_geo=min(abs(Q2H(1:b)), abs(Q2H(0:b-1)), 0.5_dp*(abs(Q(1:b))+abs(Q_old(1:b)) )) & 
             *0.5_dp*(sign(1._dp,Q2H(1:b))+sign(1._dp,Q2H(0:b-1)) ) !sqrt(abs(Q2H(1:b))*abs(Q2H(0:(b-1))))*0.5_dp*(sign(1._dp,Q2H(1:b))+sign(1._dp,Q2H(0:b-1)) )
-    !!Define 'limited' version of Q2
+    ! The 'limited' version is only used if it is sufficiently different to the
+    ! ordinary Q2
     DO i=1,b
-        IF(abs(Q2_geo(i)-Q2(i))/(min(abs(Q2(i)), abs(Q2_geo(i)))+1.0E-07_dp)> .3_dp) THEN
-            !!!Note - not sure if this is useful - but the difference between [  Q2^{k+1/2}_{j+1/2} + Q2^{k+1/2}_{j-1/2} ] and [ Q^{k+1}_{j} + Q^{k}_{j}] (which are both reasonable estimates of the half time step Q at j) is equal to 1/4( del^2 Q^{k}_{j} + (Qpred^{k+1}_{j}  - Qcor^{k+1}_{j})). Perhaps it could be useful to design a method that detects when there are large differences in the velocities and adjusts accordingly. I've no idea how though!
-        ELSE
+        IF(abs(Q2_geo(i)-Q2(i))/(min(abs(Q2(i)), abs(Q2_geo(i)))+1.0E-07_dp)<= .3_dp) THEN
+            !!!Note - not sure if this is useful - but the difference between [
+            !Q2^{k+1/2}_{j+1/2} + Q2^{k+1/2}_{j-1/2} ] and [ Q^{k+1}_{j} +
+            !Q^{k}_{j}] (which are both reasonable estimates of the half time
+            !step Q at j) is equal to 1/4( del^2 Q^{k}_{j} + (Qpred^{k+1}_{j}  -
+            !Qcor^{k+1}_{j})). Perhaps it could be useful to design a method
+            !that detects when there are large differences in the velocities and
+            !adjusts accordingly. I've no idea how though!
             Q2_geo(i)=Q2(i)
         END IF
     END DO
 
-    !!This section of code would be great to make parallel. 
-
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !!!!!!!!!!!!!!!Loop over every cross section, calculate shear and rates of erosion. We can use this to do sus sed and bedload, and after that we can update the morphology.
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    ! Loop over every cross section, calculate shear and rates of erosion. We
+    ! can use this to do sus sed and bedload, and after that we can update the
+    ! morphology.
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     DO i =(seabuf+1), b
   
         IF(l(i)>0) THEN !This just checks that the cross-section is wet.
@@ -336,23 +344,6 @@ DO j= 1, jmax
                                d50,veg_ht, rhos, rho, g, fs(l(i):u(i), i),&
                                vegdrag(l(i):u(i), i) ,fs_g(l(i):u(i),i), dsand, j, a_ref(l(i):u(i),i))           
  
-            !DO i1=l(i), u(i) 
-            !!!    !Set friction / drag coefficients
-            !    IF(manning) THEN
-            !        fs(i1,i)= rough_coef**2*g*8._dp/(max( waters_avg(i)-bed(i1,i),.00001_dp)**(0.3333_dp))!
-            !    ELSE
-            !        !Darcy-Weisbach depth-independent friction
-            !        fs(i1,i)= rough_coef !rough_coef**2*g*8._dp 
-            !    END IF
-
-            !    !Vegetation drag coefs
-            !    IF((bed(i1,i)>veg_ht)) THEN
-            !        vegdrag(i1,i)=man_nveg**2*8._dp*g ! Not depth dependent
-            !    ELSE
-            !        vegdrag(i1,i)=0._dp
-            !    END IF
-            !END DO !i1  
-
           
             IF((l(i)>1).and.(u(i)<a)) THEN
             ! Use central slope estimate at l(i) and u(i)
@@ -362,21 +353,8 @@ DO j= 1, jmax
                 call compute_slope(u(i)-l(i)+1,slopes(l(i):u(i),i), bed(l(i):u(i),i), ys(l(i):u(i),i))
             END IF    
             
-            !!Lateral slopes over the cross-section
-            !slopes(l(i)+1:u(i)-1,i)= (bed(l(i)+2:u(i),i)-bed(l(i):u(i)-2,i))/(ys(l(i)+2:u(i),i)-ys(l(i):u(i)-2,i)) !Slope term
-            !!!!!Boundary slope values
-            !IF(l(i)>1) THEN 
-            !    slopes(l(i),i)= (bed(l(i)+1,i)-bed(l(i)-1,i))/(ys(l(i)+1,i)-ys(l(i)-1,i))
-            !ELSE
-            !    slopes(l(i),i)= (bed(l(i)+1,i)-bed(l(i),i))/(ys(l(i)+1,i)-ys(l(i),i))
-            !END IF
-            !IF(u(i)<a) THEN
-            !    slopes(u(i),i)= (bed(u(i)+1,i)-bed(u(i)-1,i))/(ys(u(i)+1,i)-ys(u(i)-1,i))
-            !ELSE
-            !    slopes(u(i),i)= (bed(u(i),i)-bed(u(i)-1,i))/(ys(u(i),i)-ys(u(i)-1,i))
-            !END IF
-
-            !Figure out the value for heights and ys at the wetted edge of the cross-section. This is useful for the bed solver
+            ! Figure out the value for heights and ys at the wetted edge of the
+            ! cross-section. This is useful for the bed solver
             IF(l(i)>1) THEN
                 ysl(i)=ys(l(i)-1, i)
                 bedl(i)=bed(l(i)-1, i)
@@ -408,38 +386,10 @@ DO j= 1, jmax
                     stop
                 END IF
             END DO
-            !DO i1 = l(i),u(i)
-            !    DO jj1= 0, layers
-            !        !if((heights(i)> 0._dp).and.(jj>1)) mu= mu*100.5_dp
-            !        !aa= mu**2*(mu*lifttodrag-1._dp)/(mu*lifttodrag+1._dp)
-            !        !bb= -2._dp*mu**2*lifttodrag*cos(atan(slopes(i1)))*mu/(1._dp+mu*lifttodrag) 
-            !        !cc= mu**2*cos(atan(slopes(i1)))**2 - sin(atan(slopes(i1)))**2
-            !        !if((heights(i)> 0._dp).and.(jj>1)) mu= mu/100.5_dp
-            !        !multa= (-bb - sqrt(bb**2-4._dp*aa*cc))/ (2._dp*aa)
-            !        !if ((mod(j,200).eq.0).and.(heights(i)>0).and.(i.eq.142)) THEN
-            !        !        print*, multa
-            !                
-            !        !end if
-            !        !if((multa<0._dp).or.(isnan(multa))) THEN
-            !        !        multa=0.0000001_dp!1000._dp*epsilon(multa)
-            !        !       print*,  'multaprob'
-            !              !stop
-            !        !end if 
-            !        IF(jj1> -1) multa=1._dp
-            !        !if((heights(i)> -100._dp).and.(jj>0)) erconst=erconst*3._dp
-            !        taucrit(i1,i,jj1) = erconst*(1._dp+min(jj1,1)*9.0_dp)*multa !sqrt(max( 0._dp, (erconst)**2*cos(atan((slopes(i))))**2*(1._dp - ((abs(slopes(i))**2)/(mu**2)) )))
-            !        !taucrit(i1,i,jj1) = erconst*(1._dp+jj1*1.0_dp)*multa !sqrt(max( 0._dp, (erconst)**2*cos(atan((slopes(i))))**2*(1._dp - ((abs(slopes(i))**2)/(mu**2)) )))
-            !        !if(hs(i1,i) < -3.5_dp) taucrit(i1,i,jj1) = 100._dp !Make these depths basically underodable !.and.(jj>0)) erconst=erconst/3._dp
-            !        IF(isnan(taucrit(i1,i,jj1))) THEN
-            !            PRINT*, "taucrit(", i1,",",i,",", jj1, ") is nan"
-            !            STOP
-            !        END IF
 
-            !    END DO 
-            !END DO
-
-            !!Define the lateral variation of the suspended sediment concentration - this was needed to distinguish
-            !the cases in which we were using a lateral sediment distribution equation 
+            ! Define the lateral variation of the suspended sediment
+            ! concentration - this was needed to distinguish the cases in which
+            ! we were using a lateral sediment distribution equation 
             IF((.NOT.susdist).AND.(.NOT.sus2d)) Cdist(l(i):u(i),i)=C(i)
 
             !Predefine some more things
@@ -465,36 +415,12 @@ DO j= 1, jmax
                         ,slopes(l(i):u(i),i), hlim,u(i)-l(i)+1, vegdrag(l(i):u(i),i), rho, & 
                         rhos, voidf, d50, g, kvis, vertical, lambdacon, tbston, ysl(i),ysu(i),bedl(i),bedu(i), & 
                         .FALSE.) 
-        !CALL calc_shear(u(i)-l(i)+1,DT,waters_avg(i),Q2_geo(i),bed(l(i):u(i),i),ys(l(i):u(i),i),& 
-        !Asav(i),Width(i),& 
-        !bottom(i),fs(l(i):u(i),i),mxdeps(l(i):u(i),i),E(i),D(i), Cdist(l(i):u(i),i),rmu(i),a,inuc(i), & 
-        !taus(l(i):u(i),i),NN(l(i):u(i),i),j,slopes(l(i):u(i),i),hlim,mor1, taucrit_dep(l(i):u(i),i,1:layers), & 
-        !layers,taucrit_dep_ys(l(i):u(i),i),u(i)-l(i)+1, mu, taucrit(l(i):u(i),i, 0:layers),vegdrag(l(i):u(i),i)& 
-        !, susdist, Cmouth, rho, Qe(l(i):u(i),i), Qbed(l(i):u(i),i), rhos, voidf, dsand, d50, g, kvis, norm,&
-        !vertical, lambdacon, tbston, ysl(i), ysu(i), bedl(i), bedu(i)) 
 
+        ! Compute velocity, and the grain shear stress
         vels(:,i)= sqrt(8._dp*abs(taus(:,i))/(fs(:,i)*rho))*sign(1._dp+0._dp*taus(:,i), taus(:,i))
         taus_g(l(i):u(i),i) = rho*vels(l(i):u(i),i)**2*(fs_g(l(i):u(i),i)/8._dp)*&
                               sign(1._dp+0._dp*taus(l(i):u(i),i), taus(l(i):u(i),i))
-        !print*, maxval(abs(taus_g(:,i))), maxval(abs(taus(:,i)))
     END DO
-
-    !Here we calculate the value of the N term, just so we can check
-    !if it is often too large. We only do it just before writing tau
-    !and NN. And it requires acUdlast at the previous time step
-    !IF(mod(j-1,bedwrite)==bedwrite-1) THEN
-    !        vels= sqrt(8._dp*abs(taus)/(fs*rho))*sign(1._dp+0._dp*taus,taus)
-    !        DO i=1,b 
-    !                !Define this with or without the depth multiple, depending on
-    !                !whether you use findN or findn2
-    !                acUdlast(:,i)= (-Q2(i)/Asav(i)+vels(:,i))*max(waters_avg(i)-bed(:,i),0._dp*bed(:,i))
-    !        END DO
-    !END IF
-    !!Now we find N on the writing time step
-    !IF(mod(j-1,bedwrite)==0) THEN
-    !        vels= sqrt(8._dp*abs(taus)/(fs*rho))*sign(1._dp+0._dp*taus,taus)
-    !        CALL findn3(NN,inuc, Asav, Q2, vels,a,b, delX,DT, waters_avg, bed, acUdlast,NN_old, ys,l,u)
-    !END IF
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!       
     !Calculate rates of resuspension and bedload transport over each cross-section
@@ -511,20 +437,11 @@ DO j= 1, jmax
                                       voidf, dsand, d50, g, kvis, norm, alpha, Qbedon,talmon,&
                                       ysl(i),ysu(i),bedl(i),bedu(i), resus_type, bedload_type, &
                                       a_ref(l(i):u(i),i)) 
-        
-        !CALL calc_resus_bedload(u(i)-l(i)+1,DT,waters_avg(i),Q2_geo(i),bed(l(i):u(i),i),ys(l(i):u(i),i),&
-        !    Asav(i),Width(i),bottom(i), & 
-        !    fs(l(i):u(i),i),mxdeps(l(i):u(i),i),E(i),D(i), Cdist(l(i):u(i),i),rmu(i),a,inuc(i), & 
-        !    taus(l(i):u(i),i), NN(l(i):u(i),i),j,slopes(l(i):u(i),i), hlim, mor1,&
-        !    taucrit_dep(l(i):u(i),i,1:layers), layers, taucrit_dep_ys(l(i):u(i),i) ,u(i)-l(i)+1, mu,& 
-        !    taucrit(l(i):u(i),i, 0:layers) , vegdrag(l(i):u(i),i), susdist, Cmouth, rho, Qe(l(i):u(i),i),& 
-        !    Qbed(l(i):u(i),i), rhos, voidf, dsand, d50, g, kvis, norm, vertical,alpha, tbston, Qbedon,& 
-        !    ysl(i),ysu(i), bedl(i),bedu(i)) 
     END DO
 
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !!!! SUSPENDED SEDIMENT / BEDLOAD ROUTINE -Choice of 1 or 2d
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     IF(.NOT.sus2d) THEN
     !!Calculate velocity
         DO i = 1,b
@@ -559,6 +476,7 @@ DO j= 1, jmax
         wset_tmp(seabuf+1:b)=wset !Settling velocity
         wset_tmp(1:seabuf)=0._dp !No settling in the seabuf region
 
+        ! NOTE: C, Cmouth, Criver etc are in g/L (or kg/m^3), NOT (m^3/m^3)
         CALL susconc_up35(b,DT, Area, Q2, Q2_old, delX,C, UU,E*rhos, E_old*rhos, &
                           D*rhos, Cmouth , C_old, Area_old, UU_old, &
                           Criver, wset_tmp, wetwidth,wetwidth_old,&
@@ -591,7 +509,7 @@ DO j= 1, jmax
         CALL Ddx_3E(b,filler,delX, dQbedI) 
         !dQbedI=0._dp
 
-        !Now we distribute that bedload derivative
+        !Now we distribute that bedload derivative over each cross-section
         DO i=1, b
             !Here we include a trick to stop division by zero.
             IF(abs(QbedI(i))>1.0E-12_dp) THEN
@@ -603,10 +521,6 @@ DO j= 1, jmax
         !!!!END SUSPENDED SEDIMENT / BEDLOAD IN THE 1D CASE
 
     ELSE !Here we have the sediment calculations where the suspended sediment is calculated using a fully 2D model
-        ! Compute velocity
-        !DO jj=1,b
-        !    vels(:,jj)=sqrt(abs(taus(:,jj))*8._dp/(rho*fs(:,jj)))*sign(1._dp+0._dp*taus(:,jj), taus(:,jj))
-        !END DO
 
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         ! Compute suspended sediment in 2d
@@ -661,15 +575,6 @@ DO j= 1, jmax
                         rhos, voidf, d50, g, Qbedon, normmov,sus2d,ysl(i), & 
                         ysu(i),bedl(i),bedu(i),1, bed(p:o,i), talmon, .false., too_steep)
 
-        !CALL update_bed(o-p+1,DT,waters_avg(i),Q2(i),bed(p:o,i),ys(p:o,i),Asav(i),Width(i),bottom(i),fs(p:o,i),&
-        !mxdeps(p:o,i),E(i),D(i), Cdist_in(p:o,i), &
-        !rmu(i),a,inuc(i), taus(p:o,i),x(p:o),j,slopes(p:o,i), hlim,mor1, taucrit_dep(p:o,i,1:layers), layers, & 
-        !taucrit_dep_ys(p:o,i), o-p+1, mu, taucrit(p:o,i, 0:layers) , vegdrag(p:o,i), susdist, Cmouth, rho, &
-        !Qe(p:o,i), Qbed(p:o,i),&
-        !wset, dqbeddx(p:o,i), rhos, voidf, dsand, d50, g, kvis, norm, vertical, lambdacon, tbston, &
-        !Qbedon,normmov, sus2d, &
-        !ysl(i),ysu(i),bedl(i),bedu(i), 1, bed(p:o,i), susQbal, talmon)
-
         ! Test for changes in the bank values, which shouldn't happen with the
         ! new routine
         IF(l(i)>1) THEN
@@ -686,9 +591,9 @@ DO j= 1, jmax
         END IF
 
         IF(.TRUE.) THEN
-        !    ! A version of the Delft bank erosion model. 
-        !    ! If erosion is occuring at the channel margins,
-        !    ! then assign it to the neighbouring dry bed point
+        !   A version of the Delft bank erosion model. 
+        !   If erosion is occuring at the channel margins,
+        !   then assign it to the neighbouring dry bed point
             IF((bed(l(i),i)<bed_old(l(i),i)).AND.(l(i)>1)) THEN
                     bed(l(i)-1,i) = bed(l(i)-1,i) - (bed_old(l(i),i) - bed(l(i),i))
                     bed(l(i),i) = bed_old(l(i),i)
@@ -699,31 +604,6 @@ DO j= 1, jmax
             END IF
         END IF
 
-        !!!OLD ROUTINE: Correct for sediment transported in from the banks. This
-        !is very important to ensure mass conservation
-        !IF(l(i)>1) THEN
-        !    IF(bed(l(i)-1,i)>bedl(i)) bed(l(i)-1, i)=bedl(i)
-        !END IF
-
-        !IF(u(i)<a) THEN
-        !    IF(bed(u(i)+1,i)>bedu(i)) bed(u(i)+1,i)=bedu(i)
-        !END IF
-
-        !Update bed layers
-        !IF((p>1).AND.(o<a)) THEN
-        !    DO n= 1, layers
-        !    !taucrit_dep((p-1):(o+1),i,n)= min(max(taucrit_dep((p-1):(o+1),i,n),bed((p-1):(o+1),i)-10000.40_dp*n),bed((p-1):(o+1),i)) 
-        !    taucrit_dep((p-1):(o+1),i,n)= min( max(taucrit_dep((p-1):(o+1),i,n),bed((p-1):(o+1),i)-lincrem*n - & 
-        !                            wset*Cdist((p-1):(o+1),i)*mor*dT/(rhos*(1._dp-voidf)) ) , bed((p-1):(o+1),i) ) !This version is alright for when we actually have bed layers -- need to define 'lincrem' - put this in inputdata2.modin. Note also that you have to edit taucrit to use the taucrit_dep layers to good effect. 
-        !    END DO 
-        !ELSE
-        !    DO n= 1, layers
-        !    !taucrit_dep(p:o,i,n)= min( max(taucrit_dep(p:o,i,n),bed(p:o,i)-10000.40_dp*n) , bed(p:o,i) ) 
-        !    taucrit_dep(p:o,i,n)= min( max(taucrit_dep(p:o,i,n), & 
-        !                            bed(p:o,i)-lincrem*n - wset*Cdist(p:o,i)*mor*dT/(rhos*(1._dp-voidf)) ) &
-        !                             , bed(p:o,i) ) !This version is alright for when we actually have bed layers -- need to define 'lincrem' - put this in inputdata2.modin. Note also that you have to edit taucrit to use the taucrit_dep layers to good effect. 
-        !    END DO 
-        !END IF
 
     END DO 
 
@@ -766,13 +646,15 @@ DO j= 1, jmax
                 GOTO 3334  !Go back to the start of the time step
         
         ELSE
-                !In this case, delt-aim is chosen so the erosion is not too fast, and also the suspended sediment cfl is respected (too-much, for safety purposes!)
+                ! In this case, delt-aim is chosen so the erosion is not too
+                ! fast, and also the suspended sediment cfl is respected
+                ! (too-much, for safety purposes!)
                 longt1=min(longt1*1.0E-03_dp/maxval(abs(bed-bed_old)), longt, 0.6_dp*minval(delX/(abs(Q/Area)+0.01_dp)))
                 cfl1=min(cfl,0.5_dp*longt1/(delX/(maxval(( g*(waters-bottom))**0.5_dp+abs(Q/Area)))) )
         END IF
     ELSE
-        !In this case, the time step is limited by longt and the susconc CFL
-        !condition
+        ! In this case, the time step is limited by longt and the susconc CFL
+        ! condition
         longt1=min(longt, minval(0.6_dp*delX/(abs(Q/Area)+0.01_dp))) 
         cfl1=min(cfl,1.5_dp*cfl1)
     END IF
@@ -811,7 +693,7 @@ DO j= 1, jmax
         !WRITE(22,*) bed(a/2,75:76) !rmu!QbedI
     END IF
     !!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !Save larger variables less frequently
+    !Save larger '2D' variables less frequently
     IF((mod(j-1,bedwrite).EQ.0).AND.(mor1.EQ.mor)) THEN
         WRITE(3,*) bed
         
@@ -836,29 +718,6 @@ DO j= 1, jmax
         writfreq1=9E+8 !So we will never write with this value of writfreq.
     END IF
 
-    !!!Bed viscosity experimentation
-    !IF(.false.) THEN
-    !        bed_Vold=bed !Define the old bed, and then apply viscosity in a loop. Use a Chaudhry type artificial visc, scaled by the rate of change of the bed - this way the viscosity goes to zero at an equilibrium
-    !        visc_bed(:,2:b-1)=abs(bed(:,3:b)-2._dp*bed(:,2:b-1)+bed(:,1:b-2))*abs(bed_old(:,2:b-1)-bed(:,2:b-1))*0.01_dp
-    !        visc_bed(:,b)=abs(bed(:,b)-bed(:,b-1))*abs(bed_old(:,b)-bed(:,b))*0.01_dp
-    !        visc_bed(:,1)=abs(bed(:,2)-bed(:,1))*abs(bed_old(:,1)-bed(:,1))*0.01_dp
-    !        
-    !        DO i=2,b-1
-    !        !Define forward and backward visc coefs
-    !        visc_bedp=max(visc_bed(:,i),visc_bed(:,i+1)) 
-    !        visc_bedm=max(visc_bed(:,i),visc_bed(:,i-1)) 
-    !        !Update bed
-    !        bed(:,i)= bed_Vold(:,i)+ visc_bedp*(bed(:,i+1)-bed(:,i)) - visc_bedm*(bed(:,i)-bed(:,i-1))
-    !        !Take care of boundary points
-    !                IF(i==2) THEN
-    !                bed(:,1)=bed_Vold(:,1)+ visc_bedm*(bed(:,2)-bed(:,1))
-    !                END IF
-    !                IF(i==b-1) THEN
-    !                bed(:,b)=bed_Vold(:,b)- visc_bedp*(bed(:,b)-bed(:,b-1))
-    !                END IF
-    !        END DO
-    !END IF
-            
     !Smoothing routine - here we stop the banks from being too steep to
     !erode, by smoothing if the height difference between points is too
     !large. For symmetry preservation purposes, we approach from the banks
@@ -985,7 +844,8 @@ DO j= 1, jmax
         WRITE(22,*) bed(a/2,75:76) !rmu!QbedI
     END IF
 
-    !Trial to improve mass conservation. Notice that the any change between bottom and bottom_old must be due to sedimentation/erosion
+    !Trial to improve mass conservation. Notice that the any change between
+    !bottom and bottom_old must be due to sedimentation/erosion
     !waters=waters+min(0.02_dp, abs(bottom-bottom_old))*sign(1._dp, bottom-bottom_old) ! However, sometimes when the flow goes overbank, this is badly behaved. Changes fast, need to limit it.
     !waters=waters+min(0.02_dp, abs(bottom-bottom_old))*sign(1._dp, bottom-bottom_old) ! However, sometimes when the flow goes overbank, this is badly behaved. Changes fast, need to limit it.
 

@@ -1598,7 +1598,7 @@ subroutine susconc_up35(n2,DT, A2, QH2, QH2_old, delX,C2, U2, Qe2,Qe2_old, Qd2, 
                UU_old(n2+4), wetwidth(n2+4),wetwidth_old(n2+4), D(n2+4), D_old(n2+4), Fl1(n2+4), Q_old(n2+4), limi(n2+4), & 
                FL_old(n2+4), theta(n2+4), Cpred(n2+4), diag(n2+4), lower(n2+4), upper(n2+4), rhs(n2+4),wset(n2+4)
     REAL(dp):: usef1(n2+4), usef2(n2+4), usef3(n2+4), usef4(n2+4)
-    REAL(dp):: mu=1._dp, eeps=1.0E-10_dp
+    REAL(dp):: mu_lim=1._dp, eeps=1.0E-10_dp
     !!##Solves (del AC/ del T) +  (del CQ / delX) =   d/dx (A Diffuse del C / delX) + (E-D)  
 
     !! See a test with an analytical advection-diffusion solution in:
@@ -1768,12 +1768,12 @@ subroutine susconc_up35(n2,DT, A2, QH2, QH2_old, delX,C2, U2, Qe2,Qe2_old, Qd2, 
     !Calculate fluxes, with limiting -- 3rd order without limiting
     DO i=2, n2+2
         IF(0.5_dp*(Q_old(i)*C_old(i)+Q_old(i+1)*C_old(i+1))>=0._dp) THEN
-            limi(i)=max(0._dp, min(1._dp, 1._dp/3._dp+1._dp/6._dp*theta(i) , mu*theta(i)))
+            limi(i)=max(0._dp, min(1._dp, 1._dp/3._dp+1._dp/6._dp*theta(i) , mu_lim*theta(i)))
             !limi(i)= 0.5_dp*(theta(i)+abs(theta(i)))/(1._dp+abs(theta(i)))
             !if((i>n2).or.(i<4).or.(.false.)) limi(i)=0._dp !Force the boundaries to use an upwind flux
             FL1(i)= FL_old(i)+limi(i)*(FL_old(i+1)-FL_old(i)) !(1._dp/6._dp)*( 2._dp*Q_old(i+1)*C_old(i+1) + 5._dp*Q_old(i)*C_old(i) -Q_old(i-1)*C_old(i-1)) 
         ELSE
-            limi(i)=max(0._dp, min(1._dp, 1._dp/3._dp+1._dp/(6._dp*theta(i+1)) , mu/theta(i+1)))
+            limi(i)=max(0._dp, min(1._dp, 1._dp/3._dp+1._dp/(6._dp*theta(i+1)) , mu_lim/theta(i+1)))
             !limi(i)= 0.5_dp*(1._dp/theta(i+1)+abs(1._dp/theta(i+1)))/(1._dp+abs(1._dp/theta(i+1)))
             !if((i>n2).or.(i<4).or.(.false.)) limi(i)=0._dp !Force the boundaries to use an upwind flux
             FL1(i)= ( FL_old(i+1)+limi(i)*(FL_old(i)-FL_old(i+1)) ) ! (1._dp/6._dp)*( 2._dp*Q_old(i)*C_old(i) + 5._dp*Q_old(i+1)*C_old(i+1) -Q_old(i+2)*C_old(i+2)) 
@@ -1915,12 +1915,12 @@ subroutine susconc_up35(n2,DT, A2, QH2, QH2_old, delX,C2, U2, Qe2,Qe2_old, Qd2, 
     !Calculate fluxes, with limiting -- 3rd order without limiting
     DO i=2, n2+2
         IF(0.5_dp*(QH(i)*Cpred(i)+QH(i+1)*Cpred(i+1))>=0._dp) THEN
-            limi(i)=max(0._dp, min(1._dp, 1._dp/3._dp+1._dp/6._dp*theta(i) , mu*theta(i)))
+            limi(i)=max(0._dp, min(1._dp, 1._dp/3._dp+1._dp/6._dp*theta(i) , mu_lim*theta(i)))
             !limi(i)= 0.5_dp*(theta(i)+abs(theta(i)))/(1._dp+abs(theta(i)))
             !if((i>n2).or.(i<4).or.(.false.)) limi(i)=0._dp !Force the boundaries to use an upwind flux
             FL1(i)= FL_old(i)+limi(i)*(FL_old(i+1)-FL_old(i)) 
         ELSE
-            limi(i)=max(0._dp, min(1._dp, 1._dp/3._dp+1._dp/(6._dp*theta(i+1)) , mu/theta(i+1)))
+            limi(i)=max(0._dp, min(1._dp, 1._dp/3._dp+1._dp/(6._dp*theta(i+1)) , mu_lim/theta(i+1)))
             !limi(i)= 0.5_dp*(1._dp/theta(i+1)+abs(1._dp/theta(i+1)))/(1._dp+abs(1._dp/theta(i+1)))
             !if((i>n2).or.(i<4).or.(.false.)) limi(i)=0._dp !Force the boundaries to use an upwind flux
             FL1(i)= ( FL_old(i+1)+limi(i)*(FL_old(i)-FL_old(i+1)) )  
