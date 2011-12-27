@@ -208,7 +208,7 @@ OPEN(33,file="Susconc.2DO")
 OPEN(25,file="dropout.0DO")
 OPEN(26,file="dropout4")
 OPEN(35,file='Randomstuff')
-!OPEN(14,file="taucrit_dep")
+OPEN(14,file="friction.1D0")
 !OPEN(15,file="tausss")
 !OPEN(22,file="bndry")
 !OPEN(34,file="Nfile.2DO")
@@ -684,6 +684,7 @@ DO j= 1, jmax
         WRITE(10,*) E
         WRITE(11,*) QbedI !dqbeddx(a/2,:)
         WRITE(15,*) sqrt(abs(taus(a/2,:))/(rho*fs(a/2,:)/8._dp))*sign(1._dp,taus(a/2,:))
+        WRITE(14,*) rmu !fs(a/2,:)
         !WRITE(22,*) bed(a/2,75:76) !rmu!QbedI
     END IF
     !!!!!!!!!!!!!!!!!!!!!!!!!!!

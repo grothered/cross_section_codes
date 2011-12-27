@@ -273,15 +273,15 @@ getcs<- function(l, x, ...){
 			}
 
 
-getvs<- function(l, x, ...){
-	a=which(dir()=="vels")
-#	b=which(dir()=="lengths")
-	a1<- scan(dir()[a], what= "numeric", ...)
-#	b1<- scan(dir()[b], what="numeric", ...)
-	vels<<- array(as.numeric(a1),dim=c(l,x,floor(length(a1)/(l*x))))
-#	lnths<<- array(as.numeric(b1),dim=c(l,x,floor(length(a1)/(l*x))))
-			}
-
+#getvs<- function(l, x, ...){
+#	a=which(dir()=="vels")
+##	b=which(dir()=="lengths")
+#	a1<- scan(dir()[a], what= "numeric", ...)
+##	b1<- scan(dir()[b], what="numeric", ...)
+#	vels<<- array(as.numeric(a1),dim=c(l,x,floor(length(a1)/(l*x))))
+##	lnths<<- array(as.numeric(b1),dim=c(l,x,floor(length(a1)/(l*x))))
+#			}
+#
 
 
 gettendep<-function(a,b,layers, ...){

@@ -1,7 +1,7 @@
 ## Quick R routine to create the files sectionsold2 and lnthsold2
 ## 
 a=5
-b=30
+b=60
 width=10.0
 
 ys=matrix(NA, nrow=a,ncol=b)
