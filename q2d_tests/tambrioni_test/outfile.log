@@ -8,7 +8,6 @@
  DELX= 3.59698999999999991E-002,
  WSET=  0.0000000000000000     ,
  SEABUF=          0,
- LF=         -1,
  HLIM= 1.00000000000000002E-003,
  QB= -0.0000000000000000     ,
  TR= 4.75000000000000006E-002,
@@ -19,7 +18,6 @@
  RHO=  1000.0000000000000     ,
  RHOS=  1480.0000000000000     ,
  BURNIN=  0.0000000000000000     ,
- LFKICK= 0.29999999999999999     ,
  SUS2D=F,
  LAKE=F,
  MOUTHREAD=F,
@@ -35,7 +33,7 @@
  ALPHA=  0.0000000000000000     ,
  READIN=T,
  CFL= 0.98999999999999999     ,
- ROUGH_COEF= 2.92000000000000003E-002,
+ ROUGH_COEF= 6.68469760000000024E-002,
  MAN_NVEG=  0.0000000000000000     ,
  CMOUTH=  0.0000000000000000     ,
  CRIVER=  0.0000000000000000     ,
@@ -57,7 +55,14 @@
  BOUNDARY_DOWNSTREAM_FILE="mouth               ",
  FRICTION_TYPE="darcy               ",
  GRAIN_FRICTION_TYPE="one                 ",
+ RESUS_TYPE="vanrijn             ",
+ BEDLOAD_TYPE="mpm                 ",
  /
  Analytical water level mouth boundary needed
- status   0.0000000000000000                1   1.0000000000000000        0.0000000000000000       0.98999999999999999       0.98999999999999999     
- Finished time =   65.548802315247329      j=         501
+ #################
+ # Output Step:           1
+ #   Time (hrs):   0.0000000000000000     
+ #   Long timestep:    1.0000000000000000       Hydrodynamic timestep:    0.0000000000000000     
+ #   cfl_local:   0.98999999999999999      cfl:   0.98999999999999999     
+ ################
+ Finished time =   71.378297684070603      j=         501

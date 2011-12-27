@@ -66,7 +66,7 @@ END SUBROUTINE dAdP
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-SUBROUTINE shear(nn,ys,bed,water,wslope,taus,ks, f,NNN,slopes, counter, Q, vegdrag, rho,g, lambdacon, tbston, & 
+SUBROUTINE shear(nn,ys,bed,water,wslope,taus,f,NNN,slopes, counter, Q, vegdrag, rho,g, lambdacon, tbston, & 
                 ysl,ysu, bedl,bedu, high_order_shear)
     ! Solve a model for the distribution of bed shear and velocity over a
     ! cross-section
@@ -84,7 +84,6 @@ SUBROUTINE shear(nn,ys,bed,water,wslope,taus,ks, f,NNN,slopes, counter, Q, vegdr
     !distribution will be correct to a constant multiple, because the equation
     !is linear in wslope. 
     !taus is the bed shear 
-    !ks is a defunct parameter
     !f is the bed roughness vector
     !NNN is a defunct parameter
     !slopes is a vector of the lateral bed slopes
@@ -103,10 +102,10 @@ SUBROUTINE shear(nn,ys,bed,water,wslope,taus,ks, f,NNN,slopes, counter, Q, vegdr
 
 
     INTEGER, INTENT(IN)::nn, counter
-    REAL(dp), INTENT(IN):: ys, bed,water,wslope, ks, f,NNN,slopes, Q, vegdrag, rho, lambdacon, ysl, ysu, bedl, bedu,g 
+    REAL(dp), INTENT(IN):: ys, bed,water,wslope, f,NNN,slopes, Q, vegdrag, rho, lambdacon, ysl, ysu, bedl, bedu,g 
     REAL(dp), INTENT(IN OUT):: taus !shear, side slope
     LOGICAL, INTENT(IN):: tbston, high_order_shear
-    DIMENSION:: ys(nn),bed(nn),taus(nn), ks(nn), f(nn),NNN(nn), slopes(nn), vegdrag(nn)
+    DIMENSION:: ys(nn),bed(nn),taus(nn), f(nn),NNN(nn), slopes(nn), vegdrag(nn)
 
     !logical, intrinsic:: isnan
     LOGICAL:: flag, stopper, const_mesh
@@ -476,6 +475,11 @@ SUBROUTINE calc_shear(a, dT, water, Q, bed,ys,Area, bottom, ff,rmu,inuc,tau,NN,c
     IF(abs(wslope)>.1) print*, "|wslope| >.1", wslope, water-bottom, rmu, Q, Area, Q/Area
     IF(isnan(wslope)) print*, "wslope is nan", Q, A, water-bottom, rmu
 
+    IF(a<3) THEN
+        print*, 'ERROR: less than 3 wet points on a cross-section -- shear &
+                 cannot work with this', a
+        stop
+    END IF
 
     ! CALCULATE SHEAR
     ! This can deal with multiple wet sections/ interior dry points. 
@@ -512,7 +516,7 @@ SUBROUTINE calc_shear(a, dT, water, Q, bed,ys,Area, bottom, ff,rmu,inuc,tau,NN,c
             IF ( ( (dry(i)).AND.(.NOT.dry(i-1)) ) )  THEN ! Reached an interior dry point folling a wet point
                 up=i-1
                 IF(maxval(water-bed(bgwet:up))>.01_dp) THEN
-                    call shear(up-bgwet+1,ys(bgwet:up),bed(bgwet:up),water, wslope ,tau(bgwet:up),kkkk(bgwet:up), & 
+                    call shear(up-bgwet+1,ys(bgwet:up),bed(bgwet:up),water, wslope ,tau(bgwet:up), & 
                             ff(bgwet:up),NN(bgwet:up), slopes(bgwet:up), counter, Q, vegdrag(bgwet:up), rho,g, & 
                             lambdacon, tbston, ysl,ysu, bedl, bedu, high_order_shear)
                 END IF
@@ -524,7 +528,7 @@ SUBROUTINE calc_shear(a, dT, water, Q, bed,ys,Area, bottom, ff,rmu,inuc,tau,NN,c
 
             IF((i==a)) THEN 
                 IF (maxval(water-bed(bgwet:a))>.01_dp ) THEN 
-                    call shear(i-bgwet+1,ys(bgwet:a),bed(bgwet:a),water, wslope ,tau(bgwet:a),kkkk(bgwet:a),ff(bgwet:a) &
+                    call shear(i-bgwet+1,ys(bgwet:a),bed(bgwet:a),water, wslope ,tau(bgwet:a),ff(bgwet:a) &
                         ,NN(bgwet:a),slopes(bgwet:a),counter, Q, vegdrag(bgwet:a), rho,g, lambdacon, tbston, ysl,ysu, &
                          bedl, bedu, high_order_shear)
                 END IF
@@ -712,7 +716,7 @@ SUBROUTINE roughmult(aa,rmu, vel, Q, A, tbst,depths, ys, f, vegdrag, &
 
     ! Sanity checks
     IF(rmu.eq.0._dp) THEN
-        print*, "rmu is zero", abs(Q), aa, sum(f), maxval(vel), minval(vel)
+        print*, " ERROR: rmu is zero", abs(Q), aa, sum(f), maxval(vel), minval(vel)
         stop
     END IF
 
