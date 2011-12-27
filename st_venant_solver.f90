@@ -57,7 +57,7 @@ SUBROUTINE hyupdate(delT, delX, bottom, B, A, Q,Q2H_dT,Y, t,l, counter,dbdh, rmu
     ! g = gravity
     ! cfl = cfl number (<= 1) which influences the size of the time step
     ! v1coef = coefficient for artificial viscosity
-    ! v4coef = another coefficient for artificial viscosity
+    ! v4coef = DEFUNCT coefficient for artificial viscosity
     ! seabuf = number of 'morphologically frozen' cross-sections at the
     !          downstream boundary. In the driver routine, only cross-sections
     !          'seabuf+1:l' are alowed to evolve. At some stage, I found it
@@ -446,7 +446,7 @@ SUBROUTINE hyupdate(delT, delX, bottom, B, A, Q,Q2H_dT,Y, t,l, counter,dbdh, rmu
         
         IF(i.EQ.seabuf+1) viscf(i)=min(visc(i+1)*v1coef,1000.5_dp)
 
-        viscf4(i)=max(0._dp,v4coef*1.0_dp-viscf(i))
+        !viscf4(i)=max(0._dp,v4coef*1.0_dp-viscf(i))
         IF((minval(Y(max(i-1,1):i+1)-bottom(max(i-1,1):i+1))<5.00001_dp*hlim+0.00_dp)) THEN
             viscf(i)=0._dp
             viscf(max(i-1,1))=0._dp
