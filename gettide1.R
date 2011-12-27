@@ -12,17 +12,17 @@ getf<-function(l, ...){
 	dee2=which(dir()=="Discharge_halftime_lim.1DO")
 	ayy2=which(dir()=="Area_halftime.1DO")
 	
-	A1<- scan(dir()[a], what= "numeric", ...)
-	d1<- scan(dir()[b], what= "numeric", ...)
-	b1<- scan(dir()[c], what= "numeric", ...)
-	bt<- scan(dir()[d], what="numeric", ...)	
-	w1<- scan(dir()[w], what="numeric", ...)
-	s1<- scan(dir()[s],what="numeric", ...)
-	t1<- scan(dir()[t], what="numeric", ...)
-	e1<-scan(dir()[e], what="numeric", ...)
+	A1<- scan(dir()[a], what= "numeric", quiet=T,...)
+	d1<- scan(dir()[b], what= "numeric", quiet=T,...)
+	b1<- scan(dir()[c], what= "numeric", quiet=T,...)
+	bt<- scan(dir()[d], what="numeric", quiet=T,...)	
+	w1<- scan(dir()[w], what="numeric", quiet=T,...)
+	s1<- scan(dir()[s],what="numeric", quiet=T,...)
+	t1<- scan(dir()[t], what="numeric", quiet=T,...)
+	e1<-scan(dir()[e], what="numeric", quiet=T,...)
 	#de1<- scan(dir()[dee],what="numeric", ...)	
-	d2<- scan(dir()[dee2],what="numeric", ...)	
-	A2<- scan(dir()[ayy2],what="numeric", ...)	
+	d2<- scan(dir()[dee2],what="numeric", quiet=T,...)	
+	A2<- scan(dir()[ayy2],what="numeric", quiet=T,...)	
 	
 	A1<<- matrix(as.numeric(A1),ncol=l,byrow=TRUE)
 	d1<<- matrix(as.numeric(d1),ncol=l,byrow=TRUE)
@@ -147,7 +147,7 @@ wire<-function(lnths,cs1,xincrem,t){
 	
 genread<-function(name, l, ...){
 	s=which(dir()==name)
-	s2=scan(dir()[s], what="numeric", ...)
+	s2=scan(dir()[s], what="numeric", quiet=T,...)
 	lnth=floor(length(s2)/prod(l))*prod(l)
 	array(as.numeric(s2)[1:lnth], dim=c(l, lnth/prod(l)))
 
