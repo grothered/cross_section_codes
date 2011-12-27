@@ -706,7 +706,7 @@ SUBROUTINE roughmult(aa,rmu, vel, Q, A, tbst,depths, ys, f, vegdrag, &
         rmutop=0.0_dp
         DO i=2,aa-1
             rmutop= rmutop + &
-                    (f(i)/8.0_dp*tbst(i) + vegdrag(i)*depths(i))*0.5_dp*(ys(i+1)-ys(i))
+                    (f(i)/8.0_dp*tbst(i) + vegdrag(i)*depths(i))*0.5_dp*(ys(i+1)-ys(i-1))
         END DO
         !Denominator
         rmubot=A*g

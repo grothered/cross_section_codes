@@ -30,3 +30,4 @@ echo '#########################'
 R CMD BATCH --slave r_compare.R /dev/tty
 cd ..
 
+

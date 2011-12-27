@@ -35,7 +35,7 @@ REAL(dp):: hlim , Qb, tr, mor,mor1,  mu, erconst, multa, aa,bb, cc, lifttodrag, 
     Criver, water_m, water_mthick, veg_ht, &
     v1coef,v4coef, eddis1D,lincrem
 LOGICAL:: susdist=.false., sus2d, LAKE, mouthread, norm, vertical, tbston, normmov, readin, & 
-    remesh, Qbedon, talmon, susQbal=.false., manning, printall, taucrit_slope_reduction=.false.
+    remesh, Qbedon, talmon, susQbal=.false., printall, taucrit_slope_reduction=.false.
 CHARACTER(char_len):: boundary_downstream_file, friction_type, grain_friction_type, resus_type, &
                       bedload_type
 
@@ -44,7 +44,7 @@ NAMELIST /inputdata2/ a, b, jmax, writfreq, t,longt, delX, wset, seabuf, hlim, &
      Qb, tr, mor, mu, erconst,lifttodrag, rho, rhos, burnin, sus2d, LAKE, mouthread, & 
     voidf, dsand, d50, g, kvis, norm, vertical, lambdacon, tbston, alpha, readin, cfl, &
      rough_coef, man_nveg, Cmouth, Criver, layers, bedwrite, remesh, remeshfreq, normmov,& 
-     water_m, water_mthick, veg_ht, Qbedon, talmon, manning, v1coef,v4coef,eddis1D,lincrem, &
+     water_m, water_mthick, veg_ht, Qbedon, talmon, v1coef,v4coef,eddis1D,lincrem, &
      boundary_downstream_file, friction_type, grain_friction_type, resus_type, bedload_type
 
 ALLOCATABLE bed(:,:),bed_old(:,:),bed_Vold(:,:),bed_oldrefit(:,:), ys(:,:),ys_oldrefit(:,:),& 
@@ -684,7 +684,7 @@ DO j= 1, jmax
         WRITE(10,*) E
         WRITE(11,*) QbedI !dqbeddx(a/2,:)
         WRITE(15,*) sqrt(abs(taus(a/2,:))/(rho*fs(a/2,:)/8._dp))*sign(1._dp,taus(a/2,:))
-        WRITE(14,*) rmu !fs(a/2,:)
+        WRITE(14,*) fs(a/2,:)
         !WRITE(22,*) bed(a/2,75:76) !rmu!QbedI
     END IF
     !!!!!!!!!!!!!!!!!!!!!!!!!!!
