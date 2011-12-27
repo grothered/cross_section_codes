@@ -1577,101 +1577,76 @@ CONTAINS
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!
 subroutine susconc_up35(n2,DT, A2, QH2, QH2_old, delX,C2, U2, Qe2,Qe2_old, Qd2, Cmouth, C_old2, Area_old2, UU_old2, & 
                         Criver, wset2, wetwidth2,wetwidth_old2, D2,D2_old, third, pars_out)
+    ! Solves (del AC/ del T) +  (del CQ / delX) =   d/dx (A Diffuse del C / delX) + (E-D)  
     INTEGER, INTENT(IN):: n2
     REAL(dp), INTENT(IN):: DT, delX, Qe2, Qe2_old, Qd2, Cmouth, A2, QH2, QH2_old, U2, C_old2, Area_old2, UU_old2,Criver,&
                      wset2, wetwidth2,wetwidth_old2, D2, D2_old
     REAL(dp), INTENT(IN OUT):: C2, pars_out(10)
     LOGICAL, INTENT(IN):: third
 
-    !!Note - here Qe is different to elsewhere. 
+    ! Note - here Qe is different to elsewhere. 
     DIMENSION C2(n2), A2(n2), QH2(n2), QH2_old(n2), U2(n2), Qe2(n2), Qe2_old(n2), Qd2(n2),C_old2(n2),Area_old2(n2),UU_old2(n2),&
               wetwidth2(n2),wetwidth_old2(n2), D2(n2), D2_old(n2),wset2(n2)
 
     INTEGER:: info, i, KL=2, KU=2, IPV(n2+4), ii !Note KL,KU are the number of upper and lower diagonals of the banded matrix
     REAL(dp):: r(n2) !Right hand side of equation
     LOGICAL:: flag
-    !REAL(dp):: D(n) !dispersion constant-- actually not constant, need to fix.
     REAL(dp):: impcon=.50_dp, impconU=.00_dp
-    !REAL(dp):: Qf1(n), Qf0(n), Af1(n), Af0(n), Df1(n), Df0(n)
-    !REAL(dp):: band(7,n2+4), rhs(n2+4)
     REAL(dp):: A(n2+4), QH(n2+4), QH_old(n2+4), C(n2+4), U(n2+4), Qe(n2+4),Qe_old(n2+4), Qd(n2+4), C_old(n2+4), Area_old(n2+4), &
                UU_old(n2+4), wetwidth(n2+4),wetwidth_old(n2+4), D(n2+4), D_old(n2+4), Fl1(n2+4), Q_old(n2+4), limi(n2+4), & 
                FL_old(n2+4), theta(n2+4), Cpred(n2+4), diag(n2+4), lower(n2+4), upper(n2+4), rhs(n2+4),wset(n2+4)
     REAL(dp):: usef1(n2+4), usef2(n2+4), usef3(n2+4), usef4(n2+4)
     REAL(dp):: mu_lim=1._dp, eeps=1.0E-10_dp
-    !!##Solves (del AC/ del T) +  (del CQ / delX) =   d/dx (A Diffuse del C / delX) + (E-D)  
 
     !! See a test with an analytical advection-diffusion solution in:
     !!/home/gareth/Doc_Win/My_Documents/H_drive_Gareth/Maths and bits of Code/fortran code/Hydrodynamic model/full model/2009jan-2009date/good_version_without_N_support/port_with_namespace/most_updated_nov2309/third_order_sussed/with_bedload/lower_Q/bound/even_smallerQ/iforttry/vels1/simple_geo/1d_sedconcheck/analytical
 
     !!And with pure diffusion in:
 
-    !!Note that E and D are the total rate of erosion/deposition over each
-    !section.  Solved Using an approach developed from Hundsdorfer's notes,
-    !probably also in their book.  Note that it is easy to have this explicit
-    !(stability requirement is much less stringent than for 1D St Venant -- this
-    !has a stability determined by the velocity and delX only, no gravity waves)
+    ! The spatial discretization is a standard central scheme for diffusion, and a
+    ! flux limited third order upwind scheme for advection. The latter is described
+    ! in Hundsdorfer's notes (page 38)
+    
+    ! Note that E and D are the total rate of erosion/deposition over each
+    ! section.  Solved using an approach developed from Hundsdorfer's notes,
+    ! probably also in their book.  Note that it is easy to have advection explicit
+    ! (stability requirement is much less stringent than for 1D St Venant --
+    ! this has a stability determined by the velocity and delX only, no gravity
+    ! waves)
 
-    !!The numerical time stepping scheme is modified based n something described by Hundsdorfer's lecture notes
-    !(page 49) as 'the implicit midpoint rule with Euler predictor', although it is
-    !not implicit (but I use implicit diffusion on the first half step, which seems more stable).
+    ! The numerical time stepping scheme is modified based on something
+    ! described by Hundsdorfer's lecture notes (page 49) as 'the implicit
+    ! midpoint rule with Euler predictor' -- although it is not implicit. I use
+    ! implicit diffusion, which is stable and avoids strong time-step
+    ! restrictions
     ! In the book Hundsdorfer and Verwer (2003) report the 'one
-    !step explicit midpoint rule' (page 142)
-    !Which is the basis of this method, the only difference being that I treat
-    !diffusion implicitly.
-    !Basically we take a predictor half-step
-    !Cpred = Clast + (1/2 delt)/delx*( ADVECTION(tlast,Clast) + DIFFUSION(CPRED,tlast+1/2delT) )
-    !And then a corrector full step
-    !C=Clast+ delt/delX*(ADVECTION(t+1/2 delT, Cpred) + DIFFUSION(C,tlast+delT) )
-    !On the first step, the discharge is evaluated as QH2, which is
-    !the conservative discharge estimates from the McCormack method. Note
-    !that this is a reasonable estimate of the discharge at the old time level if we
-    !assume that the discharge is constant between the last step and the next one -
-    !While this is a crude assumption, more complex things I tried (e.g Q =
-    !0.5*(QH2+QH2_old) lead to greater overshoot near the mouth than the present
-    !approach. (NOT UP TO DATE - PRESENTLY I AM USING THE LATTER - HOPEFULLY FINE).
-    !Note that while we could just use the straight discharge output from McCormack, it would not be
-    !conservative. I have checked this by running a constant discharge case with no
-    !erosion or deposition - the present algorithm predicts a constant sediment
-    !concentration (and the QH2 discharge is constant), while if we use the straight
-    !output from McCormack, then both the Discharge and sediment conc show slight
-    !variation from constant.
-    ! The diffusion coefs are evaluated implicitly (more stable and accurate than
-    ! explicit), as is the rate of erosion. 
-    !On the second step, the discharge is evaluated as QH (a good half-time step
-    !estimate), as are the rate of erosion and the diffusion coef, by suitable
-    !averaging of the input variables 
+    ! step explicit midpoint rule' (page 142)
+    ! Which is the basis of this method, the only difference being that I treat
+    ! diffusion implicitly.
+    ! Basically we take a predictor half-step
+    ! Cpred = Clast + (1/2 delt)/delx*( ADVECTION(tlast,Clast) + DIFFUSION(CPRED,tlast+1/2delT) )
+    ! And then a corrector full step, where the advection terms are computed
+    ! using the predictor step.
+    ! C=Clast+ delt/delX*(ADVECTION(t+1/2 delT, Cpred) + DIFFUSION(C,tlast+delT) )
 
-    !The spatial discretization is a standard central scheme for diffusion, and a
-    !flux limited third order upwind scheme for advection. The latter is described
-    !in Hundsdorfer's notes (page 38)
+    ! I found Vreugdenhill (1989:59) a useful reference, and the way the code
+    ! USED TO be written reflects that. 
 
-    !Note -- the discharge issues. With the McCormack Scheme, we can show that
-    !A(t+1)-A(t) = (dT/dX)*(0.5*(Q(t)_[i+1]+Q(Pred)_[i])-0.5*(Q(t)_[i]+Q(Pred)_[i-1]) )
-    !This means that at steady state (constant discharge), it is actually (Q(t)_[i+1]+Q(Pred)_[i]) which
-    !will not be changing either in time or in space.
+    ! Flux form of third order advection: 
+    ! dF/dx = [ F(i+1/2)-F(i-1/2) ] / dx
+    ! with: 
+    ! F[i+1/2] = (1/6)[ - F(i-1) +5F(i) +2F(i+1) ]     if (Q(i+1/2) > 0)
+    ! F[i+1/2] = (1/6)[ 2F(i) +5F(i+1) -F(i+2) ] if ( Q(i+1/2) <0 )
 
-    !Although this is a common reference, I
-    !found Vreugdenhill (1989:59) a useful reference, and the way the code USED TO be
-    !written reflects that. 
+    ! BOUNDARY CONDITIONS
+    ! For the third order advection, I have used 'ghost' cells. There are 2
+    ! downstream, and 2 upstream At the mouth boundary, a given value is imposed
+    ! if the flow is inward, and otherwise a zero gradient condition is imposed.
+    ! At the landward boundary, a zero gradient condition is enforced if there
+    ! is outflow. Otherwise, the river concentration is enforced, or used to
+    ! provide other boundary values, depending on the version of this code you
+    ! have.  
 
-    !Flux form of third order advection. dF/dx = [ F(i+1/2)-F(i-1/2) ] / dx
-    !with F[i+1/2] = (1/6)[ - F(i-1) +5F(i) +2F(i+1) ]     if (Q(i+1/2) > 0)
-    !F[i+1/2] = (1/6)[ 2F(i) +5F(i+1) -F(i+2) ] if ( Q(i+1/2) <0 )
-
-    !For the third order advection, I have used 'ghost' cells. There are 2
-    !downstream, and 2 upstream
-    !!At the mouth boundary, a given value is imposed if the flow is inward, and
-    !otherwise a zero gradient condition is imposed.
-    !! At the landward boundary, a zero gradient condition is enforced if there is
-    !outflow. Otherwise, the river concentration is enforced, or used to
-    !provide other boundary values, depending on the version of this code you have.  
-
-    !Note that if we force advection to first order, presently I can find weird
-    !long-term behaviour - accumulation of sediment in upstream zones -odd.
-
-    !!Define new variables with 'ghost'points on the edges, useful for implementing
-    !boundary conditions
     A(3:(n2+2))=A2
     QH(3:(n2+2))=QH2
     QH_old(3:(n2+2))=QH2_old
