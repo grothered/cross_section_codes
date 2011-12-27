@@ -22,6 +22,6 @@ for(i in 21:b){
 }
 
 
-write(ys,file='lnthsold2',ncolumns=10)
-write(bed,file='sectionsold2',ncolumns=10)
+write(ys,file='lnthsold2',ncolumns=a)
+write(bed,file='sectionsold2',ncolumns=a)
 
