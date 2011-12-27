@@ -1575,27 +1575,26 @@ CONTAINS
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!
-subroutine susconc_up35(n2,DT, A2, QH2, QH2_old, delX,C2, U2, Qe2,Qe2_old, Qd2, Cmouth, C_old2, Area_old2, UU_old2, & 
-                        Criver, wset2, wetwidth2,wetwidth_old2, D2,D2_old, third, pars_out)
+subroutine susconc_up35(b,DT, Area, Q2, Q2_old, delX,C, U2, Qe2,Qe2_old, Qd2, Cmouth, C_old2, Area_old2, & 
+                        Criver, wset2, wetwidth2,wetwidth_old2, D2,D2_old, pars_out)
     ! Solves (del AC/ del T) +  (del CQ / delX) =   d/dx (A Diffuse del C / delX) + (E-D)  
-    INTEGER, INTENT(IN):: n2
-    REAL(dp), INTENT(IN):: DT, delX, Qe2, Qe2_old, Qd2, Cmouth, A2, QH2, QH2_old, U2, C_old2, Area_old2, UU_old2,Criver,&
+    INTEGER, INTENT(IN):: b
+    REAL(dp), INTENT(IN):: DT, delX, Qe2, Qe2_old, Qd2, Cmouth, Area, Q2, Q2_old, U2, C_old2, Area_old2, Criver,&
                      wset2, wetwidth2,wetwidth_old2, D2, D2_old
-    REAL(dp), INTENT(IN OUT):: C2, pars_out(10)
-    LOGICAL, INTENT(IN):: third
+    REAL(dp), INTENT(IN OUT):: C, pars_out(10)
 
     ! Note - here Qe is different to elsewhere. 
-    DIMENSION C2(n2), A2(n2), QH2(n2), QH2_old(n2), U2(n2), Qe2(n2), Qe2_old(n2), Qd2(n2),C_old2(n2),Area_old2(n2),UU_old2(n2),&
-              wetwidth2(n2),wetwidth_old2(n2), D2(n2), D2_old(n2),wset2(n2)
+    DIMENSION C(b), Area(b), Q2(b), Q2_old(b), U2(b), Qe2(b), Qe2_old(b), Qd2(b),C_old2(b),Area_old2(b),&
+              wetwidth2(b),wetwidth_old2(b), D2(b), D2_old(b),wset2(b)
 
-    INTEGER:: info, i, KL=2, KU=2, IPV(n2+4), ii !Note KL,KU are the number of upper and lower diagonals of the banded matrix
-    REAL(dp):: r(n2) !Right hand side of equation
+    INTEGER:: info, i, KL=2, KU=2, IPV(b+4), ii !Note KL,KU are the number of upper and lower diagonals of the banded matrix
+    REAL(dp):: r(b) !Right hand side of equation
     LOGICAL:: flag
     REAL(dp):: impcon=.50_dp, impconU=.00_dp
-    REAL(dp):: A(n2+4), QH(n2+4), QH_old(n2+4), C(n2+4), U(n2+4), Qe(n2+4),Qe_old(n2+4), Qd(n2+4), C_old(n2+4), Area_old(n2+4), &
-               UU_old(n2+4), wetwidth(n2+4),wetwidth_old(n2+4), D(n2+4), D_old(n2+4), Fl1(n2+4), Q_old(n2+4), limi(n2+4), & 
-               FL_old(n2+4), theta(n2+4), Cpred(n2+4), diag(n2+4), lower(n2+4), upper(n2+4), rhs(n2+4),wset(n2+4)
-    REAL(dp):: usef1(n2+4), usef2(n2+4), usef3(n2+4), usef4(n2+4)
+    REAL(dp):: A(b+4), QH(b+4), QH_old(b+4), U(b+4), Qe(b+4),Qe_old(b+4), Qd(b+4), C_old(b+4), Area_old(b+4), &
+               wetwidth(b+4),wetwidth_old(b+4), D(b+4), D_old(b+4), Fl1(b+4), Q_old(b+4), limi(b+4), & 
+               FL_old(b+4), theta(b+4), Cpred(b+4), diag(b+4), lower(b+4), upper(b+4), rhs(b+4),wset(b+4)
+    REAL(dp):: usef1(b+4), usef2(b+4), usef3(b+4), usef4(b+4)
     REAL(dp):: mu_lim=1._dp, eeps=1.0E-10_dp
 
     !! See a test with an analytical advection-diffusion solution in:
@@ -1647,58 +1646,54 @@ subroutine susconc_up35(n2,DT, A2, QH2, QH2_old, delX,C2, U2, Qe2,Qe2_old, Qd2, 
     ! provide other boundary values, depending on the version of this code you
     ! have.  
 
-    A(3:(n2+2))=A2
-    QH(3:(n2+2))=QH2
-    QH_old(3:(n2+2))=QH2_old
-    C(3:(n2+2))=C2
-    U(3:(n2+2))=U2
-    Qe(3:(n2+2))=Qe2
-    Qe_old(3:(n2+2))=Qe2_old
-    Qd(3:(n2+2))=Qd2
-    C_old(3:(n2+2))=C_old2
-    Area_old(3:(n2+2))=Area_old2
-    UU_old(3:(n2+2))=UU_old2
-    wetwidth(3:(n2+2))=wetwidth2
-    wetwidth_old(3:(n2+2))=wetwidth_old2
-    D(3:(n2+2))=D2
-    D_old(3:(n2+2))=D2_old
-    wset(3:n2+2)=wset2
+    A(3:(b+2))=Area
+    QH(3:(b+2))=Q2
+    QH_old(3:(b+2))=Q2_old
+    U(3:(b+2))=U2
+    Qe(3:(b+2))=Qe2
+    Qe_old(3:(b+2))=Qe2_old
+    Qd(3:(b+2))=Qd2
+    C_old(3:(b+2))=C_old2
+    Area_old(3:(b+2))=Area_old2
+    wetwidth(3:(b+2))=wetwidth2
+    wetwidth_old(3:(b+2))=wetwidth_old2
+    D(3:(b+2))=D2
+    D_old(3:(b+2))=D2_old
+    wset(3:b+2)=wset2
 
     !Boundary conditions
-    A(1:2)=A2(1)
-    A((n2+3):(n2+4)) = A2(n2)
-    QH(1:2)=QH2(1)
-    QH((n2+3):(n2+4)) = QH2(n2)
-    QH_old(1:2)=QH2_old(1)
-    QH_old((n2+3):(n2+4)) = QH2_old(n2)
+    A(1:2)=Area(1)
+    A((b+3):(b+4)) = Area(b)
+    QH(1:2)=Q2(1)
+    QH((b+3):(b+4)) = Q2(b)
+    QH_old(1:2)=Q2_old(1)
+    QH_old((b+3):(b+4)) = Q2_old(b)
     Area_old(1:2)=Area_old2(1)
-    Area_old((n2+3):(n2+4)) = Area_old2(n2)
+    Area_old((b+3):(b+4)) = Area_old2(b)
     U(1:2)=U2(1)
-    U((n2+3):(n2+4)) = U2(n2)
-    UU_old(1:2)=U2(1)
-    UU_old((n2+3):(n2+4)) = UU_old2(n2)
+    U((b+3):(b+4)) = U2(b)
     Qe(1:2)=Qe(3)!0._dp
-    Qe((n2+3):(n2+4)) = Qe(n2+2) !0._dp 
+    Qe((b+3):(b+4)) = Qe(b+2) !0._dp 
     Qe_old(1:2)= Qe_old(3) !0._dp
-    Qe_old((n2+3):(n2+4))= Qe_old(n2+2) ! 0._dp 
+    Qe_old((b+3):(b+4))= Qe_old(b+2) ! 0._dp 
     Qd(1:2)=0._dp
-    Qd((n2+3):(n2+4)) = 0._dp 
+    Qd((b+3):(b+4)) = 0._dp 
     wetwidth(1:2)=wetwidth2(1)
-    wetwidth((n2+3):(n2+4)) = wetwidth2(n2)
+    wetwidth((b+3):(b+4)) = wetwidth2(b)
     wetwidth_old(1:2)=wetwidth_old2(1)
-    wetwidth_old((n2+3):(n2+4)) = wetwidth_old2(n2)
+    wetwidth_old((b+3):(b+4)) = wetwidth_old2(b)
     D(1:2)=D2(1)
-    D((n2+3):(n2+4))=D2(n2)
+    D((b+3):(b+4))=D2(b)
     D_old(1:2)=D2_old(1)
-    D_old((n2+3):(n2+4))=D2_old(n2)
+    D_old((b+3):(b+4))=D2_old(b)
     wset(1:2)=wset2(1)
-    wset(n2+3:n2+4)=wset2(n2)
+    wset(b+3:b+4)=wset2(b)
     !!If I cut diffusion at the mouth, mass conservation seems much better - weird, might be a bug deeper in my code?
     !D(1:3)=0._dp
     !D_old(1:3)=0._dp
 
 
-    IF(QH2(1)>0._dp) THEN
+    IF(Q2(1)>0._dp) THEN
         C_old(1)=Cmouth
         C_old(2)=Cmouth !0.5_dp*(Cmouth+C_old(3))
     ELSE
@@ -1706,10 +1701,10 @@ subroutine susconc_up35(n2,DT, A2, QH2, QH2_old, delX,C2, U2, Qe2,Qe2_old, Qd2, 
         C_old(1)=C_old(3) !max(2._dp*C_old(2) - C_old(3),0._dp )
     END IF
 
-    IF(QH2(n2)>0._dp) THEN
-        C_old((n2+3):(n2+4)) = C_old2(n2) !0._dp !Criver 
+    IF(Q2(b)>0._dp) THEN
+        C_old((b+3):(b+4)) = C_old2(b) !0._dp !Criver 
     ELSE
-        C_old((n2+3):(n2+4)) = Criver 
+        C_old((b+3):(b+4)) = Criver 
     END IF
 
 
@@ -1720,7 +1715,7 @@ subroutine susconc_up35(n2,DT, A2, QH2, QH2_old, delX,C2, U2, Qe2,Qe2_old, Qd2, 
     !The old Flux
     FL_old=Q_old*C_old
     !Useful for limiter, Hundsdorfer
-    DO i=2,n2+3
+    DO i=2,b+3
         theta(i)=(FL_old(i)-FL_old(i-1))/(FL_old(i+1)-FL_old(i))  
         !Catch special cases - theta = nan or 0
         IF(isnan(theta(i))) THEN
@@ -1741,17 +1736,13 @@ subroutine susconc_up35(n2,DT, A2, QH2, QH2_old, delX,C2, U2, Qe2,Qe2_old, Qd2, 
     END DO
 
     !Calculate fluxes, with limiting -- 3rd order without limiting
-    DO i=2, n2+2
+    DO i=2, b+2
         IF(0.5_dp*(Q_old(i)*C_old(i)+Q_old(i+1)*C_old(i+1))>=0._dp) THEN
             limi(i)=max(0._dp, min(1._dp, 1._dp/3._dp+1._dp/6._dp*theta(i) , mu_lim*theta(i)))
-            !limi(i)= 0.5_dp*(theta(i)+abs(theta(i)))/(1._dp+abs(theta(i)))
-            !if((i>n2).or.(i<4).or.(.false.)) limi(i)=0._dp !Force the boundaries to use an upwind flux
-            FL1(i)= FL_old(i)+limi(i)*(FL_old(i+1)-FL_old(i)) !(1._dp/6._dp)*( 2._dp*Q_old(i+1)*C_old(i+1) + 5._dp*Q_old(i)*C_old(i) -Q_old(i-1)*C_old(i-1)) 
+            FL1(i)= FL_old(i)+limi(i)*(FL_old(i+1)-FL_old(i))  
         ELSE
             limi(i)=max(0._dp, min(1._dp, 1._dp/3._dp+1._dp/(6._dp*theta(i+1)) , mu_lim/theta(i+1)))
-            !limi(i)= 0.5_dp*(1._dp/theta(i+1)+abs(1._dp/theta(i+1)))/(1._dp+abs(1._dp/theta(i+1)))
-            !if((i>n2).or.(i<4).or.(.false.)) limi(i)=0._dp !Force the boundaries to use an upwind flux
-            FL1(i)= ( FL_old(i+1)+limi(i)*(FL_old(i)-FL_old(i+1)) ) ! (1._dp/6._dp)*( 2._dp*Q_old(i)*C_old(i) + 5._dp*Q_old(i+1)*C_old(i+1) -Q_old(i+2)*C_old(i+2)) 
+            FL1(i)= ( FL_old(i+1)+limi(i)*(FL_old(i)-FL_old(i+1)) )  
         END IF
     END DO
 
@@ -1760,15 +1751,7 @@ subroutine susconc_up35(n2,DT, A2, QH2, QH2_old, delX,C2, U2, Qe2,Qe2_old, Qd2, 
     diag=0._dp
     rhs=0._dp
     !Calculate C at the next half time step, predictor style
-    DO i=3, n2+2
-        !C(i) = (0.5_dp*DT)/(0.5_dp*(A(i)+A(i)))*(Area_old(i)*C_old(i)/(DT*0.5_dp) + Qe_old(i) -wset*C_old(i)*wetwidth_old(i) & !Source Terms
-        !C(i) = ((0.5_dp*(A(i)+Area_old(i)))/(0.5_dp*DT)+wset*0.5_dp*(wetwidth_old(i)+wetwidth(i)))**(-1._dp)*&  !Constant of C(i), including implicit settling
-        !(Area_old(i)*C_old(i)/(DT*0.5_dp) &  !Unsteady
-        !+ Qe(i) & !Erosion at half time (Source Terms)
-        !- 1._dp/delX*( (FL1(i)-FL1(i-1)) - &  !Advection
-        !(0.5_dp*(Area_old(i+1)*D_old(i+1)+Area_old(i)*D_old(i))*(C_old(i+1)-C_old(i))/delX - & !Diffusion
-        !0.5_dp*(Area_old(i)*D_old(i)+Area_old(i-1)*D_old(i-1))*(C_old(i)-C_old(i-1))/delX )) ) !Diffusion
-
+    DO i=3, b+2
         upper(i)=-0.25_dp*(Area_old(i+1)*D(i+1)+Area_old(i)*D(i)+A(i+1)*D(i+1)+A(i)*D(i))*1._dp/delX**2 !Diffusion
         lower(i)=-0.25_dp*(Area_old(i)*D(i)+Area_old(i-1)*D(i-1)+A(i)*D(i)+A(i-1)*D(i-1))*1._dp/delX**2 !Diffusion
         diag(i)=(0.5_dp*(A(i)+Area_old(i)))/(0.5_dp*DT)+& !Time derivative
@@ -1781,46 +1764,36 @@ subroutine susconc_up35(n2,DT, A2, QH2, QH2_old, delX,C2, U2, Qe2,Qe2_old, Qd2, 
     END DO
 
 
-
-
     !Mouth boundary conditions for the half step -- we impose zero gradient if the flow is
     !outward, and a mouth boundary condition otherwise
     IF(Q_old(3)>0._dp) THEN
-        !C(1)=Cmouth
         diag(1)=1._dp
         rhs(1)=Cmouth
 
-        !C(2)=Cmouth !0.5_dp*(Cmouth+C(3))
         diag(2)=1._dp
         rhs(2)=Cmouth
     ELSE
-        !C(2)=C(3) !max(2._dp*C(3) -C(4), 0._dp)
         diag(2)=1._dp
         upper(2)=-1._dp
 
-        !C(1)=C(2) !max(2._dp*C(2)-C(3), 0._dp)
         diag(1)=1._dp
         upper(1)=-1._dp
     END IF
 
     !River boundary conditions for the half step -- we impose zero gradient if the flow is
     !outward, and a river boundary condition otherwise
-    IF(Q_old(n2+2)>0._dp) THEN
-        !C(n2+3)=C(n2+2)
-        diag(n2+3)=1._dp
-        lower(n2+3)=-1._dp
+    IF(Q_old(b+2)>0._dp) THEN
+        diag(b+3)=1._dp
+        lower(b+3)=-1._dp
 
-        !C(n2+4)=C(n2+3)
-        diag(n2+4)=1._dp
-        lower(n2+4)=-1._dp
+        diag(b+4)=1._dp
+        lower(b+4)=-1._dp
     ELSE
-        !C(n2+3)=Criver
-        diag(n2+3)=1._dp
-        rhs(n2+3)=Criver
+        diag(b+3)=1._dp
+        rhs(b+3)=Criver
 
-        !C(n2+4)=Criver
-        diag(n2+4)=1._dp
-        rhs(n2+4)=Criver
+        diag(b+4)=1._dp
+        rhs(b+4)=Criver
     END IF
 
     usef1=lower
@@ -1828,30 +1801,30 @@ subroutine susconc_up35(n2,DT, A2, QH2, QH2_old, delX,C2, U2, Qe2,Qe2_old, Qd2, 
     usef3=upper
     usef4=rhs
     !Solve it
-    call dgtsv(n2+4,1, lower(2:n2+4), diag(1:n2+4), upper(1:n2+3), rhs(1:n2+4),n2+4, info)
+    call dgtsv(b+4,1, lower(2:b+4), diag(1:b+4), upper(1:b+3), rhs(1:b+4),b+4, info)
     Cpred=rhs
     IF(info.ne.0) THEN
         PRINT*, 'info .ne. 0 in susconc_up35 , pred step', info
     END IF
 
-    DO i = 1, n2+4
+    DO i = 1, b+4
         Flag=isnan(Cpred(i))
         IF(Flag) THEN
             PRINT*, "Cpred is NAN"
             PRINT*, Q_old
             PRINT*, "................"
-            PRINT*, A2
+            PRINT*, Area
             PRINT*, Qd2
             PRINT*, Qe2
             PRINT*,"........MATRIX DIAGONALS.."
             PRINT*, '.......Lower.......'
-            PRINT*, usef1(2:n2+4)
+            PRINT*, usef1(2:b+4)
             PRINT*, '.......Main.......'
-            PRINT*, usef2(1:n2+4)
+            PRINT*, usef2(1:b+4)
             PRINT*, '.......Upper.......'
-            PRINT*, usef3(1:n2+3)
+            PRINT*, usef3(1:b+3)
             PRINT*, '.......RHS.......'
-            PRINT*, usef4(1:n2+4)
+            PRINT*, usef4(1:b+4)
             PRINT*, '.......FL1.......'
             PRINT*, FL1
             PRINT*, '.......theta.......'
@@ -1866,7 +1839,7 @@ subroutine susconc_up35(n2,DT, A2, QH2, QH2_old, delX,C2, U2, Qe2,Qe2_old, Qd2, 
     !lecture notes from Hundsdorfer, page 
     Fl_old=QH*Cpred
     !Useful for limiter
-    DO i=2,n2+3
+    DO i=2,b+3
         theta(i)=(FL_old(i)-FL_old(i-1))/(FL_old(i+1)-FL_old(i))  
         
         !Catch special cases - theta = nan or 0
@@ -1888,16 +1861,12 @@ subroutine susconc_up35(n2,DT, A2, QH2, QH2_old, delX,C2, U2, Qe2,Qe2_old, Qd2, 
     END DO
 
     !Calculate fluxes, with limiting -- 3rd order without limiting
-    DO i=2, n2+2
+    DO i=2, b+2
         IF(0.5_dp*(QH(i)*Cpred(i)+QH(i+1)*Cpred(i+1))>=0._dp) THEN
             limi(i)=max(0._dp, min(1._dp, 1._dp/3._dp+1._dp/6._dp*theta(i) , mu_lim*theta(i)))
-            !limi(i)= 0.5_dp*(theta(i)+abs(theta(i)))/(1._dp+abs(theta(i)))
-            !if((i>n2).or.(i<4).or.(.false.)) limi(i)=0._dp !Force the boundaries to use an upwind flux
             FL1(i)= FL_old(i)+limi(i)*(FL_old(i+1)-FL_old(i)) 
         ELSE
             limi(i)=max(0._dp, min(1._dp, 1._dp/3._dp+1._dp/(6._dp*theta(i+1)) , mu_lim/theta(i+1)))
-            !limi(i)= 0.5_dp*(1._dp/theta(i+1)+abs(1._dp/theta(i+1)))/(1._dp+abs(1._dp/theta(i+1)))
-            !if((i>n2).or.(i<4).or.(.false.)) limi(i)=0._dp !Force the boundaries to use an upwind flux
             FL1(i)= ( FL_old(i+1)+limi(i)*(FL_old(i)-FL_old(i+1)) )  
         END IF
     END DO
@@ -1909,58 +1878,47 @@ subroutine susconc_up35(n2,DT, A2, QH2, QH2_old, delX,C2, U2, Qe2,Qe2_old, Qd2, 
     lower=0._dp
     rhs=0._dp
 
-    DO i=3, n2+2
-        !C(i) = DT/A(i)*(Area_old(i)*C_old(i)/DT + Qe(i) -wset*Cpred(i)*0.5_dp*(wetwidth(i) +wetwidth_old(i)) & !Source Terms
-        !- 1._dp/delX*( (FL1(i)-FL1(i-1)) - &  !Advection
-        !(0.25_dp*(Area_old(i+1)*D_old(i+1)+Area_old(i)*D_old(i)+A(i+1)*D(i+1)+A(i)*D(i))*(Cpred(i+1)-Cpred(i))/delX - & !Diffusion
-        !0.25_dp*(Area_old(i)*D_old(i)+Area_old(i-1)*D_old(i-1)+ A(i)*D(i)+A(i-1)*D(i-1))*(Cpred(i)-Cpred(i-1))/delX )) ) !Diffusion
+    DO i=3, b+2
         upper(i)= -0.5_dp*0.5_dp*(0.5_dp*(A(i+1)+Area_old(i+1))*D(i+1) +0.5_dp*(A(i)+Area_old(i))*D(i))/delX**2 !Diffusion
         lower(i)= -0.5_dp*0.5_dp*(0.5_dp*(A(i)+Area_old(i))*D(i) +0.5_dp*(A(i-1)+Area_old(i-1))*D(i-1))/delX**2 !Diffusion
         diag(i)= A(i)/DT & !Unsteady
                 -upper(i) - lower(i) & !Diffusion
                 +0.5_dp*min(wset(i)*0.5_dp*(wetwidth(i) +wetwidth(i)), 0.5_dp*(Area_old(i)+A(i))/DT) !Deposition
         rhs(i) = Area_old(i)*C_old(i)/DT & !Unsteady
-                !+ Qe(i) -min(wset(i)*0.5_dp*(wetwidth(i) +wetwidth(i)), 0.5_dp*(Area_old(i)+A(i))/DT)*Cpred(i) & !Erosion and deposition
                 + Qe(i)*6._dp/8._dp +1._dp/8._dp*(Qe(i+1)+Qe(i-1)) & !Erosion 
                 -0.5_dp*min(wset(i)*0.5_dp*(wetwidth(i) +wetwidth(i)), 0.5_dp*(Area_old(i)+A(i))/DT)*C_old(i) & ! deposition
                 - 1._dp/delX*(FL1(i)-FL1(i-1)) & !Advection
                 -upper(i)*C_old(i+1) +upper(i)*C_old(i) +lower(i)*C_old(i) - lower(i)*C_old(i-1) ! Diffusion
     END DO
 
+    ! Boundary conditions. If there is inflow at the downstream boundary, then
+    ! impose a value of Cmouth. Otherwise, use a zero gradient
     IF(QH(3)>0._dp) THEN
-        !C(1)=Cmouth
         diag(1)=1._dp
         rhs(1)=Cmouth
-        !C(2)=Cmouth !0.5_dp*(Cmouth+C(3))
         diag(2)=1._dp
         rhs(2)=Cmouth
     ELSE
-        !C(2)=C(3) !max(2._dp*C(3) -C(4), 0._dp)
         diag(2)=1._dp
         upper(2)=-1._dp
-        !C(1)=C(2) !max(2._dp*C(2)-C(3), 0._dp)
         diag(1)=1._dp
         upper(1)=-1._dp
     END IF
 
-    !River boundary conditions for the half step -- we impose zero gradient if the flow is
-    !outward, and a river boundary condition otherwise
-    IF(QH(n2+2)>0._dp) THEN
-        !C(n2+3)=C(n2+2)
-        diag(n2+3)=1._dp
-        lower(n2+3)=-1._dp
+    ! River boundary conditions for the half step -- we impose zero gradient if the flow is
+    ! outward, and a river boundary condition otherwise
+    IF(QH(b+2)>0._dp) THEN
+        diag(b+3)=1._dp
+        lower(b+3)=-1._dp
 
-        !C(n2+4)=C(n2+3)
-        diag(n2+4)=1._dp
-        lower(n2+4)=-1._dp
+        diag(b+4)=1._dp
+        lower(b+4)=-1._dp
     ELSE
-        !C(n2+3)=Criver
-        diag(n2+3)=1._dp
-        rhs(n2+3)=Criver
+        diag(b+3)=1._dp
+        rhs(b+3)=Criver
 
-        !C(n2+4)=Criver
-        diag(n2+4)=1._dp
-        rhs(n2+4)=Criver
+        diag(b+4)=1._dp
+        rhs(b+4)=Criver
     END IF
 
     usef1=lower
@@ -1968,17 +1926,17 @@ subroutine susconc_up35(n2,DT, A2, QH2, QH2_old, delX,C2, U2, Qe2,Qe2_old, Qd2, 
     usef3=upper
     usef4=rhs
 
-    call dgtsv(n2+4,1, lower(2:n2+4), diag(1:n2+4), upper(1:n2+3), rhs(1:n2+4),n2+4, info)
-    !Update C2 - C2 holds the sediment concentration.
-    C2(1:n2)=rhs(3:n2+2) 
+    call dgtsv(b+4,1, lower(2:b+4), diag(1:b+4), upper(1:b+3), rhs(1:b+4),b+4, info)
+    !Update C - C holds the sediment concentration.
+    C(1:b)=rhs(3:b+2) 
 
     !Record the boundary fluxes - useful for checking conservation.
     pars_out(1)=FL1(2) - &  !Advection
             0.25_dp*((A(3)+Area_old(3))*D(3) +(A(3-1)+Area_old(3-1))*D(3-1))/delX*0.5_dp* & !Diffusion coeff
             ((C_old(3)-C_old(2))+(rhs(3)-rhs(2))) !Sus gradient
-    pars_out(2)=FL1(n2+2) - &  !Advection
-            0.25_dp*((A(n2+3)+Area_old(n2+3))*D(n2+3) +(A(n2+3-1)+Area_old(n2+3-1))*D(n2+3-1))/delX*0.5_dp* & !Diffusion coef
-            ((C_old(n2+3)-C_old(n2+2))+(rhs(n2+3)-rhs(n2+2))) !Sus gradient
+    pars_out(2)=FL1(b+2) - &  !Advection
+            0.25_dp*((A(b+3)+Area_old(b+3))*D(b+3) +(A(b+3-1)+Area_old(b+3-1))*D(b+3-1))/delX*0.5_dp* & !Diffusion coef
+            ((C_old(b+3)-C_old(b+2))+(rhs(b+3)-rhs(b+2))) !Sus gradient
 
 
     IF(info.ne.0) THEN
@@ -1988,77 +1946,71 @@ subroutine susconc_up35(n2,DT, A2, QH2, QH2_old, delX,C2, U2, Qe2,Qe2_old, Qd2, 
     ! Hundsdorfer states that the use of eps in theta (for the limiter) can allow
     ! negative values of order eps. Let's get rid of them in a mass conservative
     ! way, by taking the sediment from the upwind cross-section.
-    DO i=1, n2
-        IF((i>1).AND.(i<n2)) THEN
-            IF(C2(i)<0._dp) THEN
+    DO i=1, b
+        IF((i>1).AND.(i<b)) THEN
+            IF(C(i)<0._dp) THEN
                 ii=int(sign(1._dp, U2(i)))
-                ! Note the different indexing of A vs C2 -- because the former
+                ! Note the different indexing of A vs C -- because the former
                 ! has 2 'ghost' points on each boundary. 
-                C2(i-ii)=C2(i-ii)-A(i+2)*C2(i)/A(i-ii+2)
-                C2(i)=0._dp
+                C(i-ii)=C(i-ii)-A(i+2)*C(i)/A(i-ii+2)
+                C(i)=0._dp
             END IF
         ELSE
             IF(i==1) THEN
-                IF(C2(i)<0._dp) THEN
+                IF(C(i)<0._dp) THEN
                     ii=-1
-                    C2(i-ii)=C2(i-ii)-A(i+2)*C2(i)/A(i-ii+2)
-                    C2(i)=0._dp
+                    C(i-ii)=C(i-ii)-A(i+2)*C(i)/A(i-ii+2)
+                    C(i)=0._dp
                 END IF 
             END IF
-            IF(i==n2) THEN
-                IF(C2(i)<0._dp) THEN
+            IF(i==b) THEN
+                IF(C(i)<0._dp) THEN
                     ii=1
-                    C2(i-ii)=C2(i-ii)-A(i+2)*C2(i)/A(i-ii+2)
-                    C2(i)=0._dp
+                    C(i-ii)=C(i-ii)-A(i+2)*C(i)/A(i-ii+2)
+                    C(i)=0._dp
                 END IF 
             END IF
         END IF
     END DO
 
-    IF(minval(C2)<0._dp) THEN 
-        PRINT*, "min Sediment conc <0", minval(C2),  maxval(C_old2), minval(C_old2), maxval(U2), minval(U2)
-        PRINT*, "..........minloc C is", minloc(C2), "............ depth is =",A2(minloc(C2))/wetwidth2(minloc(C2))
-        PRINT*, C_old(minloc(C2)+2), C_old(minloc(C2)-1+2), C_old(minloc(C2)+1+2), maxval(Qe2), minval(Qe2),&
+    IF(minval(C)<0._dp) THEN 
+        PRINT*, "min Sediment conc <0", minval(C),  maxval(C_old2), minval(C_old2), maxval(U2), minval(U2)
+        PRINT*, "..........minloc C is", minloc(C), "............ depth is =",Area(minloc(C))/wetwidth2(minloc(C))
+        PRINT*, C_old(minloc(C)+2), C_old(minloc(C)-1+2), C_old(minloc(C)+1+2), maxval(Qe2), minval(Qe2),&
                 maxval(Qd2), minval(Qd2)
-        !print*, ">>>>>>>>>>>>>"
-        !print*, C
-        !print*, A !diag-(abs(up)+abs(lo))
-        DO i=1, n2
-            IF(C2(i)<0._dp) THEN
-                IF(abs(C2(i))<10._dp**(-10)) THEN !This could just be due to round off error in the matrix solver - fix it.
-                    C2(i)=0._dp
+        
+        DO i=1, b
+            IF(C(i)<0._dp) THEN
+                IF(abs(C(i))<10._dp**(-10)) THEN !This could just be due to round off error in the matrix solver - fix it.
+                    C(i)=0._dp
                 ELSE
-                    print*, "C2 is < 0; violation is", abs(C2(i))
+                    print*, "C is < 0; violation is", abs(C(i))
                     !stop
                 END IF
             END IF
         END DO
     END IF
 
-    !DO i=1, n
-    !IF(C(i)<0._dp) C(i)=0._dp
-    !END DO
 
-    DO i = 1, n2
-        Flag=isnan(C2(i))
+    DO i = 1, b
+        Flag=isnan(C(i))
         IF(Flag) THEN
             PRINT*, "sedconc is NAN"
             PRINT*, U2
             PRINT*, "................"
-            PRINT*, A2
+            PRINT*, Area
             PRINT*, Qd2
             PRINT*, Qe2
            
             PRINT*,"........MATRIX DIAGONALS.."
             PRINT*, '.......Lower.......'
-            PRINT*, usef1(2:n2+4)
+            PRINT*, usef1(2:b+4)
             PRINT*, '.......Main.......'
-            PRINT*, usef2(1:n2+4)
+            PRINT*, usef2(1:b+4)
             PRINT*, '.......Upper.......'
-            PRINT*, usef3(1:n2+3)
+            PRINT*, usef3(1:b+3)
             PRINT*, '.......RHS.......'
-            PRINT*, usef4(1:n2+4)
-            !EXIT
+            PRINT*, usef4(1:b+4)
             
             STOP
         END IF

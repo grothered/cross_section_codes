@@ -17,12 +17,12 @@ INTEGER:: a, b, i,j, m, p, o,d2,d1, ii, n, i1, jj1, dlength, jmax, writfreq,writ
 REAL(dp):: longt,longt1, cfl1, tmp1
 REAL(dp):: bed,bed_old,bed_Vold,bed_oldrefit, ys,ys_oldrefit, mxdeps, fs,fs_g,a_ref, ws, waters, rough_coef 
 REAL(dp):: Width, Area, bottom, bottom_old,wid_old, Q,Q2, Q2_old,& 
-           dBdh,inuc,NN,taus,taus_g, Qsav, Asav, &
+           dBdh,inuc,NN,taus,taus_g, Qsav, A2, &
            waters_avg,waters_avg_old, waters_old, tsav,C_old, &
-           Area_old, UU_old,acUdlast, NN_old, NN_old2, taus_old2, & 
+           Area_old, U2_old,acUdlast, NN_old, NN_old2, taus_old2, & 
            NN_last, bedl, bedu, ysl, ysu, diff1D, diff1D_old, Q_old, Q2H, Q2H_dT, useme1,useme2, & 
            wset_tmp, Q2_geo, recrd
-REAL(dp)::delT,delX, wset, wetwidth, wetwidth_old, DT_old, t, DT, tlast, UU, vels,vels_old, & 
+REAL(dp)::delT,delX, wset, wetwidth, wetwidth_old, DT_old, t, DT, tlast, U2, vels,vels_old, & 
             velslast,taucrit_dep, Qe,Qe_old, Qbed, QbedI, dQbedI, dQbedIp, filler, dqbeddx
 REAL(dp)::  R, E,E_old, D, C, q1, rmu,bt,el,x,w,slopes, wt, wt2, vegdrag, taucrit, Cdist, Cdist_old,& 
             Cdist_in, taucrit_dep_ys, dst, qb_G
@@ -50,15 +50,15 @@ NAMELIST /inputdata2/ a, b, jmax, writfreq, t,longt, delX, wset, seabuf, LF,  hl
 ALLOCATABLE bed(:,:),bed_old(:,:),bed_Vold(:,:),bed_oldrefit(:,:), ys(:,:),ys_oldrefit(:,:),& 
             mxdeps(:,:), fs(:,:), fs_g(:,:),a_ref(:,:), waters(:), waters_old(:),&
             l(:), u(:), morbl(:),morbu(:), recrd(:), & 
-            morbl_old(:),morbu_old(:), dbdh(:,:),rmu(:), slopes(:,:), Qsav(:), Asav(:),& 
+            morbl_old(:),morbu_old(:), dbdh(:,:),rmu(:), slopes(:,:), Qsav(:), A2(:),& 
             waters_avg(:),waters_avg_old(:), taucrit_dep(:,:,:),dst(:,:,:), wt(:),wt2(:),&
             vegdrag(:,:), taucrit(:,:,:), wset_tmp(:),& 
             taucrit_dep_ys(:,:), mthdta(:,:), C_old(:), Area_old(:),&
-            UU_old(:), wetwidth(:),wetwidth_old(:),& 
+            U2_old(:), wetwidth(:),wetwidth_old(:),& 
             QbedI(:), dQbedI(:), dqbeddx(:,:),dQbedIp(:), qb_G(:,:), &
             filler(:), diff1D(:), diff1D_old(:), Q_old(:), Q1in(:),&
             Vol1(:),pars_out(:),  Width(:),Area(:),bottom(:), bottom_old(:),wid_old(:),&
-            Q(:),Q2(:),Q2_old(:), R(:),E(:),E_old(:), D(:),C(:),UU(:),inuc(:),NN(:,:), &
+            Q(:),Q2(:),Q2_old(:), R(:),E(:),E_old(:), D(:),C(:),U2(:),inuc(:),NN(:,:), &
             taus(:,:), taus_g(:,:), vels(:,:), vels_old(:,:), acUdlast(:,:), velslast(:,:), &
             NN_old(:,:), NN_old2(:,:),taus_old2(:,:), NN_last(:,:), Q2H(:), Q2H_dT(:), Q2_geo(:), &
              x(:), Cdist(:,:), Cdist_old(:,:), Cdist_in(:,:), Qe(:,:), Qe_old(:,:), Qbed(:,:), ws(:), & 
@@ -76,12 +76,12 @@ ALLOCATE( bed(a,b),bed_old(a,b),bed_Vold(a,b),bed_oldrefit(a,b), ys(a,b),ys_oldr
           mxdeps(a,b),fs(a,b),fs_g(a,b),a_ref(a,b), ws(b), waters(b), waters_old(b),l(b), u(b), &
           morbl(b),morbu(b) ,morbl_old(b),& 
           morbu_old(b) ,taus(a,b), taus_g(a,b), vels(a,b),vels_old(a,b), Cdist(a,b),Cdist_old(a,b),Cdist_in(a,b), & 
-          C_old(b), Area_old(b), UU_old(b), Qe(a,b),Qe_old(a,b), Qbed(a,b), QbedI(b), dQbedI(b),dQbedIp(0:b),& 
+          C_old(b), Area_old(b), U2_old(b), Qe(a,b),Qe_old(a,b), Qbed(a,b), QbedI(b), dQbedI(b),dQbedIp(0:b),& 
           filler(-1:b+2), dqbeddx(a,b) , acUdlast(a,b),velslast(a,b), diff1D(b), diff1D_old(b),  &
           Width(b), Area(b), bottom(b),bottom_old(b),wid_old(b), Q(b), Q2(b), Q2_old(b), R(a), D(b),&
-          E(b),E_old(b), C(b), UU(b),dbdh(b,2) ,rmu(b), inuc(b), NN(a,b),NN_old(a,b), NN_old2(a,b),& 
+          E(b),E_old(b), C(b), U2(b),dbdh(b,2) ,rmu(b), inuc(b), NN(a,b),NN_old(a,b), NN_old2(a,b),& 
           taus_old2(a,b), NN_last(a,b), x(a),slopes(a,b),wetwidth(b), wetwidth_old(b), Q2H(0:b),Q2H_dT(0:b), Q2_geo(b),& 
-          wset_tmp(b), Asav(b), Qsav(b), waters_avg(b),waters_avg_old(b), taucrit_dep(a,b,layers), dst(a,b,0:layers+1), &
+          wset_tmp(b), A2(b), Qsav(b), waters_avg(b),waters_avg_old(b), taucrit_dep(a,b,layers), dst(a,b,0:layers+1), &
           wt(b), wt2(b), vegdrag(a,b), qb_G(0:a+1,b), recrd(0:a), & 
           taucrit(a,b,0:layers), taucrit_dep_ys(a,b) , bedl(b), bedu(b), ysl(b), ysu(b), Q_old(b), & 
           visc_bedp(a), visc_bedm(a), visc_bed(a,b), Q1in(1), Vol1(1),pars_out(10), too_steep(a) ) 
@@ -133,7 +133,7 @@ taus=0._dp
 taus_g=0._dp
 Area_old=Area
 C_old=Criver
-UU_old=0._dp+0._dp*Q
+U2_old=0._dp+0._dp*Q
 E_old=0._dp
 waters_old=-99999._dp !waters
 slopes=0._dp
@@ -227,7 +227,7 @@ DO j= 1, jmax
     DT_old=DT
     C_old=C
     Area_old=Area
-    UU_old=UU
+    U2_old=U2
     E_old=E
     diff1D_old=diff1D
     Q2_old=Q2
@@ -308,9 +308,9 @@ DO j= 1, jmax
     m=b
     !More half time-step variables
     CALL meanvars(bed(:,1:m),ys(:,1:m),waters_avg(1:m),fs(:,1:m),a,m,u(1:m),l(1:m),Width(1:m), & 
-            Asav(1:m), bottom(1:m),dbdh(1:m,1:2),.false.,hlim) !Figure out the average geometry
+            A2(1:m), bottom(1:m),dbdh(1:m,1:2),.false.,hlim) !Figure out the average geometry
     Q2H=Q2H_dT/DT !The conservative 'mean' discharge throughout the last time step, evaluated spatially at 1/2, 3/2, 5/2, ... i.e. halfway between the cross-sections
-    Q2H(0)= delX/DT*(Asav(1)-Area_old(1))*2._dp + Q2H(1) !Note the use of (Asav(1)-Area_old(1))*2 here--This should be Area(1)-Area_old(1) - except that Area(1) is not correct, because it has not yet adjusted for the change in Y(1) due to the boundary condition. However, Asav(1) has adjusted, and should be halfway between Area_old and Area. So this works quite well.
+    Q2H(0)= delX/DT*(A2(1)-Area_old(1))*2._dp + Q2H(1) !Note the use of (A2(1)-Area_old(1))*2 here--This should be Area(1)-Area_old(1) - except that Area(1) is not correct, because it has not yet adjusted for the change in Y(1) due to the boundary condition. However, A2(1) has adjusted, and should be halfway between Area_old and Area. So this works quite well.
     Q2=0.5_dp*(Q2H(1:b)+Q2H(0:(b-1))) !Q2H, evaluated spatially at 1, 2, 3, 4, ... i.e. at the cross-sections
     
     !!Define 'limited' version of Q2
@@ -410,7 +410,7 @@ DO j= 1, jmax
     DO i=(seabuf+1),b
         
         CALL calc_shear(u(i)-l(i)+1, DT, waters_avg(i), Q2_geo(i), bed(l(i):u(i),i), &
-                        ys(l(i):u(i),i),Asav(i), bottom(i), fs(l(i):u(i),i),rmu(i),inuc(i), &
+                        ys(l(i):u(i),i),A2(i), bottom(i), fs(l(i):u(i),i),rmu(i),inuc(i), &
                         taus(l(i):u(i),i),NN(l(i):u(i),i), j &
                         ,slopes(l(i):u(i),i), hlim,u(i)-l(i)+1, vegdrag(l(i):u(i),i), rho, & 
                         rhos, voidf, d50, g, kvis, vertical, lambdacon, tbston, ysl(i),ysu(i),bedl(i),bedu(i), & 
@@ -427,7 +427,7 @@ DO j= 1, jmax
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     DO i=(seabuf+1),b
         call calc_resus_bedload(u(i)-l(i)+1, DT, waters_avg(i), Q2_geo(i), bed(l(i):u(i),i),&
-                                      ys(l(i):u(i),i),Asav(i), fs(l(i):u(i),i),recrd(l(i):u(i)),&
+                                      ys(l(i):u(i),i),A2(i), fs(l(i):u(i),i),recrd(l(i):u(i)),&
                                       E(i), Cdist(l(i):u(i),i), wset, 1, taus(l(i):u(i),i), &
                                       taus_g(l(i):u(i),i),vels(l(i):u(i),i), j, slopes(l(i):u(i),i), &
                                       hlim,mor1,taucrit_dep(l(i):u(i),i,1:layers),layers, &
@@ -445,11 +445,11 @@ DO j= 1, jmax
     IF(.NOT.sus2d) THEN
     !!Calculate velocity
         DO i = 1,b
-            IF(Asav(i)>0._dp) THEN
-                UU(i)= Q2(i)/Asav(i)
+            IF(A2(i)>0._dp) THEN
+                U2(i)= Q2(i)/A2(i)
                 wetwidth(i)= ys(u(i),i)-ys(l(i),i)
             ELSE
-                UU(i)=0._dp
+                U2(i)=0._dp
                 wetwidth(i)=0._dp
             END IF
         END DO
@@ -463,12 +463,6 @@ DO j= 1, jmax
         !print*, 'INJECT C_RIVER'
         !END IF
         !Cmouth=E(seabuf+1)*rhos/wset
-        !Update suspended sediment concentration, 1D.  Do the update from tlast to t
-        !CALL susconc_up35(b-seabuf,DT, Area((seabuf+1):b), Q2((seabuf+1):b), Q2_old((seabuf+1):b), delX,C((seabuf+1):b), & 
-        !UU((seabuf+1):b),(E((seabuf+1):b)+E((seabuf+1):b))*rhos*.5_dp, E_old((seabuf+1):b)*rhos, &
-        !D((seabuf+1):b)*rhos, Cmouth , C_old((seabuf+1):b), Area_old((seabuf+1):b), UU_old((seabuf+1):b), &
-        !Criver, wset, wetwidth((seabuf+1):b),wetwidth_old((seabuf+1):b), diff1D((seabuf+1):b), diff1D_old((seabuf+1):b),.true.,&
-        !pars_out)
 
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         !Update suspended sediment concentration in 1D.  Do the update from tlast to t
@@ -477,10 +471,10 @@ DO j= 1, jmax
         wset_tmp(1:seabuf)=0._dp !No settling in the seabuf region
 
         ! NOTE: C, Cmouth, Criver etc are in g/L (or kg/m^3), NOT (m^3/m^3)
-        CALL susconc_up35(b,DT, Area, Q2, Q2_old, delX,C, UU,E*rhos, E_old*rhos, &
-                          D*rhos, Cmouth , C_old, Area_old, UU_old, &
+        CALL susconc_up35(b,DT, Area, Q2, Q2_old, delX,C, U2,E*rhos, E_old*rhos, &
+                          D*rhos, Cmouth , C_old, Area_old, &
                           Criver, wset_tmp, wetwidth,wetwidth_old,&
-                          diff1D, diff1D_old,.true., pars_out)
+                          diff1D, diff1D_old,pars_out)
 
         !!BEDLOAD IN THE 1D CASE
         QbedI=0._dp !Cross-sectionally integrated bedload flux
@@ -566,7 +560,7 @@ DO j= 1, jmax
         END IF
         
         !Morphological evolution routine
-        CALL update_bed(o-p+1, DT, waters_avg(i), Q2(i), bed(p:o,i),ys(p:o,i),Asav(i), &
+        CALL update_bed(o-p+1, DT, waters_avg(i), Q2(i), bed(p:o,i),ys(p:o,i),A2(i), &
                         recrd(p-1:o), E(i),&
                         D(i), Cdist_in(p:o,i) ,1 , taus(p:o,i),taus_g(p:o,i),&
                         j,slopes(p:o,i), hlim,mor1,taucrit_dep(p:o,i,1:layers),layers,&
@@ -631,7 +625,7 @@ DO j= 1, jmax
                 C=C_old
                 Q=Q_old
                 Area=Area_old
-                UU=UU_old
+                U2=U2_old
                 E=E_old
                 diff1D=diff1D_old
                 Q2=Q2_old
@@ -673,7 +667,7 @@ DO j= 1, jmax
     !!!!!!!Save variables
     IF((mod(j-1, writfreq1).EQ.0).AND.(mor1.EQ.mor)) THEN !.or.((mod(j,2).eq.0).AND.(t>72.*3600.))) THEN
         WRITE(1,*) Area
-        WRITE(23,*) Asav !QbedI
+        WRITE(23,*) A2 !QbedI
         WRITE(24,*) dbdh(:,1)
         WRITE(25,*) Q1in(1), Vol1(1), QS2in, VolS2, Source2
         WRITE(2,*) Q
