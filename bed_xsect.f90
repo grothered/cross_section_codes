@@ -169,8 +169,6 @@ SUBROUTINE calc_resus_bedload(a, dT, water, Q, bed,ys,Area, ff,recrd, E, C, wset
                 IF((Qe(i)<0._dp).OR.(isnan(Qe(i)))) THEN 
                     print*, "erosion < 0 or nan", taucrit(i, jj), tau_g(i), Qe(i)
                     print*, ".........."
-                    !print*, i, jj, ys(i), hs(i), taucrit_dep_ys(indd(i,:)), taucrit_dep(indd(i,:), jj), & 
-                    !    taucrit_dep(indd(i,:), jj+1)  
                     STOP
                 END IF
 
@@ -296,17 +294,14 @@ SUBROUTINE update_bed(a, dT, water, Q, bed,ys,Area, recrd, E, D,C,a2, tau,taug,&
     DIMENSION bed(a),ys(a), recrd(0:a),tau(a),taug(a), slopes(a),taucrit_dep(nos,layers),C(a),&
         taucrit_dep_ys(nos),taucrit(nos,0:layers), Qbed(a), qb_G(0:a+1), Qe(a), dqbeddx(a), bedlast(a), too_steep(a) ! 
 
-    INTEGER::i, j, bgwet, up, bfall, jj,dstspl, jjj, minX,maxX, storindex(a), info,ii, indd(a,layers), n(a), b(1)
+    INTEGER::i, j, bgwet, up, jj,jjj,storindex(a), info,ii, n(a), b(1)
     REAL(dp):: val, tmp1,dt_on_lambda 
     REAL(dp)::wslope, Qeold, tt, Qelocal, bed_tmp(0:a+1), ys_tmp(0:a+1)!, dqbeddx(a)
-    REAL(dp):: kkkk(a), tbst(a), f(a), Qd(a), h_rhs(0:a+1), newxs(a), newys(a), lcslp(a)
-    REAL(dp)::vinext,vi, vilast, epsl, epsu , mxslopes(a), erode, newslope(a), slim,p1, w1,w2,eqspc,dsts(a), dsts2(a), taud(a) &
-        , sllength(a), hlast1,hlast2, storeys(a), C_diag(a),C_upper(a),C_lower(a), C_out(a),dDdy(a), dst(a,0:(layers+1)), taucinc,& 
-        Bdist,p11,p12,taucrit_depnew(nos,layers),edvis(a),dedvisdy(a),edvisd(a),dedvisddy(a),d2hdy2(a),rnd(a),hss2_deriv(a), & 
-        h_diag(0:a+1), h_upper(0:a+1), h_lower(0:a+1), h_rhs2(0:a+1), vel(a), sinf(a), bednew(a),&
-        hss22(a),bedlast_tmp(a), sinsl(a), mu_d, Qtemp, useful(a), Ceq(a), h_lower2(0:a+1),h_upper2(0:a+1), &
-        ecu, zetamult(a), upper(a), lower(a), diag(a), rhs(a), dyf(a), upper2(a), lower2(a), diag2(a),rhs2(a), &
-        edvisy(a), dum1(a), dum2(a), dum3(a), dum4(a),spec(a),homo(a), sllength2(a)  
+    REAL(dp):: f(a), Qd(a), h_rhs(0:a+1), newxs(a), newys(a), lcslp(a)
+    REAL(dp):: h_diag(0:a+1), h_upper(0:a+1), h_lower(0:a+1), h_rhs2(0:a+1), &
+        bedlast_tmp(a), h_lower2(0:a+1),h_upper2(0:a+1), &
+        upper(a), lower(a), diag(a), rhs(a), dyf(a)
+          
 
     REAL(dp)::writout(a2), impcon, useme
     REAL(dp)::bandmat(7,0:a+1), dbeddyH(4,0:a), AFB(7,0:a+1), RRR(0:a+1), CCC(0:a+1), XXX(0:a+1,1), rcond, ferr, berr,work(3*(a+2))
@@ -560,7 +555,7 @@ SUBROUTINE update_bed(a, dT, water, Q, bed,ys,Area, recrd, E, D,C,a2, tau,taug,&
 
         IF(abs(bedlast_tmp(i)-bed(i))>0.1_dp) THEN
             print*, "bedjump in update_bed", i, bedlast_tmp(i)-bed(i), bedlast_tmp(i), bed(i), &
-                    tau(i), taug(i), Qe(i), C(i),&
+                    tau(i), taug(i), water-bed(i), water-bedlast_tmp(i), Qe(i), C(i),&
                     Qd(i), dqbeddx(i)
         END IF
     END DO
