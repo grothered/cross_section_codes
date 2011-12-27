@@ -2,11 +2,11 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! SIMPLE CASE OF A STRAIGHT CHANNEL
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-a = 10 !Number of points in each cross section
+a = 5 !Number of points in each cross section
 b = 30 !Number of cross sections
 delX = 50.0 !0.5 !The horizontal spacing between cross sections (m)
 
-jmax = 3000 !4000200 !3500000 ! Number of time steps
+jmax = 30000 !4000200 !3500000 ! Number of time steps
 t=0.0 !Starting time (s)
 longt= 30.0 !The time step in between cross sectional updates (s)
 writfreq = 10 ! Write output every writfreqth timestep
@@ -19,10 +19,10 @@ boundary_downstream_file = 'mouth' ! name of input file for downstream boundary 
 
 Qb = -0.0 !The river discharge (m^3/s)
 tr = 0.0475 !The tide range in the case that mouthread=.false. (m)
-Cmouth=0.00 !The concentration of sediment at the mouth boundary
+Cmouth=0.10 !The concentration of sediment at the mouth boundary (g/L)
 Criver=0.0 !The concentration of sediment at the river boundary
 eddis1D=00.0 !dimensionless eddy dispersion for 1D suspended sediment
-water_m=0.082 !The minimum initial water level (m)
+water_m=0.000 !The minimum initial water level (m)
 water_mthick=0.002 !The minimum initial thickness of water above the average bed level +hlim. Used to prevent dry starts.
 
 sus2d = .false. !Do we use the 2d sus sed solver? If .false., we use the 1D solver.
@@ -34,8 +34,6 @@ hlim = 0.001 !The depth at which we start to do funny things to avoid negative d
 mor = 1.0 ! The morphological factor
 
 burnin = 0.0 !The time in hours before morphological evolution begins
-LF = -1 !TURN ON/OFF Mixed LF and McCormack 1d longitudinal solver (ON = 0 ; OF = -1)
-lfkick = 0.3 !The depth at which we start 'blending' lax friedrichs into the solution, presuming that LF is positive
 v1coef= 0.0E-01 !Viscosity coefficient
 v4coef= 0.0E-04 !Viscosity coefficient
 
@@ -56,7 +54,7 @@ layers= 1 !The number of bed layers
 erconst= 0.2 ! = 0.047*(rhos-rho)*g*d50 The constant determining the critical shear and its increment
 lincrem=100.004 !The constant determining the distance between consecutive bed layers.
 lifttodrag = 0.0 !NOT YET SUPPORTED The lift to drag ratio
-rhos = 1480.0 !Density of solid sediment
+rhos = 2600.0 !Density of solid sediment
 voidf = 0.4 !The void fraction of the bed
 dsand = 0.000062 !The d_sand parameter in the van Rijn (2007) bedload equation
 d50 = 0.00031 !The median grain size for the bedload formula
@@ -64,13 +62,13 @@ alpha = 0.000 !Constant in the 'cohesive' suspended sediment erosion formula.
 resus_type = 'vanrijn' ! 'cohesive', 'vanrijn', 'smithmac' -- equation for resuspension
 bedload_type= 'mpm' ! 'vanrijn', 'mpm' -- equation for bedload
 
-Qbedon=.true. !Is bedload on?
+Qbedon=.false. !Is bedload on?
 talmon=.false. !If bedload is on, do we use a talmon lateral slope closure?
 
 norm = .false. !Is erosion directed normal to the bed
 normmov = .false. 
 vertical = .true. !Is the vertical shear (shiono and knight) method used - support for .false. is incomplete
-tbston = .true. !Switches on/off the sqrt(1+slp^2) term in the lateral shear equation, and corrects the cross-sectionally averaged friction slope accordingly
+tbston = .false. !Switches on/off the sqrt(1+slp^2) term in the lateral shear equation, and corrects the cross-sectionally averaged friction slope accordingly
 remesh = .false. !Only supported for no tendep, no bedload, no sus2d.
 remeshfreq = 500 !Frequency of above
 

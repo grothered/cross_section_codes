@@ -26,11 +26,11 @@ REAL(dp)::delT,delX, wset, wetwidth, wetwidth_old, DT_old, t, DT, tlast, U2, vel
             velslast,taucrit_dep, Qe,Qe_old, Qbed, QbedI, dQbedI, dQbedIp, filler, dqbeddx
 REAL(dp)::  R, E,E_old, D, C, q1, rmu,bt,el,x,w,slopes, wt, wt2, vegdrag, taucrit, Cdist, Cdist_old,& 
             Cdist_in, taucrit_dep_ys, dst, qb_G
-INTEGER:: l, u,k,kk, incount, count2, seabuf, LF, layers, bedwrite,&
+INTEGER:: l, u,k,kk, incount, count2, seabuf, layers, bedwrite,&
           remeshfreq,morbl,morbu,morbl_old,morbu_old, iost, too_steep
 REAL(dp):: Q1in, Vol1, QS2in, VolS2, Source2, pars_out, xxx, visc_bedp, visc_bedm, visc_bed 
 REAL(dp):: hlim , Qb, tr, mor,mor1,  mu, erconst, multa, aa,bb, cc, lifttodrag, & 
-    rho, mthdta, z0, rhos, burnin, lfkick ,&
+    rho, mthdta, z0, rhos, burnin, &
     voidf, dsand, d50, g, kvis,  lambdacon, alpha, cfl,man_nveg, Cmouth,& 
     Criver, water_m, water_mthick, veg_ht, &
     v1coef,v4coef, eddis1D,lincrem
@@ -40,8 +40,8 @@ CHARACTER(char_len):: boundary_downstream_file, friction_type, grain_friction_ty
                       bedload_type
 
 !Variables that are read in from the inputdata file
-NAMELIST /inputdata2/ a, b, jmax, writfreq, t,longt, delX, wset, seabuf, LF,  hlim, &
-     Qb, tr, mor, mu, erconst,lifttodrag, rho, rhos, burnin, lfkick,sus2d, LAKE, mouthread, & 
+NAMELIST /inputdata2/ a, b, jmax, writfreq, t,longt, delX, wset, seabuf, hlim, &
+     Qb, tr, mor, mu, erconst,lifttodrag, rho, rhos, burnin, sus2d, LAKE, mouthread, & 
     voidf, dsand, d50, g, kvis, norm, vertical, lambdacon, tbston, alpha, readin, cfl, &
      rough_coef, man_nveg, Cmouth, Criver, layers, bedwrite, remesh, remeshfreq, normmov,& 
      water_m, water_mthick, veg_ht, Qbedon, talmon, manning, v1coef,v4coef,eddis1D,lincrem, &
