@@ -145,77 +145,6 @@ wire<-function(lnths,cs1,xincrem,t){
 }
 
 	
-get1d<-function(l){
-	a=which(dir()=="Areas.out")	
-	b=which(dir()=="Discharge.out")
-	c=which(dir()=="times.out")
-	f= which(dir()=="Areafil.out")
-	g=which(dir()=="Qfil.out")
-	h=which(dir()=="Width.out")
-	j=which(dir()=="Rando.out")
-	
-	ds=scan(dir()[b],what="numeric")
-	d<<-matrix(as.numeric(ds),ncol=l,byrow=TRUE)
-	
-	As=scan(dir()[a],what="numeric")
-	A<<-matrix(as.numeric(As),ncol=l,byrow=TRUE)
-	
-	t<<-scan(dir()[c],what="numeric")
-		
-
-	Rs= scan(dir()[h],what="numeric")	
-	B<<-matrix(as.numeric(Rs),ncol=l,byrow=TRUE)
-	
-	rss= scan(dir()[j],what="numeric")	
-	Rando<<-matrix(as.numeric(rss),ncol=l,byrow=TRUE)	
-
-	Afs=scan(dir()[f],what="numeric")
-	Afils<<-matrix(as.numeric(Afs),ncol=l,byrow=TRUE)
-
-	Dfs=scan(dir()[g],what="numeric")
-	dfils<<-matrix(as.numeric(Dfs),ncol=l,byrow=TRUE)
-	
-	n=length(t)
-	det<<- (-as.numeric(t[1:(n-2)])+as.numeric(t[3:n]))/2
-	
-}
-
-
-
-
-gethy<-function(l, ...){
-	a= which(dir()== "waters1")
-	b= which(dir()== "discharge1")
-	#c=which(dir()=="widths")
-	#d= which(dir()=="bottom")
-	w=which(dir()=="water")
-	#s=which(dir()=="susconc")
-	t= which(dir()=="times")
-	#e= which(dir()=="erosion")	
-	#dee=which(dir()=="deposition")
-
-	a1<- scan(dir()[a], what= "numeric", ...)
-	b1<- scan(dir()[b], what= "numeric", ...)
-	#c1<- scan(dir()[c], what= "numeric", ...)
-	#d2<- scan(dir()[d], what="numeric", ...)	
-	w1<- scan(dir()[w], what="numeric", ...)
-	#s1<- scan(dir()[s],what="numeric", ...)
-	t1<- scan(dir()[t], what="numeric", ...)
-	#e1<-scan(dir()[e], what="numeric", ...)
-	#de1<- scan(dir()[dee],what="numeric", ...)	
-
-	A1<<- matrix(as.numeric(a1),ncol=l,byrow=TRUE)
-	d1<<- matrix(as.numeric(b1),ncol=l,byrow=TRUE)
-	#b1<<- matrix(as.numeric(c1), ncol=l,byrow=TRUE)
-	#bt<<- matrix(as.numeric(d2), ncol=l, byrow=TRUE)
-	w1<<- matrix(as.numeric(w1),ncol=l,byrow=TRUE)	
-	#s1<<- matrix(as.numeric(s1),ncol=l,byrow=TRUE)	
-	t1<<- as.numeric(t1)
-	#er<<- matrix(as.numeric(e1), ncol=l,byrow=TRUE)
-	#dep<<- matrix(as.numeric(de1), ncol=l, byrow=TRUE)
-
-	} 
-
 genread<-function(name, l, ...){
 	s=which(dir()==name)
 	s2=scan(dir()[s], what="numeric", ...)
@@ -224,54 +153,125 @@ genread<-function(name, l, ...){
 
 	}
 
-getmor<-function(l){
-	#a= which(dir()== "waters1")
-	#b= which(dir()== "discharge1")
-	c=which(dir()=="widths")
-	d= which(dir()=="bottom")
-	#w=which(dir()=="water")
-	s=which(dir()=="susconc")
-	t= which(dir()=="times")
-	e= which(dir()=="erosion")	
-	dee=which(dir()=="deposition")
+#get1d<-function(l){
+#	a=which(dir()=="Areas.out")	
+#	b=which(dir()=="Discharge.out")
+#	c=which(dir()=="times.out")
+#	f= which(dir()=="Areafil.out")
+#	g=which(dir()=="Qfil.out")
+#	h=which(dir()=="Width.out")
+#	j=which(dir()=="Rando.out")
+#	
+#	ds=scan(dir()[b],what="numeric")
+#	d<<-matrix(as.numeric(ds),ncol=l,byrow=TRUE)
+#	
+#	As=scan(dir()[a],what="numeric")
+#	A<<-matrix(as.numeric(As),ncol=l,byrow=TRUE)
+#	
+#	t<<-scan(dir()[c],what="numeric")
+#		
+#
+#	Rs= scan(dir()[h],what="numeric")	
+#	B<<-matrix(as.numeric(Rs),ncol=l,byrow=TRUE)
+#	
+#	rss= scan(dir()[j],what="numeric")	
+#	Rando<<-matrix(as.numeric(rss),ncol=l,byrow=TRUE)	
+#
+#	Afs=scan(dir()[f],what="numeric")
+#	Afils<<-matrix(as.numeric(Afs),ncol=l,byrow=TRUE)
+#
+#	Dfs=scan(dir()[g],what="numeric")
+#	dfils<<-matrix(as.numeric(Dfs),ncol=l,byrow=TRUE)
+#	
+#	n=length(t)
+#	det<<- (-as.numeric(t[1:(n-2)])+as.numeric(t[3:n]))/2
+#	
+#}
+#
+#
+#
+#
+#gethy<-function(l, ...){
+#	a= which(dir()== "waters1")
+#	b= which(dir()== "discharge1")
+#	#c=which(dir()=="widths")
+#	#d= which(dir()=="bottom")
+#	w=which(dir()=="water")
+#	#s=which(dir()=="susconc")
+#	t= which(dir()=="times")
+#	#e= which(dir()=="erosion")	
+#	#dee=which(dir()=="deposition")
+#
+#	a1<- scan(dir()[a], what= "numeric", ...)
+#	b1<- scan(dir()[b], what= "numeric", ...)
+#	#c1<- scan(dir()[c], what= "numeric", ...)
+#	#d2<- scan(dir()[d], what="numeric", ...)	
+#	w1<- scan(dir()[w], what="numeric", ...)
+#	#s1<- scan(dir()[s],what="numeric", ...)
+#	t1<- scan(dir()[t], what="numeric", ...)
+#	#e1<-scan(dir()[e], what="numeric", ...)
+#	#de1<- scan(dir()[dee],what="numeric", ...)	
+#
+#	A1<<- matrix(as.numeric(a1),ncol=l,byrow=TRUE)
+#	d1<<- matrix(as.numeric(b1),ncol=l,byrow=TRUE)
+#	#b1<<- matrix(as.numeric(c1), ncol=l,byrow=TRUE)
+#	#bt<<- matrix(as.numeric(d2), ncol=l, byrow=TRUE)
+#	w1<<- matrix(as.numeric(w1),ncol=l,byrow=TRUE)	
+#	#s1<<- matrix(as.numeric(s1),ncol=l,byrow=TRUE)	
+#	t1<<- as.numeric(t1)
+#	#er<<- matrix(as.numeric(e1), ncol=l,byrow=TRUE)
+#	#dep<<- matrix(as.numeric(de1), ncol=l, byrow=TRUE)
+#
+#	} 
 
-	#a1<- scan(dir()[a], what= "numeric")
-	#b1<- scan(dir()[b], what= "numeric")
-	c1<- scan(dir()[c], what= "numeric")
-	d2<- scan(dir()[d], what="numeric")	
-	#w1<- scan(dir()[w], what="numeric")
-	s1<- scan(dir()[s],what="numeric")
-	t1<- scan(dir()[t], what="numeric")
-	e1<-scan(dir()[e], what="numeric")
-	de1<- scan(dir()[dee],what="numeric")	
-
-	#A1<<- matrix(as.numeric(a1),ncol=l,byrow=TRUE)
-	#d1<<- matrix(as.numeric(b1),ncol=l,byrow=TRUE)
-	b1<<- matrix(as.numeric(c1), ncol=l,byrow=TRUE)
-	bt<<- matrix(as.numeric(d2), ncol=l, byrow=TRUE)
-	#w1<<- matrix(as.numeric(w1),ncol=l,byrow=TRUE)	
-	s1<<- matrix(as.numeric(s1),ncol=l,byrow=TRUE)	
-	t1<<- as.numeric(t1)
-	er<<- matrix(as.numeric(e1), ncol=l,byrow=TRUE)
-	dep<<- matrix(as.numeric(de1), ncol=l, byrow=TRUE)
-
-	} 
-
-
-
-
-
-
-
-getcs<- function(l, x, ...){
-	a=which(dir()=="sections")
-#	b=which(dir()=="lengths")
-	a1<- scan(dir()[a], what= "numeric", ...)
-#	b1<- scan(dir()[b], what="numeric", ...)
-	cs1<<- array(as.numeric(a1),dim=c(l,x,floor(length(a1)/(l*x))))
-#	lnths<<- array(as.numeric(b1),dim=c(l,x,floor(length(a1)/(l*x))))
-			}
-
+#getmor<-function(l){
+#	#a= which(dir()== "waters1")
+#	#b= which(dir()== "discharge1")
+#	c=which(dir()=="widths")
+#	d= which(dir()=="bottom")
+#	#w=which(dir()=="water")
+#	s=which(dir()=="susconc")
+#	t= which(dir()=="times")
+#	e= which(dir()=="erosion")	
+#	dee=which(dir()=="deposition")
+#
+#	#a1<- scan(dir()[a], what= "numeric")
+#	#b1<- scan(dir()[b], what= "numeric")
+#	c1<- scan(dir()[c], what= "numeric")
+#	d2<- scan(dir()[d], what="numeric")	
+#	#w1<- scan(dir()[w], what="numeric")
+#	s1<- scan(dir()[s],what="numeric")
+#	t1<- scan(dir()[t], what="numeric")
+#	e1<-scan(dir()[e], what="numeric")
+#	de1<- scan(dir()[dee],what="numeric")	
+#
+#	#A1<<- matrix(as.numeric(a1),ncol=l,byrow=TRUE)
+#	#d1<<- matrix(as.numeric(b1),ncol=l,byrow=TRUE)
+#	b1<<- matrix(as.numeric(c1), ncol=l,byrow=TRUE)
+#	bt<<- matrix(as.numeric(d2), ncol=l, byrow=TRUE)
+#	#w1<<- matrix(as.numeric(w1),ncol=l,byrow=TRUE)	
+#	s1<<- matrix(as.numeric(s1),ncol=l,byrow=TRUE)	
+#	t1<<- as.numeric(t1)
+#	er<<- matrix(as.numeric(e1), ncol=l,byrow=TRUE)
+#	dep<<- matrix(as.numeric(de1), ncol=l, byrow=TRUE)
+#
+#	} 
+#
+#
+#
+#
+#
+#
+#
+#getcs<- function(l, x, ...){
+#	a=which(dir()=="sections")
+##	b=which(dir()=="lengths")
+#	a1<- scan(dir()[a], what= "numeric", ...)
+##	b1<- scan(dir()[b], what="numeric", ...)
+#	cs1<<- array(as.numeric(a1),dim=c(l,x,floor(length(a1)/(l*x))))
+##	lnths<<- array(as.numeric(b1),dim=c(l,x,floor(length(a1)/(l*x))))
+#			}
+#
 
 #getvs<- function(l, x, ...){
 #	a=which(dir()=="vels")
