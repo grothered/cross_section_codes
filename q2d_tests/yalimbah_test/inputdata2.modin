@@ -60,7 +60,7 @@ d50 = 0.000032 !The median grain size for the bedload formula
 alpha = 0.0003 !Constant in the suspended sediment erosion formula.
 resus_type = 'cohesive' ! 'cohesive', 'vanrijn', 'smithmac' -- equation for resuspension
 bedload_type= 'vanrijn' ! 'vanrijn', 'mpm' -- equation for bedload
-
+bank_erosion_type='Delft' ! 'None' 
 
 Qbedon=.false. !Is bedload on?
 talmon=.true. !If bedload is on, do we use a talmon lateral slope closure?

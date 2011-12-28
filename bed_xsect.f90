@@ -275,6 +275,16 @@ SUBROUTINE calc_resus_bedload(a, dT, water, Q, bed,ys,Area, ff,recrd, E, C, wset
         + Qe(a)*(1._dp*((water-bed(a))/(bedu-bed(a))*(ysu-ys(a)) )+ys(a)-ys(a-1)) )
 
 
+    ! DEBUG
+    !IF(Qe(1).ne.Qe(2)) THEN
+    !    print*, 'Qe unequal on step:', counter
+    !    print*, 'Qe: ', Qe
+    !    print*, 'tau_g: ', tau_g
+    !    print*, 'bed: ', bed
+    !    print*, 'C: ', C
+    !    stop
+    !END IF
+
 END SUBROUTINE calc_resus_bedload
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -374,6 +384,15 @@ SUBROUTINE update_bed(a, dT, water, Q, bed,ys,Area, recrd, E, D,C,a2, tau,taug,&
             !print*, 'b ', mor*dT/(1.0_dp-voidf), maxval(Qe)
             IF(iii==1) bed = bed + (-dqbeddx + Qd - Qe)*mor*dT/(1._dp-voidf)
             IF(iii==2) bed = bedlast + (-dqbeddx + Qd - Qe)*mor*dT/(1._dp-voidf)
+
+            ! DEBUG
+            !IF(bed(1).ne.bed(2)) THEN
+            !    print*, 'Bed variation'
+            !    print*, bed
+            !    print*, Qd
+            !    print*, Qe
+            !    stop
+            !END IF
 
         ELSE !!USE POINTS WHICH MOVE IN THE DIRECTION OF THE VECTOR D-E
             print*, 'FIXME: Use of normmov is not consistent with the new definition of Qe &

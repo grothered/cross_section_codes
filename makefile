@@ -10,9 +10,7 @@ compiler_options = -fbounds-check -g -pg
 # know a better method to use in the algorithm.
 #compiler_options = -ffpe-trap=invalid,zero,overflow -fbounds-check -g -pg
 
-# Clean up at the end of the make
-clean: xsect q2d
-	rm *.o *.mod
+make_all: q2d xsect
 
 # This is to make the quasi2d model
 q2d: global_defs.o util_various.o Pizzutotry_correction.o hydro_xsect.o bed_xsect.o susconc6.o st_venant_solver.o driver_q2d.f90  
@@ -49,3 +47,6 @@ global_defs.o: global_defs.f90
 	gfortran -c  $(compiler_options)  $^
 
 
+# Clean up at the end of the make
+clean: xsect q2d
+	rm *.o *.mod

@@ -473,9 +473,9 @@ SUBROUTINE calc_shear(a, dT, water, Q, bed,ys,Area, bottom, ff,rmu,inuc,tau,NN,c
     END IF
 
     ! DEBUG
-    IF(mod(counter,1000).eq.0) THEN 
-        print*, wslope, rmu, ff(a/2), bedl, bedu, ysl, ysu
-    END IF
+    !IF(mod(counter,1000).eq.0) THEN 
+    !    print*, wslope, rmu, ff(a/2), bedl, bedu, ysl, ysu
+    !END IF
 
     IF(abs(wslope)>.1) print*, "|wslope| >.1", wslope, water-bottom, rmu, Q, Area, Q/Area
     IF(isnan(wslope)) print*, "wslope is nan", Q, A, water-bottom, rmu
@@ -549,22 +549,22 @@ SUBROUTINE calc_shear(a, dT, water, Q, bed,ys,Area, bottom, ff,rmu,inuc,tau,NN,c
         ! to ensure that INTEGRAL ( vel*(water-bed) ) dy = Q 
         IF((abs(Q)>0._dp).AND.(maxval(abs(vel))>0._dp)) THEN
             !if(counter>5011) print*, "we get to the correction of tau", maxval(vel),	
-            corfact=(Q/sum(0.5_dp*( vel*(water-bed) )*(& 
+            corfact=(Q/(0.5_dp*sum(( vel*(water-bed) )*(& 
                            (/1._dp*(ys(2)-ys(1) +1._dp*((water-bed(1))/(bedl-bed(1))*(ys(1)-ysl) )),&
                            (ys(3:a)-ys(1:(a-2))), & 
                            (1._dp*((water-bed(a))/(bedu-bed(a))*(ysu-ys(a)) )+ ys(a)-ys(a-1))/) )& 
-                           ))**2
+                           )))**2
             !corfact=1._dp
             tau = tau*corfact
             vel=vel*sqrt(corfact)
             ! DEBUG
-            IF(mod(counter,1000).eq.0) THEN
-               corfact= sum(0.5_dp*( vel*(water-bed) )*(& 
-                            (/1._dp*(ys(2)-ys(1) +1._dp*((water-bed(1))/(bedl-bed(1))*(ys(1)-ysl) )),&
-                            (ys(3:a)-ys(1:(a-2))), & 
-                            (1._dp*((water-bed(a))/(bedu-bed(a))*(ysu-ys(a)) )+ ys(a)-ys(a-1))/)))
-               print*, 'Corfact:', corfact, water-bed, vel, ys, (water-bed(a))/(bedu-bed(a))*(ysu-ys(a)) 
-            END IF
+            !IF(mod(counter,1000).eq.0) THEN
+            !   corfact= sum(0.5_dp*( vel*(water-bed) )*(& 
+            !                (/1._dp*(ys(2)-ys(1) +1._dp*((water-bed(1))/(bedl-bed(1))*(ys(1)-ysl) )),&
+            !                (ys(3:a)-ys(1:(a-2))), & 
+            !                (1._dp*((water-bed(a))/(bedu-bed(a))*(ysu-ys(a)) )+ ys(a)-ys(a-1))/)))
+            !   print*, 'Corfact:', corfact, water-bed, vel, ys, (water-bed(a))/(bedu-bed(a))*(ysu-ys(a)) 
+            !END IF
         ELSE
             tau=0._dp
             vel=0._dp
@@ -710,15 +710,18 @@ SUBROUTINE roughmult(aa,rmu, vel, Q, A, tbst,depths, ys, f, vegdrag, &
         rmutop=rmutop+ &
                (f(aa)/8._dp*vel(aa)**2*tbst(aa) + vegdrag(aa)*vel(aa)**2*depths(aa))*0.5_dp*&
                (ys(aa)-ys(aa-1) +2._dp*(water-bed(aa))/(bedu-bed(aa))*(ysu-ys(aa)))
+        ! Note that the treatment of the boundary edges is slightly different
+        ! in rmutop as compared with comparable integrations, like corfact and
+        ! E. 
 
         !Denominator 
         rmubot= (Q/A)**2*A*g  
         ! (roughness/depth)
         rmu= rmutop/rmubot
         ! DEBUG
-        IF(mod(counter,1000).eq.0) THEN
-            print*, 'roughmult', rmu, rmutop, rmubot, sum(vel)/(1.0_dp*aa), Q, A
-        END IF
+        !IF(mod(counter,1000).eq.0) THEN
+        !    print*, 'roughmult', rmu, rmutop, rmubot, sum(vel)/(1.0_dp*aa), Q, A
+        !END IF
     ELSE
         ! Default behaviour if there is no discharge
         !rmu=sum(f)/(8._dp*g*sum(depths)) !The mean value of (f/8g)/depth

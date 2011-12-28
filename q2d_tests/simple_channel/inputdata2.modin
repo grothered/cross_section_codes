@@ -10,7 +10,7 @@ jmax = 30000 !4000200 !3500000 ! Number of time steps
 t=0.0 !Starting time (s)
 longt= 30.0 !The time step in between cross sectional updates (s)
 writfreq = 10 ! Write output every writfreqth timestep
-bedwrite = 300 !20000 !Write bed geometry every bedwrite'th timestep
+bedwrite = 10 !20000 !Write bed geometry every bedwrite'th timestep
 
 readin=.true. !Do we read in initial geometry data from a file? 
 
@@ -61,6 +61,7 @@ d50 = 0.00031 !The median grain size for the bedload formula
 alpha = 0.000 !Constant in the 'cohesive' suspended sediment erosion formula.
 resus_type = 'vanrijn' ! 'cohesive', 'vanrijn', 'smithmac' -- equation for resuspension
 bedload_type= 'mpm' ! 'vanrijn', 'mpm' -- equation for bedload
+bank_erosion_type='None' ! 'Delft'
 
 Qbedon=.false. !Is bedload on?
 talmon=.false. !If bedload is on, do we use a talmon lateral slope closure?

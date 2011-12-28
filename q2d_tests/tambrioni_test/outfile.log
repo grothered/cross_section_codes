@@ -56,6 +56,7 @@
  GRAIN_FRICTION_TYPE="one                 ",
  RESUS_TYPE="vanrijn             ",
  BEDLOAD_TYPE="mpm                 ",
+ BANK_EROSION_TYPE="None                ",
  /
  Analytical water level mouth boundary needed
  #################
@@ -64,4 +65,4 @@
  #   Long timestep:    1.0000000000000000       Hydrodynamic timestep:    0.0000000000000000     
  #   cfl_local:   0.98999999999999999      cfl:   0.98999999999999999     
  ################
- Finished time =   71.088042613716595      j=         501
+ Finished time =   71.088915613038125      j=         501

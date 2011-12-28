@@ -6,7 +6,7 @@ getf<-function(l, ...){
 	d= which(dir()=="Bottom.1DO")
 	w=which(dir()=="Water.1DO")
 	s=which(dir()=="Susconc.1DO")
-	t= which(dir()=="Times.ODO")
+	t= which(dir()=="Times.0DO")
 	e= which(dir()=="Resuspension.1DO")	
 	#dee=which(dir()=="deposition")
 	dee2=which(dir()=="Discharge_halftime_lim.1DO")

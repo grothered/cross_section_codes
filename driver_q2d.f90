@@ -30,14 +30,14 @@ INTEGER:: l, u,k,kk, incount, count2, seabuf, layers, bedwrite,&
           remeshfreq,morbl,morbu,morbl_old,morbu_old, iost, too_steep
 REAL(dp):: Q1in, Vol1, QS2in, VolS2, Source2, pars_out, xxx, visc_bedp, visc_bedm, visc_bed 
 REAL(dp):: hlim , Qb, tr, mor,mor1,  mu, erconst, multa, aa,bb, cc, lifttodrag, & 
-    rho, mthdta, z0, rhos, burnin, &
-    voidf, dsand, d50, g, kvis,  lambdacon, alpha, cfl,man_nveg, Cmouth,& 
-    Criver, water_m, water_mthick, veg_ht, &
-    v1coef,v4coef, eddis1D,lincrem
+           rho, mthdta, z0, rhos, burnin, &
+           voidf, dsand, d50, g, kvis,  lambdacon, alpha, cfl,man_nveg, Cmouth,& 
+           Criver, water_m, water_mthick, veg_ht, &
+           v1coef,v4coef, eddis1D,lincrem
 LOGICAL:: susdist=.false., sus2d, LAKE, mouthread, norm, vertical, tbston, normmov, readin, & 
-    remesh, Qbedon, talmon, susQbal=.false., printall, taucrit_slope_reduction=.false.
+          remesh, Qbedon, talmon, printall, taucrit_slope_reduction=.false.
 CHARACTER(char_len):: boundary_downstream_file, friction_type, grain_friction_type, resus_type, &
-                      bedload_type
+                      bedload_type, bank_erosion_type
 
 !Variables that are read in from the inputdata file
 NAMELIST /inputdata2/ a, b, jmax, writfreq, t,longt, delX, wset, seabuf, hlim, &
@@ -45,7 +45,8 @@ NAMELIST /inputdata2/ a, b, jmax, writfreq, t,longt, delX, wset, seabuf, hlim, &
     voidf, dsand, d50, g, kvis, norm, vertical, lambdacon, tbston, alpha, readin, cfl, &
      rough_coef, man_nveg, Cmouth, Criver, layers, bedwrite, remesh, remeshfreq, normmov,& 
      water_m, water_mthick, veg_ht, Qbedon, talmon, v1coef,v4coef,eddis1D,lincrem, &
-     boundary_downstream_file, friction_type, grain_friction_type, resus_type, bedload_type
+     boundary_downstream_file, friction_type, grain_friction_type, resus_type, bedload_type, &
+     bank_erosion_type
 
 ALLOCATABLE bed(:,:),bed_old(:,:),bed_Vold(:,:),bed_oldrefit(:,:), ys(:,:),ys_oldrefit(:,:),& 
             mxdeps(:,:), fs(:,:), fs_g(:,:),a_ref(:,:), waters(:), waters_old(:),&
@@ -395,6 +396,7 @@ DO j= 1, jmax
             !Predefine some more things
             Qe(:,i)=0._dp
             Qbed(:,i)=0._dp
+            dqbeddx(:,i)=0._dp
             qb_G(:,i)=0._dp
             taus(:,i)=0._dp !Predefine hydrodynamic shear stress
             taus_g(:,i)=0._dp ! Predefine the grain shear stress
@@ -422,10 +424,10 @@ DO j= 1, jmax
                               sign(1._dp+0._dp*taus(l(i):u(i),i), taus(l(i):u(i),i))
        
         ! DEBUG 
-        IF(mod(j,1000).eq.0) THEN
-            print*, 'vel:', vels(:,i), 'Q2:', Q2_geo(i),Q(i), Q2(i), & 
-                    'A:', Area(i), A2(i), waters_avg(i), bottom(i)
-        END IF
+        !IF(mod(j,1000).eq.0) THEN
+        !    print*, 'vel:', vels(:,i), 'Q2:', Q2_geo(i),Q(i), Q2(i), & 
+        !            'A:', Area(i), A2(i), waters_avg(i), bottom(i)
+        !END IF
 
     END DO
 
@@ -483,42 +485,44 @@ DO j= 1, jmax
                           Criver, wset_tmp, wetwidth,wetwidth_old,&
                           diff1D, diff1D_old,pars_out)
 
-        !!BEDLOAD IN THE 1D CASE
-        QbedI=0._dp !Cross-sectionally integrated bedload flux
-        DO i=seabuf+1,b
-            IF(norm) THEN !Include the slope factor in this case
-                QbedI(i)=0.5_dp*(sum( Qbed((l(i)+1):(u(i)-1),i)*sqrt(1._dp+slopes((l(i)+1):(u(i)+1),i)**2._dp )*&
-                        (ys((l(i)+2):u(i), i)-ys(l(i):(u(i)-2), i))) &
-                        +Qbed(l(i),i)*sqrt(1._dp+slopes(l(i),i)**2._dp)*(ys(l(i)+1,i)-ys(l(i),i)) &
-                        +Qbed(u(i),i)*sqrt(1._dp+slopes(u(i),i)**2._dp)*(ys(u(i),i)-ys(u(i)-1,i))  )
-            ELSE !Don't include the slope factor
-                QbedI(i)= 0.5_dp*(sum( Qbed((l(i)+1):(u(i)-1),i)*&
-                        (ys((l(i)+2):u(i), i)-ys(l(i):(u(i)-2), i))) &
-                        +Qbed(l(i),i)*(ys(l(i)+1,i)-ys(l(i),i)) &
-                        +Qbed(u(i),i)*(ys(u(i),i)-ys(u(i)-1,i))  )
-            END IF
-        END DO
-        !Now estimate the bedload derivatives. Filler is just a useful thing to put the boundary conditions in
-        filler(1:b)=QbedI(1:b)
-        !filler(-1:0)=QbedI(1) !Boundary condition - QbedI(mouth)=QbedI(1)
-        filler(0)=0._dp !QbedI(1)-(QbedI(2)-QbedI(1))
-        filler(-1)=0._dp !QbedI(1)-2._dp*(QbedI(2)-QbedI(1))
-        !filler(b+1:b+2)=QbedI(b)!Boundary condition - QbedI(upstream)=QbedI(b)
-        filler(b+1)=0._dp !QbedI(b)+(QbedI(b)-QbedI(b-1))
-        filler(b+2)=0._dp !QbedI(b)+2.0_dp*(QbedI(b)-QbedI(b-1))
-        !Calculate the third order flux limited bedload derivative
-        CALL Ddx_3E(b,filler,delX, dQbedI) 
-        !dQbedI=0._dp
+        IF(Qbedon) THEN
+            !!BEDLOAD IN THE 1D CASE
+            QbedI=0._dp !Cross-sectionally integrated bedload flux
+            DO i=seabuf+1,b
+                IF(norm) THEN !Include the slope factor in this case
+                    QbedI(i)=0.5_dp*(sum( Qbed((l(i)+1):(u(i)-1),i)*sqrt(1._dp+slopes((l(i)+1):(u(i)+1),i)**2._dp )*&
+                            (ys((l(i)+2):u(i), i)-ys(l(i):(u(i)-2), i))) &
+                            +Qbed(l(i),i)*sqrt(1._dp+slopes(l(i),i)**2._dp)*(ys(l(i)+1,i)-ys(l(i),i)) &
+                            +Qbed(u(i),i)*sqrt(1._dp+slopes(u(i),i)**2._dp)*(ys(u(i),i)-ys(u(i)-1,i))  )
+                ELSE !Don't include the slope factor
+                    QbedI(i)= 0.5_dp*(sum( Qbed((l(i)+1):(u(i)-1),i)*&
+                            (ys((l(i)+2):u(i), i)-ys(l(i):(u(i)-2), i))) &
+                            +Qbed(l(i),i)*(ys(l(i)+1,i)-ys(l(i),i)) &
+                            +Qbed(u(i),i)*(ys(u(i),i)-ys(u(i)-1,i))  )
+                END IF
+            END DO
+            !Now estimate the bedload derivatives. Filler is just a useful thing to put the boundary conditions in
+            filler(1:b)=QbedI(1:b)
+            !filler(-1:0)=QbedI(1) !Boundary condition - QbedI(mouth)=QbedI(1)
+            filler(0)=0._dp !QbedI(1)-(QbedI(2)-QbedI(1))
+            filler(-1)=0._dp !QbedI(1)-2._dp*(QbedI(2)-QbedI(1))
+            !filler(b+1:b+2)=QbedI(b)!Boundary condition - QbedI(upstream)=QbedI(b)
+            filler(b+1)=0._dp !QbedI(b)+(QbedI(b)-QbedI(b-1))
+            filler(b+2)=0._dp !QbedI(b)+2.0_dp*(QbedI(b)-QbedI(b-1))
+            !Calculate the third order flux limited bedload derivative
+            CALL Ddx_3E(b,filler,delX, dQbedI) 
+            !dQbedI=0._dp
 
-        !Now we distribute that bedload derivative over each cross-section
-        DO i=1, b
-            !Here we include a trick to stop division by zero.
-            IF(abs(QbedI(i))>1.0E-12_dp) THEN
-                dqbeddx(:,i)= abs(Qbed(:,i))/abs(QbedI(i))*dQbedI(i)
-            ELSE
-                dqbeddx(:,i)=dQbedI(i)/(ys(u(i),i)-ys(l(i),i))+0._dp*Qbed(:,i)
-            END IF
-        END DO
+            !Now we distribute that bedload derivative over each cross-section
+            DO i=1, b
+                !Here we include a trick to stop division by zero.
+                IF(abs(QbedI(i))>1.0E-12_dp) THEN
+                    dqbeddx(:,i)= abs(Qbed(:,i))/abs(QbedI(i))*dQbedI(i)
+                ELSE
+                    dqbeddx(:,i)=dQbedI(i)/(ys(u(i),i)-ys(l(i),i))+0._dp*Qbed(:,i)
+                END IF
+            END DO
+        END IF
         !!!!END SUSPENDED SEDIMENT / BEDLOAD IN THE 1D CASE
 
     ELSE !Here we have the sediment calculations where the suspended sediment is calculated using a fully 2D model
@@ -591,21 +595,27 @@ DO j= 1, jmax
             END IF    
         END IF
 
-        IF(.TRUE.) THEN
-        !   A version of the Delft bank erosion model. 
-        !   If erosion is occuring at the channel margins,
-        !   then assign it to the neighbouring dry bed point
-            IF((bed(l(i),i)<bed_old(l(i),i)).AND.(l(i)>1)) THEN
-                    bed(l(i)-1,i) = bed(l(i)-1,i) - (bed_old(l(i),i) - bed(l(i),i))
-                    bed(l(i),i) = bed_old(l(i),i)
-            END IF
-            IF((bed(u(i),i)<bed_old(u(i),i)).AND.(u(i)<a)) THEN
-                    bed(u(i)+1,i) = bed(u(i)+1,i) - (bed_old(u(i),i) - bed(u(i),i))
-                    bed(u(i),i) = bed_old(u(i),i)
-            END IF
-        END IF
+        SELECT CASE(bank_erosion_type)
 
-
+            CASE('Delft')
+            !   A version of the Delft bank erosion model. 
+            !   If erosion is occuring at the channel margins,
+            !   then assign it to the neighbouring dry bed point
+                IF((bed(l(i),i)<bed_old(l(i),i)).AND.(l(i)>1)) THEN
+                        bed(l(i)-1,i) = bed(l(i)-1,i) - (bed_old(l(i),i) - bed(l(i),i))
+                        bed(l(i),i) = bed_old(l(i),i)
+                END IF
+                IF((bed(u(i),i)<bed_old(u(i),i)).AND.(u(i)<a)) THEN
+                        bed(u(i)+1,i) = bed(u(i)+1,i) - (bed_old(u(i),i) - bed(u(i),i))
+                        bed(u(i),i) = bed_old(u(i),i)
+                END IF
+            CASE('None')
+                ! No bank erosion here
+                continue
+            CASE DEFAULT
+                print*, 'ERROR: bank_erosion_type specified incorrectly', bank_erosion_type
+                stop
+        END SELECT
     END DO 
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!

@@ -34,8 +34,6 @@ hlim = 0.001 !The depth at which we start to do funny things to avoid negative d
 mor = 1.0 ! The morphological factor
 
 burnin = 0.3 !The time in hours before morphological evolution begins
-LF = -1 !TURN ON/OFF Mixed LF and McCormack 1d longitudinal solver (ON = 0 ; OF = -1)
-lfkick = 0.3 !The depth at which we start 'blending' lax friedrichs into the solution, presuming that LF is positive
 v1coef= 0.0E-01 !Viscosity coefficient
 v4coef= 0.0E-04 !Viscosity coefficient
 
@@ -65,6 +63,7 @@ d50 = 0.00031 !The median grain size for the bedload formula
 alpha = 0.000 !Constant in the suspended sediment erosion formula.
 resus_type = 'vanrijn' ! 'cohesive', 'vanrijn', 'smithmac' -- equation for resuspension
 bedload_type= 'vanrijn' ! 'vanrijn', 'mpm' -- equation for bedload
+bank_erosion_type='Delft' !  'None' ! Bank erosion model
 
 Qbedon=.true. !Is bedload on?
 talmon=.false. !If bedload is on, do we use a talmon lateral slope closure?
