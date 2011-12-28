@@ -1,6 +1,6 @@
 # R code to compare the outputs of 2 runs.
 
-source('../gettide1.R')
+source('../../gettide1.R')
 
 # Read in key variables
 getf(800)
