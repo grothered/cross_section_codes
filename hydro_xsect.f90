@@ -550,9 +550,10 @@ SUBROUTINE calc_shear(a, dT, water, Q, bed,ys,Area, bottom, ff,rmu,inuc,tau,NN,c
         IF((abs(Q)>0._dp).AND.(maxval(abs(vel))>0._dp)) THEN
             !if(counter>5011) print*, "we get to the correction of tau", maxval(vel),	
             corfact=(Q/sum(0.5_dp*( vel*(water-bed) )*(& 
-                (/1._dp*(ys(2)-ys(1) +1._dp*((water-bed(1))/(bedl-bed(1))*(ys(1)-ysl) )),&
-                (ys(3:a)-ys(1:(a-2))), & 
-                (1._dp*((water-bed(a))/(bedu-bed(a))*(ysu-ys(a)) )+ ys(a)-ys(a-1))/))))**2
+                           (/1._dp*(ys(2)-ys(1) +1._dp*((water-bed(1))/(bedl-bed(1))*(ys(1)-ysl) )),&
+                           (ys(3:a)-ys(1:(a-2))), & 
+                           (1._dp*((water-bed(a))/(bedu-bed(a))*(ysu-ys(a)) )+ ys(a)-ys(a-1))/) )& 
+                           ))**2
             !corfact=1._dp
             tau = tau*corfact
             vel=vel*sqrt(corfact)
