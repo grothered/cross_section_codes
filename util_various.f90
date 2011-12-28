@@ -636,7 +636,10 @@ SUBROUTINE meanvars(bed,ys,waters,fs,a,b,u,l,Width,Area,bottom, dbdh, even,hlim)
 
     REAL(dp):: increm(a) , edgel, edgeu, nom, db, Area_old(b)
     LOGICAL:: alldry, allwet
-    !print*, "here I am"
+    ! FIXME: Notice how this assumes that there exists a 'dry' point ll-1 and
+    ! uu+1. So we cannot have all points in the cross-section being wet. This
+    ! makes for a slight inefficiency in prismatic 1D cases, which you may wish
+    ! to remove.
 
     DO i= 1, b !For every cross-profile
         !ll=l(i)

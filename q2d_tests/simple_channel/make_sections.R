@@ -11,6 +11,9 @@ for(i in 1:b){
     ys[,i]=c(-0.001, seq(0,width,len=a-2), width+0.001)
     #bed[,i]=c(100,rep(1,2), rep(-2,2), rep(-2,2), rep(1,2), 100)
     bed[,i]=c(100,rep(-2,a-2), 100)
+    
+    #ys[,i]=seq(0,width,len=a-2)
+    #bed[,i]=rep(-2,a-2)
 }
 
 
