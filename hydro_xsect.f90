@@ -472,6 +472,11 @@ SUBROUTINE calc_shear(a, dT, water, Q, bed,ys,Area, bottom, ff,rmu,inuc,tau,NN,c
         wslope=  ((Q/Area)*abs(Q/Area)/(((water-bottom)))*sum(ff)/(8._dp*9.8_dp*a)) 
     END IF
 
+    ! DEBUG
+    IF(mod(counter,1000).eq.0) THEN 
+        print*, wslope, rmu, ff(a/2), bedl, bedu, ysl, ysu
+    END IF
+
     IF(abs(wslope)>.1) print*, "|wslope| >.1", wslope, water-bottom, rmu, Q, Area, Q/Area
     IF(isnan(wslope)) print*, "wslope is nan", Q, A, water-bottom, rmu
 
@@ -480,6 +485,7 @@ SUBROUTINE calc_shear(a, dT, water, Q, bed,ys,Area, bottom, ff,rmu,inuc,tau,NN,c
                  cannot work with this', a
         stop
     END IF
+
 
     ! CALCULATE SHEAR
     ! This can deal with multiple wet sections/ interior dry points. 
@@ -546,10 +552,18 @@ SUBROUTINE calc_shear(a, dT, water, Q, bed,ys,Area, bottom, ff,rmu,inuc,tau,NN,c
             corfact=(Q/sum(0.5_dp*( vel*(water-bed) )*(& 
                 (/1._dp*(ys(2)-ys(1) +1._dp*((water-bed(1))/(bedl-bed(1))*(ys(1)-ysl) )),&
                 (ys(3:a)-ys(1:(a-2))), & 
-                (1._dp*((water-bed(a))*(bedu-bed(a))*(ysu-ys(a)) )+ ys(a)-ys(a-1))/))))**2
+                (1._dp*((water-bed(a))/(bedu-bed(a))*(ysu-ys(a)) )+ ys(a)-ys(a-1))/))))**2
             !corfact=1._dp
             tau = tau*corfact
             vel=vel*sqrt(corfact)
+            ! DEBUG
+            IF(mod(counter,1000).eq.0) THEN
+               corfact= sum(0.5_dp*( vel*(water-bed) )*(& 
+                            (/1._dp*(ys(2)-ys(1) +1._dp*((water-bed(1))/(bedl-bed(1))*(ys(1)-ysl) )),&
+                            (ys(3:a)-ys(1:(a-2))), & 
+                            (1._dp*((water-bed(a))/(bedu-bed(a))*(ysu-ys(a)) )+ ys(a)-ys(a-1))/)))
+               print*, 'Corfact:', corfact, water-bed, vel, ys, (water-bed(a))/(bedu-bed(a))*(ysu-ys(a)) 
+            END IF
         ELSE
             tau=0._dp
             vel=0._dp
@@ -700,6 +714,10 @@ SUBROUTINE roughmult(aa,rmu, vel, Q, A, tbst,depths, ys, f, vegdrag, &
         rmubot= (Q/A)**2*A*g  
         ! (roughness/depth)
         rmu= rmutop/rmubot
+        ! DEBUG
+        IF(mod(counter,1000).eq.0) THEN
+            print*, 'roughmult', rmu, rmutop, rmubot, sum(vel)/(1.0_dp*aa), Q, A
+        END IF
     ELSE
         ! Default behaviour if there is no discharge
         !rmu=sum(f)/(8._dp*g*sum(depths)) !The mean value of (f/8g)/depth

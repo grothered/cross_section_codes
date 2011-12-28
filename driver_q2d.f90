@@ -420,6 +420,13 @@ DO j= 1, jmax
         vels(:,i)= sqrt(8._dp*abs(taus(:,i))/(fs(:,i)*rho))*sign(1._dp+0._dp*taus(:,i), taus(:,i))
         taus_g(l(i):u(i),i) = rho*vels(l(i):u(i),i)**2*(fs_g(l(i):u(i),i)/8._dp)*&
                               sign(1._dp+0._dp*taus(l(i):u(i),i), taus(l(i):u(i),i))
+       
+        ! DEBUG 
+        IF(mod(j,1000).eq.0) THEN
+            print*, 'vel:', vels(:,i), 'Q2:', Q2_geo(i),Q(i), Q2(i), & 
+                    'A:', Area(i), A2(i), waters_avg(i), bottom(i)
+        END IF
+
     END DO
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!       
