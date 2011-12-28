@@ -567,25 +567,25 @@ END SUBROUTINE readcs
 !
 !!!!!!!!!!!!!!!!!!!!!!
 
-SUBROUTINE set_geo(bed, ys, waters,recrds,fs,a,b,hlim, readin, water_m, water_mthick) !initial geometry
+SUBROUTINE set_geo(bed, ys, waters,recrds,fs,a,b,hlim, read_geo, water_m, water_mthick) !initial geometry
     ! A routine to set initial geometry conditions for the quasi-2D model
 
     INTEGER, INTENT(IN):: a, b 
     REAL(dp), INTENT(IN OUT):: bed, waters,recrds,fs,ys
     REAL(dp), INTENT(IN):: hlim, water_m, water_mthick
-    LOGICAL, INTENT(IN):: readin
+    LOGICAL, INTENT(IN):: read_geo
     DIMENSION bed(a,b),waters(b),recrds(a,b), ys(a,b),fs(a,b)
     
     INTEGER:: i, j,m,n
 
 
-    IF(readin) call readcs(bed,ys,a,b)  
+    IF(read_geo) call readcs(bed,ys,a,b)  
 
     DO j= 1, b
 
         DO i= 1, a
 
-            IF(readin.EQV..false.) bed(i,j) = 5.5_dp- 14.5*(((1._dp*(b-j))/(1._dp*b)))**1.2_dp+ &
+            IF(read_geo.EQV..false.) bed(i,j) = 5.5_dp- 14.5*(((1._dp*(b-j))/(1._dp*b)))**1.2_dp+ &
             (6._dp)*abs((i*1._dp-a*0.5_dp-0.5_dp)/(a*0.5_dp) )**1.2_dp  !4.5_dp- 8.5*(((1._dp*(b-j))/(0.6_dp*b)))**1.2_dp+ &
             !(6._dp)*abs((i/1._dp-a/2._dp-0.5_dp)/(a/2._dp) )**1.2_dp  !- 4.*(((1.*(b-j))/(1.*b)))**1.2  !+ (4.)*abs((i-a/2-0.5)/(a/2) )**1.2  ! -7.*exp(-j*1.0/(4.*b)) !initial valley waterations  !0.000002*abs((i-a/2))**2 - 5.*(100.-j)/100.
             fs(i,j)=0.032_dp
@@ -609,7 +609,7 @@ SUBROUTINE set_geo(bed, ys, waters,recrds,fs,a,b,hlim, readin, water_m, water_mt
 
     DO j = 1, b
         DO i= 1, a
-            IF(readin.EQV..false.) ys(i,j)= 1._dp*(i-1)*1000._dp/(1._dp*a-1._dp)
+            IF(read_geo.EQV..false.) ys(i,j)= 1._dp*(i-1)*1000._dp/(1._dp*a-1._dp)
         END DO
     END DO
 
@@ -1234,12 +1234,12 @@ SUBROUTINE compute_critical_shear(nos, layers, bed, slopes, taucrit_dep, taucrit
 END SUBROUTINE compute_critical_shear
 !!!!!!!!!!!!!!!!!!!!!!!
 SUBROUTINE create_initial_geometry( ys, bed, taucrit_dep_ys, taucrit_dep,  &
-                                  readin, nos, layers, Width, max_init_depth)
+                                  read_geo, nos, layers, Width, max_init_depth)
     ! Create the initial cross-sectional geometry,
-    ! either by reading from some input files, or using a conveniently defined
+    ! either by read_geog from some input files, or using a conveniently defined
     ! function
     INTEGER, INTENT(IN):: nos, layers
-    LOGICAL, INTENT(IN):: readin
+    LOGICAL, INTENT(IN):: read_geo
     REAL(dp), INTENT(IN):: Width, max_init_depth
     REAL(dp), INTENT(IN OUT):: ys(nos), bed(nos), & 
                               taucrit_dep_ys(nos),&
@@ -1248,7 +1248,7 @@ SUBROUTINE create_initial_geometry( ys, bed, taucrit_dep_ys, taucrit_dep,  &
     INTEGER:: i
 
     !Create the channel geometry
-    If(readin) THEN
+    If(read_geo) THEN
         !Cross-channel distance
         OPEN(77,file="lnths",status="old")
         READ(77,*) ys

@@ -34,7 +34,7 @@ REAL(dp):: hlim , Qb, tr, mor,mor1,  mu, erconst, multa, aa,bb, cc, lifttodrag, 
            voidf, dsand, d50, g, kvis,  lambdacon, alpha, cfl,man_nveg, Cmouth,& 
            Criver, water_m, water_mthick, veg_ht, &
            v1coef,v4coef, eddis1D,lincrem
-LOGICAL:: susdist=.false., sus2d, LAKE, mouthread, norm, vertical, tbston, normmov, readin, & 
+LOGICAL:: susdist=.false., sus2d, LAKE, mouthread, norm, vertical, tbston, normmov, read_geo, & 
           remesh, Qbedon, talmon, printall, taucrit_slope_reduction=.false.
 CHARACTER(char_len):: boundary_downstream_file, friction_type, grain_friction_type, resus_type, &
                       bedload_type, bank_erosion_type
@@ -42,7 +42,7 @@ CHARACTER(char_len):: boundary_downstream_file, friction_type, grain_friction_ty
 !Variables that are read in from the inputdata file
 NAMELIST /inputdata2/ a, b, jmax, writfreq, t,longt, delX, wset, seabuf, hlim, &
      Qb, tr, mor, mu, erconst,lifttodrag, rho, rhos, burnin, sus2d, LAKE, mouthread, & 
-    voidf, dsand, d50, g, kvis, norm, vertical, lambdacon, tbston, alpha, readin, cfl, &
+    voidf, dsand, d50, g, kvis, norm, vertical, lambdacon, tbston, alpha, read_geo, cfl, &
      rough_coef, man_nveg, Cmouth, Criver, layers, bedwrite, remesh, remeshfreq, normmov,& 
      water_m, water_mthick, veg_ht, Qbedon, talmon, v1coef,v4coef,eddis1D,lincrem, &
      boundary_downstream_file, friction_type, grain_friction_type, resus_type, bedload_type, &
@@ -100,7 +100,7 @@ END IF
 !!!!!!!!!!!!!!!!!!!
 
 !!Initialise the geometry
-CALL set_geo(bed,ys,waters,mxdeps,fs,a,b, hlim, readin, water_m,water_mthick) 
+CALL set_geo(bed,ys,waters,mxdeps,fs,a,b, hlim, read_geo, water_m,water_mthick) 
 ! FIXME: Temporarily initialise fs_g and a_ref here -- later, lump with fs
 fs_g=fs*0.1_dp ! Initialise Grain friction factor
 a_ref=0.01_dp ! Initialise Reference height for suspended load
