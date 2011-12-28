@@ -31,7 +31,7 @@
  LAMBDACON= 0.23999999999999999     ,
  TBSTON=T,
  ALPHA= 2.99999999999999974E-004,
- READ_GEO=T,
+ READ_INITIAL_GEO=T,
  CFL= 0.98999999999999999     ,
  ROUGH_COEF= 4.00000000000000008E-002,
  MAN_NVEG= 0.15900000000000000     ,
@@ -57,6 +57,7 @@
  RESUS_TYPE="cohesive            ",
  BEDLOAD_TYPE="vanrijn             ",
  BANK_EROSION_TYPE="Delft               ",
+ READ_INITIAL_WATERS=F,
  /
  READING FILE: mouth_new           ; Record length is        18024
  #################

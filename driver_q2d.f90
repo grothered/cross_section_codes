@@ -15,7 +15,7 @@ IMPLICIT  NONE
 !!Define variables - This is quite disorganised, but cleaning this is not a priority.
 INTEGER:: a, b, i,j, m, p, o,d2,d1, ii, n, i1, jj1, dlength, jmax, writfreq,writfreq1, jj, writcount
 REAL(dp):: longt,longt1, cfl1, tmp1
-REAL(dp):: bed,bed_old,bed_Vold,bed_oldrefit, ys,ys_oldrefit, mxdeps, fs,fs_g,a_ref, ws, waters, rough_coef 
+REAL(dp):: bed,bed_old,bed_Vold,bed_oldrefit, ys,ys_oldrefit, fs,fs_g,a_ref, ws, waters, rough_coef 
 REAL(dp):: Width, Area, bottom, bottom_old,wid_old, Q,Q2, Q2_old,& 
            dBdh,inuc,NN,taus,taus_g, Qsav, A2, &
            waters_avg,waters_avg_old, waters_old, tsav,C_old, &
@@ -34,22 +34,22 @@ REAL(dp):: hlim , Qb, tr, mor,mor1,  mu, erconst, multa, aa,bb, cc, lifttodrag, 
            voidf, dsand, d50, g, kvis,  lambdacon, alpha, cfl,man_nveg, Cmouth,& 
            Criver, water_m, water_mthick, veg_ht, &
            v1coef,v4coef, eddis1D,lincrem
-LOGICAL:: susdist=.false., sus2d, LAKE, mouthread, norm, vertical, tbston, normmov, read_geo, & 
-          remesh, Qbedon, talmon, printall, taucrit_slope_reduction=.false.
+LOGICAL:: susdist=.false., sus2d, LAKE, mouthread, norm, vertical, tbston, normmov, read_initial_geo, & 
+          remesh, Qbedon, talmon, printall, taucrit_slope_reduction=.false., read_initial_waters
 CHARACTER(char_len):: boundary_downstream_file, friction_type, grain_friction_type, resus_type, &
                       bedload_type, bank_erosion_type
 
 !Variables that are read in from the inputdata file
 NAMELIST /inputdata2/ a, b, jmax, writfreq, t,longt, delX, wset, seabuf, hlim, &
      Qb, tr, mor, mu, erconst,lifttodrag, rho, rhos, burnin, sus2d, LAKE, mouthread, & 
-    voidf, dsand, d50, g, kvis, norm, vertical, lambdacon, tbston, alpha, read_geo, cfl, &
+    voidf, dsand, d50, g, kvis, norm, vertical, lambdacon, tbston, alpha, read_initial_geo, cfl, &
      rough_coef, man_nveg, Cmouth, Criver, layers, bedwrite, remesh, remeshfreq, normmov,& 
      water_m, water_mthick, veg_ht, Qbedon, talmon, v1coef,v4coef,eddis1D,lincrem, &
      boundary_downstream_file, friction_type, grain_friction_type, resus_type, bedload_type, &
-     bank_erosion_type
+     bank_erosion_type, read_initial_waters
 
 ALLOCATABLE bed(:,:),bed_old(:,:),bed_Vold(:,:),bed_oldrefit(:,:), ys(:,:),ys_oldrefit(:,:),& 
-            mxdeps(:,:), fs(:,:), fs_g(:,:),a_ref(:,:), waters(:), waters_old(:),&
+            fs(:,:), fs_g(:,:),a_ref(:,:), waters(:), waters_old(:),&
             l(:), u(:), morbl(:),morbu(:), recrd(:), & 
             morbl_old(:),morbu_old(:), dbdh(:,:),rmu(:), slopes(:,:), Qsav(:), A2(:),& 
             waters_avg(:),waters_avg_old(:), taucrit_dep(:,:,:),dst(:,:,:), wt(:),wt2(:),&
@@ -74,7 +74,7 @@ READ(*, nml=inputdata2)
 PRINT inputdata2
 
 ALLOCATE( bed(a,b),bed_old(a,b),bed_Vold(a,b),bed_oldrefit(a,b), ys(a,b),ys_oldrefit(a,b), & 
-          mxdeps(a,b),fs(a,b),fs_g(a,b),a_ref(a,b), ws(b), waters(b), waters_old(b),l(b), u(b), &
+          fs(a,b),fs_g(a,b),a_ref(a,b), ws(b), waters(b), waters_old(b),l(b), u(b), &
           morbl(b),morbu(b) ,morbl_old(b),& 
           morbu_old(b) ,taus(a,b), taus_g(a,b), vels(a,b),vels_old(a,b), Cdist(a,b),Cdist_old(a,b),Cdist_in(a,b), & 
           C_old(b), Area_old(b), U2_old(b), Qe(a,b),Qe_old(a,b), Qbed(a,b), QbedI(b), dQbedI(b),dQbedIp(0:b),& 
@@ -95,12 +95,14 @@ ALLOCATE( bed(a,b),bed_old(a,b),bed_Vold(a,b),bed_oldrefit(a,b), ys(a,b),ys_oldr
 IF(mouthread) THEN
     call read_real_table(boundary_downstream_file, mthdta ,dlength,2)   
 ELSE
-    print*, "Analytical water level mouth boundary needed"
+    print*, "Analytical water level mouth boundary needed -- see the &
+            'mouth_height' subroutine in st_venant_solver.f90"
 END IF
 !!!!!!!!!!!!!!!!!!!
 
 !!Initialise the geometry
-CALL set_geo(bed,ys,waters,mxdeps,fs,a,b, hlim, read_geo, water_m,water_mthick) 
+CALL set_geo(bed,ys,waters,fs,a,b, hlim, read_initial_geo, read_initial_waters, water_m,water_mthick) 
+
 ! FIXME: Temporarily initialise fs_g and a_ref here -- later, lump with fs
 fs_g=fs*0.1_dp ! Initialise Grain friction factor
 a_ref=0.01_dp ! Initialise Reference height for suspended load

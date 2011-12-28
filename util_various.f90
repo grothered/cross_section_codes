@@ -567,31 +567,37 @@ END SUBROUTINE readcs
 !
 !!!!!!!!!!!!!!!!!!!!!!
 
-SUBROUTINE set_geo(bed, ys, waters,recrds,fs,a,b,hlim, read_geo, water_m, water_mthick) !initial geometry
+SUBROUTINE set_geo(bed, ys, waters,fs,a,b,hlim, read_initial_geo, read_initial_waters, water_m, water_mthick) !initial geometry
     ! A routine to set initial geometry conditions for the quasi-2D model
 
     INTEGER, INTENT(IN):: a, b 
-    REAL(dp), INTENT(IN OUT):: bed, waters,recrds,fs,ys
+    REAL(dp), INTENT(IN OUT):: bed, waters,fs,ys
     REAL(dp), INTENT(IN):: hlim, water_m, water_mthick
-    LOGICAL, INTENT(IN):: read_geo
-    DIMENSION bed(a,b),waters(b),recrds(a,b), ys(a,b),fs(a,b)
+    LOGICAL, INTENT(IN):: read_initial_geo, read_initial_waters
+    DIMENSION bed(a,b),waters(b),ys(a,b),fs(a,b)
     
     INTEGER:: i, j,m,n
+    REAL(dp), ALLOCATABLE:: waters_tmp(:,:)
+    CHARACTER(char_len):: waters_input_filename='watersold2'
 
-
-    IF(read_geo) call readcs(bed,ys,a,b)  
-
-    DO j= 1, b
-
-        DO i= 1, a
-
-            IF(read_geo.EQV..false.) bed(i,j) = 5.5_dp- 14.5*(((1._dp*(b-j))/(1._dp*b)))**1.2_dp+ &
-            (6._dp)*abs((i*1._dp-a*0.5_dp-0.5_dp)/(a*0.5_dp) )**1.2_dp  !4.5_dp- 8.5*(((1._dp*(b-j))/(0.6_dp*b)))**1.2_dp+ &
-            !(6._dp)*abs((i/1._dp-a/2._dp-0.5_dp)/(a/2._dp) )**1.2_dp  !- 4.*(((1.*(b-j))/(1.*b)))**1.2  !+ (4.)*abs((i-a/2-0.5)/(a/2) )**1.2  ! -7.*exp(-j*1.0/(4.*b)) !initial valley waterations  !0.000002*abs((i-a/2))**2 - 5.*(100.-j)/100.
-            fs(i,j)=0.032_dp
-
-        END DO !i
-    END DO !j
+    IF(read_initial_geo) THEN
+        call readcs(bed,ys,a,b)  
+    ELSE
+        DO j = 1, b
+            DO i= 1, a
+                ys(i,j)= 1._dp*(i-1)*1000._dp/(1._dp*a-1._dp)
+                bed(i,j) = 5.5_dp- 14.5*(((1._dp*(b-j))/(1._dp*b)))**1.2_dp+ &
+                            (6._dp)*abs((i*1._dp-a*0.5_dp-0.5_dp)/(a*0.5_dp) )**1.2_dp  
+                !4.5_dp- 8.5*(((1._dp*(b-j))/(0.6_dp*b)))**1.2_dp+ &
+                !(6._dp)*abs((i/1._dp-a/2._dp-0.5_dp)/(a/2._dp) )**1.2_dp  
+                !- 4.*(((1.*(b-j))/(1.*b)))**1.2  !+ (4.)*abs((i-a/2-0.5)/(a/2) )**1.2  
+                ! -7.*exp(-j*1.0/(4.*b)) !initial valley waterations  !0.000002*abs((i-a/2))**2 - 5.*(100.-j)/100.
+            END DO
+        END DO
+    END IF
+   
+    ! Set arbitrary fs value, which will be reset later 
+    fs=0.032_dp
 
     IF(maxval(bed)>5.0E+04_dp) THEN
         print*, 'ERROR: The maximum bed value is > 50000m. This is pretty big! &
@@ -607,15 +613,24 @@ SUBROUTINE set_geo(bed, ys, waters,recrds,fs,a,b,hlim, read_geo, water_m, water_
     bed(1,:)= 1.0E+05_dp  !Side wall, to prevent water flowing outside of the cross-section
     bed(a,:)= 1.0E+05_dp  !Side Wall
 
-    DO j = 1, b
-        DO i= 1, a
-            IF(read_geo.EQV..false.) ys(i,j)= 1._dp*(i-1)*1000._dp/(1._dp*a-1._dp)
-        END DO
-    END DO
-
-    DO j= 1, b
-        waters(j)= max(bed(a/2,j)+hlim/1.001_dp+water_mthick, water_m) !0.d0 !hs(a/2,j)+2.!0d0 !initial water surface wateration
-    END DO 
+    ! Set the initial water elevation
+    IF(read_initial_waters) THEN
+        ! Read in the initial water elevation. Note that because waters is a
+        ! vector, but this routine reads the data into an array, we have to use
+        ! waters_tmp to read the data first
+        CALL read_real_table(waters_input_filename, waters_tmp, n, 1)
+        ! Check that the file was of the correct size
+        IF(n.ne.b) THEN
+            print*, 'ERROR: the water level initial condition file watersold2 &
+                    did not have the correct number of values', b, n 
+            stop
+        END IF
+        waters=waters_tmp(:,1)
+    ELSE
+        DO j= 1, b
+            waters(j)= max(bed(a/2,j)+hlim/1.001_dp+water_mthick, water_m) !0.d0 !hs(a/2,j)+2.!0d0 !initial water surface wateration
+        END DO 
+    END IF
 
 END SUBROUTINE set_geo
 

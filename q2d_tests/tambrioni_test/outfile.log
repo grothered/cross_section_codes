@@ -31,7 +31,7 @@
  LAMBDACON=  0.0000000000000000     ,
  TBSTON=T,
  ALPHA=  0.0000000000000000     ,
- READ_GEO=T,
+ READ_INITIAL_GEO=T,
  CFL= 0.98999999999999999     ,
  ROUGH_COEF= 6.68469760000000024E-002,
  MAN_NVEG=  0.0000000000000000     ,
@@ -57,8 +57,9 @@
  RESUS_TYPE="vanrijn             ",
  BEDLOAD_TYPE="mpm                 ",
  BANK_EROSION_TYPE="None                ",
+ READ_INITIAL_WATERS=F,
  /
- Analytical water level mouth boundary needed
+ Analytical water level mouth boundary needed -- see the 'mouth_height' subroutine in st_venant_solver.f90
  #################
  # Output Step:           1
  #   Time (hrs):   0.0000000000000000     

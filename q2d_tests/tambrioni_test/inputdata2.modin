@@ -12,7 +12,9 @@ longt= 1.0 !The time step in between cross sectional updates (s)
 writfreq = 150 ! Write output every writfreqth timestep
 bedwrite = 1000 !20000 !Write bed geometry every bedwrite'th timestep
 
-read_geo=.true. !Do we read in initial geometry data from a file? 
+read_initial_geo=.true. !Do we read in initial geometry data from a file? 
+read_initial_waters=.false. ! Do we read in the initial water elevation
+            
 
 mouthread = .false. !Do we read in a time series of mouth water levels - of length dlength
 boundary_downstream_file = 'mouth' ! name of input file for downstream boundary condition 
