@@ -39,3 +39,16 @@ echo '#########################'
 ./q2d < inputdata2.modin > outfile.log
 R CMD BATCH --slave analytical.R /dev/tty
 cd ..
+
+# Dam break (wet downstream region)
+cd dam_break/wet
+cp ../../../q2d .
+echo '#########################'
+echo 'Running Wet dam break ...'
+echo '#########################'
+./q2d < inputdata2.modin > outfile.log
+R CMD BATCH --slave analytical_compare2.R 
+gv Dam_break_wet.eps
+cd ../../
+
+# Dam break (dry downstream region)
