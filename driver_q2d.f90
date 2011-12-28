@@ -595,6 +595,7 @@ DO j= 1, jmax
             END IF    
         END IF
 
+        ! BANK EROSION
         SELECT CASE(bank_erosion_type)
 
             CASE('Delft')

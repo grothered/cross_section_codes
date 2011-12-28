@@ -21,14 +21,14 @@ R CMD BATCH --slave r_compare.R /dev/tty
 cd ..
 
 # Simple channel test
-#cd simple_channel
-#cp ../../q2d .
-#echo '#########################'
-#echo 'Running Simple Channel test ...'
-#echo '#########################'
-#./q2d < inputdata2.modin > outfile.log
-#R CMD BATCH --slave r_compare.R /dev/tty
-#cd ..
+cd simple_channel
+cp ../../q2d .
+echo '#########################'
+echo 'Running Simple Channel test ...'
+echo '#########################'
+./q2d < inputdata2.modin > outfile.log
+R CMD BATCH --slave r_compare.R /dev/tty
+cd ..
 
 # Steady uniform test
 cd steady_uniform 
