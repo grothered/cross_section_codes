@@ -27,6 +27,6 @@ write(ys,file='lnthsold2',ncolumns=a)
 write(bed,file='sectionsold2',ncolumns=a)
 
 # Make input timeseries
-t=seq(0,24*3600*10,len=100)
+t=seq(0,24*3600*10,by=100)
 h=t*0 -1
 write.table(cbind(t,h), file='mouth', row.names=F,col.names=F)

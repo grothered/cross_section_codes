@@ -7,6 +7,7 @@ echo '#########################'
 echo 'Running Yalimbah test ...'
 echo '#########################'
 ./q2d < inputdata2.modin > outfile.log
+tail -n1 outfile.log
 R CMD BATCH --slave r_compare.R /dev/tty
 cd ..
 
@@ -17,6 +18,7 @@ echo '#########################'
 echo 'Running Tambrioni test ...'
 echo '#########################'
 ./q2d < inputdata2.modin > outfile.log
+tail -n1 outfile.log
 R CMD BATCH --slave r_compare.R /dev/tty
 cd ..
 
@@ -27,6 +29,7 @@ echo '#########################'
 echo 'Running Simple Channel test ...'
 echo '#########################'
 ./q2d < inputdata2.modin > outfile.log
+tail -n1 outfile.log
 R CMD BATCH --slave r_compare.R /dev/tty
 cd ..
 
@@ -37,6 +40,7 @@ echo '#########################'
 echo 'Running Steady uniform test ...'
 echo '#########################'
 ./q2d < inputdata2.modin > outfile.log
+tail -n1 outfile.log
 R CMD BATCH --slave analytical.R /dev/tty
 cd ..
 
@@ -47,6 +51,7 @@ echo '#########################'
 echo 'Running Wet dam break ...'
 echo '#########################'
 ./q2d < inputdata2.modin > outfile.log
+tail -n1 outfile.log
 R CMD BATCH --slave analytical_compare2.R 
 gv Dam_break_wet.eps
 cd ../../

@@ -4,7 +4,8 @@ Program driver
 use global_defs ! Various important parameters
 !use util, only: read_real_table ! Various utility routines
 use util_various, only: set_geo, reset_ys, meanvars, compute_slope, compute_critical_shear, Ddx_3E, &
-                        interp3, active_zone, conservation_tests1, conservation_tests2, read_real_table
+                        interp3, active_zone, conservation_tests1, conservation_tests2, read_real_table, &
+                        check_for_uneven_time_increments, timeseries_interpolate
 use hydro_xsect, only: calc_friction, calc_shear ! Hydrodynamic and grain friction and shear
 use bed_xsect, only: calc_resus_bedload, update_bed ! Compute rates of sediment transport, and evolve bed
 use st_venant_solver, only: hyupdate !The longitudinal hydrodynamic solver
@@ -13,7 +14,8 @@ use sus, only: susconc_up35, susconc2dup3rdV2  !The longitudinal suspended sedim
 IMPLICIT  NONE
 
 !!Define variables - This is quite disorganised, but cleaning this is not a priority.
-INTEGER:: a, b, i,j, m, p, o,d2,d1, ii, n, i1, jj1, dlength, jmax, writfreq,writfreq1, jj, writcount
+INTEGER:: a, b, i,j, m, p, o,d2,d1, ii, n, i1, jj1, mouth_data_len, jmax, writfreq,writfreq1, &
+          jj, writcount, Cmouth_data_len, Criver_data_len
 REAL(dp):: longt,longt1, cfl1, tmp1
 REAL(dp):: bed,bed_old,bed_Vold,bed_oldrefit, ys,ys_oldrefit, fs,fs_g,a_ref, ws, waters, rough_coef 
 REAL(dp):: Width, Area, bottom, bottom_old,wid_old, Q,Q2, Q2_old,& 
@@ -21,7 +23,7 @@ REAL(dp):: Width, Area, bottom, bottom_old,wid_old, Q,Q2, Q2_old,&
            waters_avg,waters_avg_old, waters_old, tsav,C_old, &
            Area_old, U2_old,acUdlast, NN_old, NN_old2, taus_old2, & 
            NN_last, bedl, bedu, ysl, ysu, diff1D, diff1D_old, Q_old, Q2H, Q2H_dT, useme1,useme2, & 
-           wset_tmp, Q2_geo, recrd
+           wset_tmp, Q2_geo, recrd, Criver_data, Cmouth_data
 REAL(dp)::delT,delX, wset, wetwidth, wetwidth_old, DT_old, t, DT, tlast, U2, vels,vels_old, & 
             velslast,taucrit_dep, Qe,Qe_old, Qbed, QbedI, dQbedI, dQbedIp, filler, dqbeddx
 REAL(dp)::  R, E,E_old, D, C, q1, rmu,bt,el,x,w,slopes, wt, wt2, vegdrag, taucrit, Cdist, Cdist_old,& 
@@ -30,7 +32,7 @@ INTEGER:: l, u,k,kk, incount, count2, seabuf, layers, bedwrite,&
           remeshfreq,morbl,morbu,morbl_old,morbu_old, iost, too_steep
 REAL(dp):: Q1in, Vol1, QS2in, VolS2, Source2, pars_out, xxx, visc_bedp, visc_bedm, visc_bed 
 REAL(dp):: hlim , Qb, tr, mor,mor1,  mu, erconst, multa, aa,bb, cc, lifttodrag, & 
-           rho, mthdta, z0, rhos, burnin, &
+           rho, mouth_data, z0, rhos, burnin, &
            voidf, dsand, d50, g, kvis,  lambdacon, alpha, cfl,man_nveg, Cmouth,& 
            Criver, water_m, water_mthick, veg_ht, &
            v1coef,v4coef, eddis1D, eddis1D_constant, lincrem
@@ -56,7 +58,7 @@ ALLOCATABLE bed(:,:),bed_old(:,:),bed_Vold(:,:),bed_oldrefit(:,:), ys(:,:),ys_ol
             morbl_old(:),morbu_old(:), dbdh(:,:),rmu(:), slopes(:,:), Qsav(:), A2(:),& 
             waters_avg(:),waters_avg_old(:), taucrit_dep(:,:,:),dst(:,:,:), wt(:),wt2(:),&
             vegdrag(:,:), taucrit(:,:,:), wset_tmp(:),& 
-            taucrit_dep_ys(:,:), mthdta(:,:), C_old(:), Area_old(:),&
+            taucrit_dep_ys(:,:), mouth_data(:,:),Cmouth_data(:,:),Criver_data(:,:), C_old(:), Area_old(:),&
             U2_old(:), wetwidth(:),wetwidth_old(:),& 
             QbedI(:), dQbedI(:), dqbeddx(:,:),dQbedIp(:), qb_G(:,:), &
             filler(:), diff1D(:), diff1D_old(:), Q_old(:), Q1in(:),&
@@ -95,10 +97,22 @@ ALLOCATE( bed(a,b),bed_old(a,b),bed_Vold(a,b),bed_oldrefit(a,b), ys(a,b),ys_oldr
 !!Read in the mouth boundary condition -- or if mouthread=.false., it should be in an equation in the
 !tidalmod_fg31.f95 subroutine 'mouth_height'
 IF(mouthread) THEN
-    call read_real_table(boundary_downstream_file, mthdta ,dlength,2)   
+    call read_real_table(boundary_downstream_file, mouth_data ,mouth_data_len,2)   
+    call check_for_uneven_time_increments(mouth_data, mouth_data_len)
 ELSE
     print*, "Analytical water level mouth boundary needed -- see the &
             'mouth_height' subroutine in st_venant_solver.f90"
+END IF
+
+! Read in the suspended sediment boundary conditions, if needed
+IF(Cmouth_read) THEN
+    call read_real_table(Cmouth_file,Cmouth_data,Cmouth_data_len,2)
+    call check_for_uneven_time_increments(Cmouth_data, Cmouth_data_len)
+END IF
+
+IF(Criver_read) THEN
+    call read_real_table(Criver_file,Criver_data,Criver_data_len,2)
+    call check_for_uneven_time_increments(Criver_data, Criver_data_len)
 END IF
 !!!!!!!!!!!!!!!!!!!
 
@@ -285,8 +299,8 @@ DO j= 1, jmax
             !Normal MacCormack
             CALL hyupdate(delT,delX,bottom(1:m),Width(1:m),Area(1:m),Q(1:m), Q2H_dT(0:m),&
                           waters(1:m),t,m,j,dbdh(1:m,1:2), &
-                          rmu(1:m),inuc(1:m),LAKE, hlim, Qb,tr, mthdta,mouthread, &
-                          dlength, bottom(1:m), rho, g,cfl1,v1coef,v4coef,seabuf)
+                          rmu(1:m),inuc(1:m),LAKE, hlim, Qb,tr, mouth_data,mouthread, &
+                          mouth_data_len, bottom(1:m), rho, g,cfl1,v1coef,v4coef,seabuf)
 
     END DO 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -483,6 +497,11 @@ DO j= 1, jmax
         wset_tmp(1:seabuf)=0._dp !No settling in the seabuf region
 
         ! NOTE: C, Cmouth, Criver etc are in g/L (or kg/m^3), NOT (m^3/m^3)
+        ! Update boundary conditions if needed -- note that these apply to tlast
+        IF(Cmouth_read) Cmouth=timeseries_interpolate(Cmouth_data,Cmouth_data_len,tlast)
+        IF(Criver_read) Criver=timeseries_interpolate(Criver_data,Criver_data_len,tlast)
+
+        ! Time-step suspended sediment concentration
         CALL susconc_up35(b,DT, Area, Q2, Q2_old, delX,C, U2,E*rhos, E_old*rhos, &
                           D*rhos, Cmouth , C_old, Area_old, &
                           Criver, wset_tmp, wetwidth,wetwidth_old,&

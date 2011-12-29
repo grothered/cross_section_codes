@@ -10,7 +10,7 @@ contains
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 SUBROUTINE hyupdate(delT, delX, bottom, B, A, Q,Q2H_dT,Y, t,l, counter,dbdh, rmu,inuc, LAKE, hlim, Qb, tr,&
- mthdta, mouthread,dlength, mns,rho, g,cfl, v1coef,v4coef,seabuf)
+ mouth_data, mouthread,mouth_data_len, mns,rho, g,cfl, v1coef,v4coef,seabuf)
     ! delT = time-step (computed herein based on the CFL condition)
     ! delX = distance between cross-sections (a constant, though this should be
     !        reasonably easy to hack if variable delX is desired)
@@ -47,11 +47,11 @@ SUBROUTINE hyupdate(delT, delX, bottom, B, A, Q,Q2H_dT,Y, t,l, counter,dbdh, rmu
     ! Qb   = River discharge imposed at boundary 'l'
     ! tr   = tidal range, which can be passed to 'mouth_height' if
     !        mouthread=FALSE
-    ! mthdta = a 2 column matrix containing (time, waterlevel) data that can be
+    ! mouth_data = a 2 column matrix containing (time, waterlevel) data that can be
     !          used to set the downstream boundary condition
-    ! mthread = True/false -- determine if we use mthdta to define the downstream boundary
+    ! mthread = True/false -- determine if we use mouth_data to define the downstream boundary
     !           condition.
-    ! dlength = number of rows in mthdta
+    ! mouth_data_len = number of rows in mouth_data
     ! mns = DEFUNCT PARAMETER
     ! rho = water density
     ! g = gravity
@@ -66,11 +66,11 @@ SUBROUTINE hyupdate(delT, delX, bottom, B, A, Q,Q2H_dT,Y, t,l, counter,dbdh, rmu
     !          cross-sectional area changed rapidly between section seabuf and
     !          seabuf+1.
 
-    INTEGER, INTENT (IN)::l, dlength,seabuf
-    REAL(dp), INTENT(IN):: delX, Qb, tr, mthdta, hlim, rho, mns, g, cfl, bottom, B
+    INTEGER, INTENT (IN)::l, mouth_data_len,seabuf
+    REAL(dp), INTENT(IN):: delX, Qb, tr, mouth_data, hlim, rho, mns, g, cfl, bottom, B
     REAL(dp),INTENT(IN OUT)::t, delT
     REAL(dp), INTENT(IN OUT):: A,Q, Q2H_dT, Y
-    DIMENSION:: bottom(l), B(l),A(l), Q(l), Q2H_dT(0:l), Y(l),mthdta(dlength,2), mns(l) 
+    DIMENSION:: bottom(l), B(l),A(l), Q(l), Q2H_dT(0:l), Y(l),mouth_data(mouth_data_len,2), mns(l) 
     INTEGER, INTENT (IN):: counter
     REAL(dp), INTENT(IN)::dbdh(l,2), rmu(l),inuc(l)
     REAL(dp), INTENT(IN):: v1coef, v4coef
@@ -132,7 +132,7 @@ SUBROUTINE hyupdate(delT, delX, bottom, B, A, Q,Q2H_dT,Y, t,l, counter,dbdh, rmu
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !Compute Mouth boundary condition 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    call mouth_height(th, t,tr, mthdta,mouthread, dlength)
+    call mouth_height(th, t,tr, mouth_data,mouthread, mouth_data_len)
 
     d0=th 
 
@@ -601,10 +601,10 @@ End Subroutine
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!
-SUBROUTINE mouth_height(th, t, tr, mthdta, mouthread, dlength)
-    INTEGER, INTENT(IN):: dlength
+SUBROUTINE mouth_height(th, t, tr, mouth_data, mouthread, mouth_data_len)
+    INTEGER, INTENT(IN):: mouth_data_len
     REAL(dp), INTENT(IN):: t, tr
-    REAL(dp), INTENT(IN)::mthdta(dlength,2)
+    REAL(dp), INTENT(IN)::mouth_data(mouth_data_len,2)
     REAL(dp), INTENT(INOUT):: th
     LOGICAL, INTENT(IN):: mouthread
 
@@ -622,7 +622,7 @@ SUBROUTINE mouth_height(th, t, tr, mthdta, mouthread, dlength)
 
         !        th=0._dp
         !END IF
-        tmax= mthdta(dlength, 1) !The maximum time in the input data. 
+        tmax= mouth_data(mouth_data_len, 1) !The maximum time in the input data. 
         !tscale = mod(t, tmax) !t modulo the max time - so we loop after this
         IF(tmax<t) THEN
             print*, 'PROBLEM: t is greater than the maximum time in the &
@@ -630,12 +630,12 @@ SUBROUTINE mouth_height(th, t, tr, mthdta, mouthread, dlength)
             stop
         END IF
         !
-        dtscale= mthdta(2,1)-mthdta(1,1) !The time increment in the data
+        dtscale= mouth_data(2,1)-mouth_data(1,1) !The time increment in the data
         !
         lwind= floor(t/dtscale)+1 !The index corresponding to tscale
         !
-        th= (( t-mthdta(lwind,1))*mthdta(lwind+1,2) + (mthdta(lwind+1,1)-t)*mthdta(lwind,2))/& 
-        (mthdta(lwind+1,1)-mthdta(lwind,1)) !The height at the mouth
+        th= (( t-mouth_data(lwind,1))*mouth_data(lwind+1,2) + (mouth_data(lwind+1,1)-t)*mouth_data(lwind,2))/& 
+        (mouth_data(lwind+1,1)-mouth_data(lwind,1)) !The height at the mouth
 
     END IF
 
@@ -643,12 +643,12 @@ END SUBROUTINE mouth_height
 !!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !subroutine hy22(delT, delX, h, B, A, Q,Q2H,Y, t,l, counter,dbdh, rmu,inuc, LAKE, hlim, Qb,tr, & 
-!mthdta,mouthread, dlength, mns, rho, g,cfl)!slL,srL,sLlh,sLrh,C0, qbbl,export)
-!INTEGER, Intent (In)::l, dlength
-!REAL(dp), Intent(In):: delX, Qb,tr, mthdta, rho, mns, g, cfl,Q2H
+!mouth_data,mouthread, mouth_data_len, mns, rho, g,cfl)!slL,srL,sLlh,sLrh,C0, qbbl,export)
+!INTEGER, Intent (In)::l, mouth_data_len
+!REAL(dp), Intent(In):: delX, Qb,tr, mouth_data, rho, mns, g, cfl,Q2H
 !REAL(dp),Intent(In out)::t
 !REAL(dp), Intent(In out):: h, B,A,Q, Y!, qbbl!,slL,srL,sLlh,sLrh, qbbl,C0
-!DIMENSION:: h(l), B(l),A(l),Q(l),Q2H(0:l), Y(l), mthdta(dlength,2), mns(l)!, qbbl(l)!,slL(l),srL(l),sLlh(l),sLrh(l), qbbl(l) 
+!DIMENSION:: h(l), B(l),A(l),Q(l),Q2H(0:l), Y(l), mouth_data(mouth_data_len,2), mns(l)!, qbbl(l)!,slL(l),srL(l),sLlh(l),sLrh(l), qbbl(l) 
 !REAL(dp), Intent(In out)::delT!,export
 !Integer, intent (in):: counter
 !REAL(dp), Intent(in)::dbdh(l,2), rmu(l),inuc(l)
@@ -780,7 +780,7 @@ END SUBROUTINE mouth_height
 !!TIDE --Now we find the change in water depth at the mouth. 
 !
 !!th=  (tr/2.00_dp)*( sin(2.00_dp*pi*t/(3600.00_dp*12.40_dp)) )!*atan(counter/4000.)*2./pi  
-!call mouth_height(th, t,tr, mthdta,mouthread, dlength)
+!call mouth_height(th, t,tr, mouth_data,mouthread, mouth_data_len)
 !d0=th !+(tr/2.)*(counter)**(-0.01)! A simple tide !max(th, hlim+h(1)) ! need to fix this to be depth at the mouth. 
 !
 !!print*, d0
@@ -930,7 +930,7 @@ END SUBROUTINE mouth_height
 !!TIDE --Now we find the change in water depth at the mouth. 
 !
 !!th=  (tr/2.00_dp)*( sin(2.00_dp*pi*t/(3600.00_dp*12.40_dp)) )!*atan(counter/4000.)*2./pi  
-!call mouth_height(th, t,tr, mthdta,mouthread, dlength)
+!call mouth_height(th, t,tr, mouth_data,mouthread, mouth_data_len)
 !d0=th !+(tr/2.)*(counter)**(-0.01)! A simple tide !max(th, hlim+h(1)) ! need to fix this to be depth at the mouth. 
 !
 !!Now we update the width, eh. 
@@ -1096,13 +1096,13 @@ END SUBROUTINE mouth_height
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!
 !subroutine hy23(delT, delX, h, B, A, Q,Q2,Y, t,l, counter,dbdh, rmu,inuc, LAKE, hlim, Qb,tr, & 
-!mthdta,mouthread, dlength, mns, rho, g,cfl)!slL,srL,sLlh,sLrh,C0, qbbl,export)
+!mouth_data,mouthread, mouth_data_len, mns, rho, g,cfl)!slL,srL,sLlh,sLrh,C0, qbbl,export)
 !
-!INTEGER, Intent (In)::l, dlength
-!REAL(dp), Intent(In):: delX, Qb,tr, mthdta, rho, mns, g, cfl,Q2
+!INTEGER, Intent (In)::l, mouth_data_len
+!REAL(dp), Intent(In):: delX, Qb,tr, mouth_data, rho, mns, g, cfl,Q2
 !REAL(dp),Intent(In out)::t
 !REAL(dp), Intent(In out):: h, B,A,Q, Y!, qbbl!,slL,srL,sLlh,sLrh, qbbl,C0
-!DIMENSION:: h(l), B(l),A(l),Q(l),Q2(l), Y(l), mthdta(dlength,2), mns(l)!, qbbl(l)!,slL(l),srL(l),sLlh(l),sLrh(l), qbbl(l) 
+!DIMENSION:: h(l), B(l),A(l),Q(l),Q2(l), Y(l), mouth_data(mouth_data_len,2), mns(l)!, qbbl(l)!,slL(l),srL(l),sLlh(l),sLrh(l), qbbl(l) 
 !REAL(dp), Intent(In out)::delT!,export
 !Integer, intent (in):: counter
 !REAL(dp), Intent(in)::dbdh(l,2), rmu(l),inuc(l)
@@ -1234,7 +1234,7 @@ END SUBROUTINE mouth_height
 !!TIDE --Now we find the change in water depth at the mouth. 
 !
 !!th=  (tr/2.00_dp)*( sin(2.00_dp*pi*t/(3600.00_dp*12.40_dp)) )!*atan(counter/4000.)*2./pi  
-!call mouth_height(th, t,tr, mthdta,mouthread, dlength)
+!call mouth_height(th, t,tr, mouth_data,mouthread, mouth_data_len)
 !d0=th !+(tr/2.)*(counter)**(-0.01)! A simple tide !max(th, hlim+h(1)) ! need to fix this to be depth at the mouth. 
 !
 !!print*, d0
@@ -1652,13 +1652,13 @@ END SUBROUTINE mouth_height
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !Subroutine hyupdate2(delT, delX, h, B, A, Q,Q2H,Y, t,l, counter,dbdh, rmu,inuc, LAKE, hlim, Qb, tr,&
-! mthdta, mouthread, dlength, mns,rho, g,cfl, v1coef,v4coef)!slL,srL,sLlh,sLrh,C0, qbbl,export) 
+! mouth_data, mouthread, mouth_data_len, mns,rho, g,cfl, v1coef,v4coef)!slL,srL,sLlh,sLrh,C0, qbbl,export) 
 !
-!INTEGER, Intent (In)::l, dlength
-!REAL(dp), Intent(In):: delX, Qb, tr, mthdta, hlim, rho, mns, g, cfl, h, B
+!INTEGER, Intent (In)::l, mouth_data_len
+!REAL(dp), Intent(In):: delX, Qb, tr, mouth_data, hlim, rho, mns, g, cfl, h, B
 !REAL(dp),Intent(In out)::t
 !REAL(dp), Intent(In out):: A,Q, Q2H, Y!, qbbl!,slL,srL,sLlh,sLrh, qbbl,C0
-!DIMENSION:: h(l), B(l),A(l), Q(l), Q2H(0:l), Y(l),mthdta(dlength,2), mns(l) !, qbbl(l)!,slL(l),srL(l),sLlh(l),sLrh(l), qbbl(l) 
+!DIMENSION:: h(l), B(l),A(l), Q(l), Q2H(0:l), Y(l),mouth_data(mouth_data_len,2), mns(l) !, qbbl(l)!,slL(l),srL(l),sLlh(l),sLrh(l), qbbl(l) 
 !REAL(dp), Intent(In out)::delT!,export
 !Integer, intent (in):: counter
 !REAL(dp), Intent(in)::dbdh(l,2), rmu(l),inuc(l)
@@ -1742,7 +1742,7 @@ END SUBROUTINE mouth_height
 !!!!!!!!!!!!!!!
 !!TIDE --Now we find the change in water depth at the mouth. 
 !
-!call mouth_height(th, t,tr, mthdta,mouthread, dlength)
+!call mouth_height(th, t,tr, mouth_data,mouthread, mouth_data_len)
 !
 !d0=th 
 !

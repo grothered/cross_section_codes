@@ -928,7 +928,55 @@ SUBROUTINE conservation_tests2(l1,Anew,wetwidth,delX,Q2,DT,C,C_old,FL1_mouth, FL
     Source2= Source2+ sum(E*rhos-min(wset*wetwidth,Anew/DT)*0.5*(C+C_old) )*DT*delX !The mass eroded/deposited
 
 END SUBROUTINE conservation_tests2
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+REAL(dp) FUNCTION timeseries_interpolate(timeseries,timeseries_len,timeout)
+    ! Purpose: Given a timeseries (array with 2 columns = (time, value)),
+    !          interpolate the value at time=timeout
+    INTEGER, INTENT(IN):: timeseries_len
+    REAL(dp), INTENT(IN):: timeseries(timeseries_len,2)
+    REAL(dp), INTENT(IN):: timeout
+
+    REAL(dp):: tmax, dtscale
+    INTEGER:: lwind
+    
+
+    tmax= timeseries(timeseries_len, 1) !The maximum time in the input data. 
+    IF(timeout>tmax) THEN
+        print*, 'ERROR in timeseries_interpolate: Requested to interpolate &
+                beyond the range of the timeseries, ', tmax, timeout
+        stop
+    END IF
+
+    dtscale= timeseries(2,1)-timeseries(1,1) !The time increment in the data
+    !
+    lwind= floor(timeout/dtscale)+1 !The index corresponding to tscale
+    !
+    timeseries_interpolate= (( timeout-timeseries(lwind,1))*timeseries(lwind+1,2) +&
+                             (timeseries(lwind+1,1)-timeout)*timeseries(lwind,2))/& 
+                            (timeseries(lwind+1,1)-timeseries(lwind,1)) ! Output value
+
+END FUNCTION timeseries_interpolate
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+SUBROUTINE check_for_uneven_time_increments(timeseries,timeseries_len)
+    ! Check that the time spacing is constant in a timeseries array
+    INTEGER, INTENT(IN):: timeseries_len
+    REAL(dp), INTENT(IN):: timeseries(timeseries_len,2)
+
+    ! Local variables
+    REAL(dp):: dt(timeseries_len-1)
+    INTEGER:: i
+
+    dt=timeseries(2:timeseries_len,1) - timeseries(1:timeseries_len-1,1)
+
+    DO i=2,timeseries_len-1
+        IF(dt(i).ne.dt(i-1)) THEN
+            print*, "ERROR: timeseries does not have even time increments"
+            stop
+        END IF
+    END DO
+    
+END SUBROUTINE
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 REAL(dp) FUNCTION simpson_integrate(a,dz,f)
     ! Purpose: Numerically integrate f
     ! Assume f(1), f(2), ...f(a) are evenly spaced by dz
