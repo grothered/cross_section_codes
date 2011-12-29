@@ -1696,6 +1696,8 @@ subroutine susconc_up35(b,DT, Area, Q2, Q2_old, delX,C, U2, Qe2,Qe2_old, Qd2, Cm
     IF(Q2(1)>0._dp) THEN
         C_old(1)=Cmouth
         C_old(2)=Cmouth !0.5_dp*(Cmouth+C_old(3))
+        ! Experiment with imposing the boundary condition more deeply
+        !C_old(3)=Cmouth
     ELSE
         C_old(2)=C_old(3) !max(2._dp*C_old(3)-C_old(4),0._dp)
         C_old(1)=C_old(3) !max(2._dp*C_old(2) - C_old(3),0._dp )
@@ -1705,6 +1707,8 @@ subroutine susconc_up35(b,DT, Area, Q2, Q2_old, delX,C, U2, Qe2,Qe2_old, Qd2, Cm
         C_old((b+3):(b+4)) = C_old2(b) !0._dp !Criver 
     ELSE
         C_old((b+3):(b+4)) = Criver 
+        ! Experiment with imposing the boundary condition more deeply
+        !C_old(b:b+2) = Criver
     END IF
 
 

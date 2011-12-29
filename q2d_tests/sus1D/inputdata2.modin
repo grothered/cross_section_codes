@@ -8,7 +8,7 @@ delX = 10.0 !0.5 !The horizontal spacing between cross sections (m)
 
 jmax = 3000 !4000200 !3500000 ! Number of time steps
 t=0.0 !Starting time (s)
-longt= 5.0 !The time step in between cross sectional updates (s)
+longt= 8.0 !The time step in between cross sectional updates (s)
 writfreq = 10 ! Write output every writfreqth timestep
 bedwrite = 300 !20000 !Write bed geometry every bedwrite'th timestep
 
