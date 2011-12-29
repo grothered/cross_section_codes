@@ -20,9 +20,17 @@ boundary_downstream_file = 'mouth' ! name of input file for downstream boundary 
 
 Qb = -0.0 !The river discharge (m^3/s)
 tr = 0.0475 !The tide range in the case that mouthread=.false. (m)
-Cmouth=0.00 !The concentration of sediment at the mouth boundary
-Criver=0.0 !The concentration of sediment at the river boundary
+
+Cmouth_read=.false. ! Do we read in the concentration of suspended sediment at the mouth?
+Cmouth=0.00 !The concentration of sediment at the mouth boundary, if not read from a file
+Cmouth_file='Cmouth' ! File with timeseries of Cmouth, if Cmouth_read=.True.
+
+Criver_read=.false. ! Do we read the concentration of suspended sediment at the upstream boundary?
+Criver=0.0 !The concentration of sediment at the river boundary, if not read from a file
+Criver_file='Criver' ! File with timeseries of Criver, if Criver_read=.True.
+
 eddis1D=00.0 !dimensionless eddy dispersion for 1D suspended sediment
+eddis1D_constant=0.0 ! This adds a constant to the eddy dispersion. Useful for some analytical cases
 water_m=0.082 !The minimum initial water level (m)
 water_mthick=0.002 !The minimum initial thickness of water above the average bed level +hlim. Used to prevent dry starts.
 

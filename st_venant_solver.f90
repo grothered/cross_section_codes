@@ -623,7 +623,7 @@ SUBROUTINE mouth_height(th, t, tr, mthdta, mouthread, dlength)
         !        th=0._dp
         !END IF
         tmax= mthdta(dlength, 1) !The maximum time in the input data. 
-        tscale = mod(t, tmax) !t modulo the max time - so we loop after this
+        !tscale = mod(t, tmax) !t modulo the max time - so we loop after this
         IF(tmax<t) THEN
             print*, 'PROBLEM: t is greater than the maximum time in the &
                     downstream boundary condition input', t, tmax
@@ -632,13 +632,11 @@ SUBROUTINE mouth_height(th, t, tr, mthdta, mouthread, dlength)
         !
         dtscale= mthdta(2,1)-mthdta(1,1) !The time increment in the data
         !
-        lwind= floor(tscale/dtscale)+1 !The index corresponding to tscale
+        lwind= floor(t/dtscale)+1 !The index corresponding to tscale
         !
-        th= (( tscale-mthdta(lwind,1))*mthdta(lwind+1,2) + (mthdta(lwind+1,1)-tscale)*mthdta(lwind,2))/& 
+        th= (( t-mthdta(lwind,1))*mthdta(lwind+1,2) + (mthdta(lwind+1,1)-t)*mthdta(lwind,2))/& 
         (mthdta(lwind+1,1)-mthdta(lwind,1)) !The height at the mouth
 
-        !th=th
-        !th=th-1._dp
     END IF
 
 END SUBROUTINE mouth_height

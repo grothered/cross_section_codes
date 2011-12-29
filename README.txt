@@ -101,3 +101,11 @@ I typically use R to plot/investigate the outputs, using the .R routines in the
 source tree, but you could use any software that can read the ascii output
 files.
 
+
+
+OUTSTANDING ISSUES
+1) Set up boundary conditions to accommodate sub and super critical flow
+    - Then add in the Zoppou Roberts hydraulic jump test
+2) Allow specification of Criver timeseries
+    - Important to allow testing
+

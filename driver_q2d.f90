@@ -33,18 +33,20 @@ REAL(dp):: hlim , Qb, tr, mor,mor1,  mu, erconst, multa, aa,bb, cc, lifttodrag, 
            rho, mthdta, z0, rhos, burnin, &
            voidf, dsand, d50, g, kvis,  lambdacon, alpha, cfl,man_nveg, Cmouth,& 
            Criver, water_m, water_mthick, veg_ht, &
-           v1coef,v4coef, eddis1D,lincrem
+           v1coef,v4coef, eddis1D, eddis1D_constant, lincrem
 LOGICAL:: susdist=.false., sus2d, LAKE, mouthread, norm, vertical, tbston, normmov, read_initial_geo, & 
-          remesh, Qbedon, talmon, printall, taucrit_slope_reduction=.false., read_initial_waters
+          remesh, Qbedon, talmon, printall, taucrit_slope_reduction=.false., read_initial_waters, &
+          Cmouth_read, Criver_read
 CHARACTER(char_len):: boundary_downstream_file, friction_type, grain_friction_type, resus_type, &
-                      bedload_type, bank_erosion_type
+                      bedload_type, bank_erosion_type, Cmouth_file, Criver_file
 
 !Variables that are read in from the inputdata file
 NAMELIST /inputdata2/ a, b, jmax, writfreq, t,longt, delX, wset, seabuf, hlim, &
      Qb, tr, mor, mu, erconst,lifttodrag, rho, rhos, burnin, sus2d, LAKE, mouthread, & 
-    voidf, dsand, d50, g, kvis, norm, vertical, lambdacon, tbston, alpha, read_initial_geo, cfl, &
-     rough_coef, man_nveg, Cmouth, Criver, layers, bedwrite, remesh, remeshfreq, normmov,& 
-     water_m, water_mthick, veg_ht, Qbedon, talmon, v1coef,v4coef,eddis1D,lincrem, &
+     voidf, dsand, d50, g, kvis, norm, vertical, lambdacon, tbston, alpha, read_initial_geo, cfl, &
+     rough_coef, man_nveg, Cmouth_read, Cmouth, Cmouth_file, Criver_read, Criver, Criver_file, &
+     layers, bedwrite, remesh, remeshfreq, normmov,& 
+     water_m, water_mthick, veg_ht, Qbedon, talmon, v1coef,v4coef,eddis1D,eddis1D_constant, lincrem, &
      boundary_downstream_file, friction_type, grain_friction_type, resus_type, bedload_type, &
      bank_erosion_type, read_initial_waters
 
@@ -170,6 +172,7 @@ morbl_old=0
 morbu_old=0
 
 writcount=9E+8
+NN=bed*0._dp !At the moment this is unused, but it flows through all the routines. Very inefficient
 
 !!!If we have a 'seabuf' (a region of the model where no sediment or morphological changes happen - i.e. a hydrodynamic buffer zone), then fix the suspended sediment concentration in this zone
 IF(seabuf>0) THEN
@@ -180,8 +183,6 @@ END IF
 !!The roughness multiplier
 rmu= fs(floor(a/2._dp),:)/(8._dp*g) !Roughness multiplier, a preliminary value. This used subsequently as the 'real' (properly integrated) roughness. So it is updated as velocity profiles become available
 
-!Some more random definitions
-NN=bed*0._dp !At the moment this is unused, but it flows through all the routines. Very inefficient
 
 
 
@@ -465,7 +466,7 @@ DO j= 1, jmax
             END IF
         END DO
         !Calculate 1D dispersion coeff. 
-        diff1D=0._dp+ eddis1D*sqrt(abs(taus(a/2,:))*max(waters_avg-bottom, 0._dp ) )
+        diff1D=eddis1D_constant+ eddis1D*sqrt(abs(taus(a/2,:))*max(waters_avg-bottom, 0._dp ) )
         !In the seabuf region, set 1D dispersion coef to the value at the channel mouth
         diff1d(1:seabuf)=diff1d(seabuf+1)
         
