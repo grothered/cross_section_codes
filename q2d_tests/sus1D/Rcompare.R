@@ -23,7 +23,7 @@ getf(num_sects)
 erf<-function(x){
    # This code uses the analytical solutions from Chanson (2004:343), and I
    # use this formula based on his description of erf in the appendices
-   2*(pnorm(x,mean=0,sd=1)-0.5)
+   2*(pnorm(x,mean=0,sd=0.5)-0.5)
 }
 
 png(file='compare.png',width=5.4,height=5.4,res=1000,units='in')
