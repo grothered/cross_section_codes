@@ -1,7 +1,7 @@
 ## Quick R routine to create the files sectionsold2 and lnthsold2
 ## 
 a=5
-b=500
+b=1000
 width=10.0
 drop=3.0
 

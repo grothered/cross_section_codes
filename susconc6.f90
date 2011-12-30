@@ -1883,8 +1883,8 @@ subroutine susconc_up35(b,DT, Area, Q2, Q2_old, delX,C, U2, Qe2,Qe2_old, Qd2, Cm
     rhs=0._dp
 
     DO i=3, b+2
-        upper(i)= -0.5_dp*0.5_dp*(0.5_dp*(A(i+1)+Area_old(i+1))*D(i+1) +0.5_dp*(A(i)+Area_old(i))*D(i))/delX**2 !Diffusion
-        lower(i)= -0.5_dp*0.5_dp*(0.5_dp*(A(i)+Area_old(i))*D(i) +0.5_dp*(A(i-1)+Area_old(i-1))*D(i-1))/delX**2 !Diffusion
+        upper(i)= -0.5_dp*0.5_dp*((A(i+1)+Area_old(i+1))*D(i+1) +(A(i)+Area_old(i))*D(i))/delX**2 !Diffusion
+        lower(i)= -0.5_dp*0.5_dp*((A(i)+Area_old(i))*D(i) +(A(i-1)+Area_old(i-1))*D(i-1))/delX**2 !Diffusion
         diag(i)= A(i)/DT & !Unsteady
                 -upper(i) - lower(i) & !Diffusion
                 +0.5_dp*min(wset(i)*0.5_dp*(wetwidth(i) +wetwidth(i)), 0.5_dp*(Area_old(i)+A(i))/DT) !Deposition
