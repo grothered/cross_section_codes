@@ -26,7 +26,8 @@ erf<-function(x){
    2*(pnorm(x,mean=0,sd=0.5)-0.5)
 }
 
-png(file='compare.png',width=5.4,height=5.4,res=1000,units='in')
+#png(file='compare.png',width=5.4,height=5.4,res=1000,units='in')
+pdf(file='compare.pdf',width=5.4,height=5.4)
 par(mfrow=c(2,2))
 par(mar=c(4,4,2,0.2))
 par(cex=0.6)

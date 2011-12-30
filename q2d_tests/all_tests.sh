@@ -53,9 +53,20 @@ echo '#########################'
 ./q2d < inputdata2.modin > outfile.log
 tail -n1 outfile.log
 R CMD BATCH --slave analytical_compare2.R 
-gv Dam_break_wet.eps
+evince Dam_break_wet.eps
 cd ../../
 
 # FIXME: Dam break (dry downstream region)
 
 # FIXME: 1D suspended sediment tests
+cd sus1D
+cp ../../q2d .
+echo '#########################'
+echo 'Running 1D sus  ...'
+echo '#########################'
+./q2d < inputdata2.modin > outfile.log
+tail -n1 outfile.log
+R CMD BATCH --slave Rcompare.R 
+evince compare.pdf
+cd ../../
+
