@@ -9,7 +9,7 @@ for i in $(find $basedir -name inputdata2.modin);
 
         ## Renaming a variable 
 
-        #sed 's/read_geo=.true./read_initial_geo=.true./g' $i > $(dirname $i)'/inputdata3.modin'
+        #sed 's/Qb =/Qriver =/g' $i > $(dirname $i)'/inputdata3.modin'
       
          
         ## Adding a newline after a known line
@@ -20,8 +20,8 @@ for i in $(find $basedir -name inputdata2.modin);
         #sed '/eddis1D=/a\eddis1D_constant=0.0 ! This adds a constant to the eddy dispersion. Useful for some analytical cases
         #     ' $i > $(dirname $i)'/inputdata3.modin'
 
-        sed '/Cmouth=/a\Cmouth_file="Cmouth" ! File with timeseries of Cmouth, if Cmouth_read=.True.
-             ' $i > $(dirname $i)'/inputdata3.modin'
+        #sed '/Cmouth=/a\Cmouth_file="Cmouth" ! File with timeseries of Cmouth, if Cmouth_read=.True.
+        #     ' $i > $(dirname $i)'/inputdata3.modin'
 
         ## Add a newline before a known line
 

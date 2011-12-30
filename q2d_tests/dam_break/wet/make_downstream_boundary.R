@@ -7,7 +7,7 @@ h = 10+0*t #0.8*sin(2*pi*t/(3600*12.4))
 
 out=cbind(t,h)
 
-write.table( out, file='mouth', row.names=F, col.names=F)
+write.table(out, file='mouth', row.names=F, col.names=F)
 
 
 

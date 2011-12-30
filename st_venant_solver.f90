@@ -9,7 +9,7 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-SUBROUTINE hyupdate(delT, delX, bottom, B, A, Q,Q2H_dT,Y, t,l, counter,dbdh, rmu,inuc, LAKE, hlim, Qb, tr,&
+SUBROUTINE hyupdate(delT, delX, bottom, B, A, Q,Q2H_dT,Y, t,l, counter,dWidth_dwaters, rmu,inuc, LAKE, hlim, Qb, tr,&
  mouth_data, mouthread,mouth_data_len, mns,rho, g,cfl, v1coef,v4coef,seabuf)
     ! delT = time-step (computed herein based on the CFL condition)
     ! delX = distance between cross-sections (a constant, though this should be
@@ -26,7 +26,7 @@ SUBROUTINE hyupdate(delT, delX, bottom, B, A, Q,Q2H_dT,Y, t,l, counter,dbdh, rmu
     ! t    = time
     ! l    = number of cross-sections
     ! counter = a counter (keeps track of how many times this has been called).
-    ! dbdh = rate of change of width w.r.t. the water elevation. This can hold 2
+    ! dWidth_dwaters = rate of change of width w.r.t. the water elevation. This can hold 2
     !        values for each cross-section (so allowing a different treatment
     !        for rising and falling water levels), but this is not used at
     !        present.
@@ -72,7 +72,7 @@ SUBROUTINE hyupdate(delT, delX, bottom, B, A, Q,Q2H_dT,Y, t,l, counter,dbdh, rmu
     REAL(dp), INTENT(IN OUT):: A,Q, Q2H_dT, Y
     DIMENSION:: bottom(l), B(l),A(l), Q(l), Q2H_dT(0:l), Y(l),mouth_data(mouth_data_len,2), mns(l) 
     INTEGER, INTENT (IN):: counter
-    REAL(dp), INTENT(IN)::dbdh(l,2), rmu(l),inuc(l)
+    REAL(dp), INTENT(IN)::dWidth_dwaters(l,2), rmu(l),inuc(l)
     REAL(dp), INTENT(IN):: v1coef, v4coef
     LOGICAL, INTENT(IN)::LAKE, mouthread
 
@@ -215,10 +215,10 @@ SUBROUTINE hyupdate(delT, delX, bottom, B, A, Q,Q2H_dT,Y, t,l, counter,dbdh, rmu
             ind=2
         END IF
 
-        w1= B(i)**2+2._dp*dbdh(i,ind)*(Apred(i)-Alast(i))
+        w1= B(i)**2+2._dp*dWidth_dwaters(i,ind)*(Apred(i)-Alast(i))
         
-        IF((dbdh(i,ind)>0._dp).AND.(w1>0._dp)) THEN
-            Ypred(i)=Ylast(i)+ (-B(i)+ sqrt(w1))/(dbdh(i,ind))
+        IF((dWidth_dwaters(i,ind)>0._dp).AND.(w1>0._dp)) THEN
+            Ypred(i)=Ylast(i)+ (-B(i)+ sqrt(w1))/(dWidth_dwaters(i,ind))
         ELSE
             Ypred(i)= Ylast(i)+ (Apred(i)-Alast(i))/B(i)
         END IF
@@ -230,8 +230,8 @@ SUBROUTINE hyupdate(delT, delX, bottom, B, A, Q,Q2H_dT,Y, t,l, counter,dbdh, rmu
             PRINT*, "elev", i," is Nan", Ylast !, Qshift(i), B(i), i, Q(i+1), Q(i),l !, Bshift(i)
             PRINT*, '....Qlast....'
             PRINT*, Q
-            PRINT*, '....dbdh....'
-            PRINT*, dbdh
+            PRINT*, '....dWidth_dwaters....'
+            PRINT*, dWidth_dwaters
             PRINT*, '....Alast....'
             PRINT*, Alast
             PRINT*, '....B....'
@@ -317,13 +317,13 @@ SUBROUTINE hyupdate(delT, delX, bottom, B, A, Q,Q2H_dT,Y, t,l, counter,dbdh, rmu
     Bnew(1:l)= B(1:l) 
     !do i= 1, l
     !   if(Ypred(i)>Ylast(i)) THEN
-    !   Bnew(i)=Bnew(i)+dbdh(i,1)*(Ypred(i)-Ylast(i))
+    !   Bnew(i)=Bnew(i)+dWidth_dwaters(i,1)*(Ypred(i)-Ylast(i))
     !   ELSE
-    !   Bnew(i)=Bnew(i)+dbdh(i,2)*(Ypred(i)-Ylast(i))
+    !   Bnew(i)=Bnew(i)+dWidth_dwaters(i,2)*(Ypred(i)-Ylast(i))
     !   END IF
     !   IF(Bnew(i)<0._dp) THEN
     !           Bnew(i)=B(i)
-    !           !dbdh(i)=0._dp
+    !           !dWidth_dwaters(i)=0._dp
     !   END IF
     !end do
 
@@ -335,10 +335,10 @@ SUBROUTINE hyupdate(delT, delX, bottom, B, A, Q,Q2H_dT,Y, t,l, counter,dbdh, rmu
             ind=2
         END IF
         !To understand this step, see a similar treatment above
-        w1= Bnew(i)**2+2._dp*dbdh(i,ind)*(Acor(i)-Alast(i))
+        w1= Bnew(i)**2+2._dp*dWidth_dwaters(i,ind)*(Acor(i)-Alast(i))
         
-        IF((dbdh(i,ind)>0._dp).and.(.true.).and.(w1>0._dp)) THEN
-            Ycor(i)=Ylast(i)+ (-Bnew(i)+ sqrt(w1))/(dbdh(i,ind))
+        IF((dWidth_dwaters(i,ind)>0._dp).and.(.true.).and.(w1>0._dp)) THEN
+            Ycor(i)=Ylast(i)+ (-Bnew(i)+ sqrt(w1))/(dWidth_dwaters(i,ind))
         ELSE
             Ycor(i)= Ylast(i)+ (Acor(i)-Alast(i))/B(i)
         END IF
@@ -419,9 +419,9 @@ SUBROUTINE hyupdate(delT, delX, bottom, B, A, Q,Q2H_dT,Y, t,l, counter,dbdh, rmu
         ELSE
             ind=2
         END IF
-            w1= B(i)**2+2._dp*dbdh(i,ind)*(A(i)-Alast(i))
-        IF((dbdh(i,ind)>0._dp).AND.(w1>0._dp)) THEN
-            Y(i)=Ylast(i)+ (-B(i)+ sqrt(w1))/(dbdh(i,ind))
+            w1= B(i)**2+2._dp*dWidth_dwaters(i,ind)*(A(i)-Alast(i))
+        IF((dWidth_dwaters(i,ind)>0._dp).AND.(w1>0._dp)) THEN
+            Y(i)=Ylast(i)+ (-B(i)+ sqrt(w1))/(dWidth_dwaters(i,ind))
         ELSE
             Y(i)= Ylast(i)+ (A(i)-Alast(i))/B(i)
         END IF
@@ -531,9 +531,9 @@ SUBROUTINE hyupdate(delT, delX, bottom, B, A, Q,Q2H_dT,Y, t,l, counter,dbdh, rmu
         ELSE
             ind=2
         END IF
-        w1= B(i)**2+2._dp*dbdh(i,ind)*(A(i)-Alast(i))
-        IF((dbdh(i,ind)>0._dp).and.(w1>0._dp)) THEN
-            Y(i)=Ylast(i)+ (-B(i)+ sqrt(w1))/(dbdh(i,ind))
+        w1= B(i)**2+2._dp*dWidth_dwaters(i,ind)*(A(i)-Alast(i))
+        IF((dWidth_dwaters(i,ind)>0._dp).and.(w1>0._dp)) THEN
+            Y(i)=Ylast(i)+ (-B(i)+ sqrt(w1))/(dWidth_dwaters(i,ind))
         ELSE
             Y(i)= Ylast(i)+ (A(i)-Alast(i))/B(i)
         END IF
@@ -554,7 +554,7 @@ SUBROUTINE hyupdate(delT, delX, bottom, B, A, Q,Q2H_dT,Y, t,l, counter,dbdh, rmu
 
     DO i=1, l
         IF(isnan(Ypred(i))) print*, "Ypred ",i," is nan"
-        IF(isnan(Ycor(i))) print*, "Ycor ",i," is nan", dbdh(i,1:2), B(i), Bnew(i), Acor(i)-Alast(i)
+        IF(isnan(Ycor(i))) print*, "Ycor ",i," is nan", dWidth_dwaters(i,1:2), B(i), Bnew(i), Acor(i)-Alast(i)
         IF(isnan(Qpred(i))) print*, "Qpred ",i," is nan"
         IF(isnan(Qcor(i))) print*, "Qcor ",i," is nan", Qcor4(i), Qcor1(i), Qcor2(i), Acorb(i) & 
         , (1._dp-sqrt(1._dp-4._dp*Qcor4(i)*delT*(Qcor1(i)-Qcor2(i)+visc(i))))/(2._dp*Qcor4(i)*delT), &

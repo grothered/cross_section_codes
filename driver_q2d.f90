@@ -19,7 +19,7 @@ INTEGER:: a, b, i,j, m, p, o,d2,d1, ii, n, i1, jj1, mouth_data_len, jmax, writfr
 REAL(dp):: longt,longt1, cfl1, tmp1
 REAL(dp):: bed,bed_old,bed_Vold,bed_oldrefit, ys,ys_oldrefit, fs,fs_g,a_ref, ws, waters, rough_coef 
 REAL(dp):: Width, Area, bottom, bottom_old,wid_old, Q,Q2, Q2_old,& 
-           dBdh,inuc,NN,taus,taus_g, Qsav, A2, &
+           dWidth_dwaters,inuc,NN,taus,taus_g, Qsav, A2, &
            waters_avg,waters_avg_old, waters_old, tsav,C_old, &
            Area_old, U2_old,acUdlast, NN_old, NN_old2, taus_old2, & 
            NN_last, bedl, bedu, ysl, ysu, diff1D, diff1D_old, Q_old, Q2H, Q2H_dT, useme1,useme2, & 
@@ -31,7 +31,7 @@ REAL(dp)::  R, E,E_old, D, C, q1, rmu,bt,el,x,w,slopes, wt, wt2, vegdrag, taucri
 INTEGER:: l, u,k,kk, incount, count2, seabuf, layers, bedwrite,&
           remeshfreq,morbl,morbu,morbl_old,morbu_old, iost, too_steep
 REAL(dp):: Q1in, Vol1, QS2in, VolS2, Source2, pars_out, xxx, visc_bedp, visc_bedm, visc_bed 
-REAL(dp):: hlim , Qb, tr, mor,mor1,  mu, erconst, multa, aa,bb, cc, lifttodrag, & 
+REAL(dp):: hlim , Qriver, tr, mor,mor1,  mu, erconst, multa, aa,bb, cc, lifttodrag, & 
            rho, mouth_data, z0, rhos, burnin, &
            voidf, dsand, d50, g, kvis,  lambdacon, alpha, cfl,man_nveg, Cmouth,& 
            Criver, water_m, water_mthick, veg_ht, &
@@ -44,7 +44,7 @@ CHARACTER(char_len):: boundary_downstream_file, friction_type, grain_friction_ty
 
 !Variables that are read in from the inputdata file
 NAMELIST /inputdata2/ a, b, jmax, writfreq, t,longt, delX, wset, seabuf, hlim, &
-     Qb, tr, mor, mu, erconst,lifttodrag, rho, rhos, burnin, sus2d, LAKE, mouthread, & 
+     Qriver, tr, mor, mu, erconst,lifttodrag, rho, rhos, burnin, sus2d, LAKE, mouthread, & 
      voidf, dsand, d50, g, kvis, norm, vertical, lambdacon, tbston, alpha, read_initial_geo, cfl, &
      rough_coef, man_nveg, Cmouth_read, Cmouth, Cmouth_file, Criver_read, Criver, Criver_file, &
      layers, bedwrite, remesh, remeshfreq, normmov,& 
@@ -55,7 +55,7 @@ NAMELIST /inputdata2/ a, b, jmax, writfreq, t,longt, delX, wset, seabuf, hlim, &
 ALLOCATABLE bed(:,:),bed_old(:,:),bed_Vold(:,:),bed_oldrefit(:,:), ys(:,:),ys_oldrefit(:,:),& 
             fs(:,:), fs_g(:,:),a_ref(:,:), waters(:), waters_old(:),&
             l(:), u(:), morbl(:),morbu(:), recrd(:), & 
-            morbl_old(:),morbu_old(:), dbdh(:,:),rmu(:), slopes(:,:), Qsav(:), A2(:),& 
+            morbl_old(:),morbu_old(:), dWidth_dwaters(:,:),rmu(:), slopes(:,:), Qsav(:), A2(:),& 
             waters_avg(:),waters_avg_old(:), taucrit_dep(:,:,:),dst(:,:,:), wt(:),wt2(:),&
             vegdrag(:,:), taucrit(:,:,:), wset_tmp(:),& 
             taucrit_dep_ys(:,:), mouth_data(:,:),Cmouth_data(:,:),Criver_data(:,:), C_old(:), Area_old(:),&
@@ -84,7 +84,7 @@ ALLOCATE( bed(a,b),bed_old(a,b),bed_Vold(a,b),bed_oldrefit(a,b), ys(a,b),ys_oldr
           C_old(b), Area_old(b), U2_old(b), Qe(a,b),Qe_old(a,b), Qbed(a,b), QbedI(b), dQbedI(b),dQbedIp(0:b),& 
           filler(-1:b+2), dqbeddx(a,b) , acUdlast(a,b),velslast(a,b), diff1D(b), diff1D_old(b),  &
           Width(b), Area(b), bottom(b),bottom_old(b),wid_old(b), Q(b), Q2(b), Q2_old(b), R(a), D(b),&
-          E(b),E_old(b), C(b), U2(b),dbdh(b,2) ,rmu(b), inuc(b), NN(a,b),NN_old(a,b), NN_old2(a,b),& 
+          E(b),E_old(b), C(b), U2(b),dWidth_dwaters(b,2) ,rmu(b), inuc(b), NN(a,b),NN_old(a,b), NN_old2(a,b),& 
           taus_old2(a,b), NN_last(a,b), x(a),slopes(a,b),wetwidth(b), wetwidth_old(b), Q2H(0:b),Q2H_dT(0:b), Q2_geo(b),& 
           wset_tmp(b), A2(b), Qsav(b), waters_avg(b),waters_avg_old(b), taucrit_dep(a,b,layers), dst(a,b,0:layers+1), &
           wt(b), wt2(b), vegdrag(a,b), qb_G(0:a+1,b), recrd(0:a), & 
@@ -97,8 +97,7 @@ ALLOCATE( bed(a,b),bed_old(a,b),bed_Vold(a,b),bed_oldrefit(a,b), ys(a,b),ys_oldr
 !!Read in the mouth boundary condition -- or if mouthread=.false., it should be in an equation in the
 !tidalmod_fg31.f95 subroutine 'mouth_height'
 IF(mouthread) THEN
-    call read_real_table(boundary_downstream_file, mouth_data ,mouth_data_len,2)   
-    call check_for_uneven_time_increments(mouth_data, mouth_data_len)
+    call read_real_table(boundary_downstream_file, mouth_data ,mouth_data_len,2, .true.)   
 ELSE
     print*, "Analytical water level mouth boundary needed -- see the &
             'mouth_height' subroutine in st_venant_solver.f90"
@@ -106,31 +105,29 @@ END IF
 
 ! Read in the suspended sediment boundary conditions, if needed
 IF(Cmouth_read) THEN
-    call read_real_table(Cmouth_file,Cmouth_data,Cmouth_data_len,2)
-    call check_for_uneven_time_increments(Cmouth_data, Cmouth_data_len)
+    call read_real_table(Cmouth_file,Cmouth_data,Cmouth_data_len,2, .true.)
 END IF
 
 IF(Criver_read) THEN
-    call read_real_table(Criver_file,Criver_data,Criver_data_len,2)
-    call check_for_uneven_time_increments(Criver_data, Criver_data_len)
+    call read_real_table(Criver_file,Criver_data,Criver_data_len,2, .true.)
 END IF
 !!!!!!!!!!!!!!!!!!!
 
 !!Initialise the geometry
-CALL set_geo(bed,ys,waters,fs,a,b, hlim, read_initial_geo, read_initial_waters, water_m,water_mthick) 
+CALL set_geo(bed,ys,waters,fs, fs_g, a_ref, a,b, hlim, read_initial_geo, read_initial_waters, water_m,water_mthick) 
 
 ! FIXME: Temporarily initialise fs_g and a_ref here -- later, lump with fs
-fs_g=fs*0.1_dp ! Initialise Grain friction factor
-a_ref=0.01_dp ! Initialise Reference height for suspended load
+!fs_g=fs*0.1_dp ! Initialise Grain friction factor
+!a_ref=0.01_dp ! Initialise Reference height for suspended load
 
 !!Calculate the averages needed for the 1d hydro
-CALL meanvars(bed,ys,waters,fs,a,b,u,l,Width, Area, bottom,dbdh, .false., hlim ) 
+CALL meanvars(bed,ys,waters,fs,a,b,u,l,Width, Area, bottom,dWidth_dwaters, .false., hlim ) 
 
 !Predefine starting values for a whole host of variables. ANYTHING IMPORTANT IS REDEFINED DEEPER IN THE CODE
 delT=0._dp
 DT=0._dp
 cfl1=cfl
-Q=Qb+0._dp*Area
+Q=Qriver+0._dp*Area
 E=0._dp+0._dp*Area
 D=0._dp+0._dp*Area
 inuc=0._dp
@@ -293,13 +290,13 @@ DO j= 1, jmax
     !!Recalculate the mean variables, if needed
         IF(incount>1) THEN
             CALL meanvars(bed(:,1:m),ys(:,1:m),waters(1:m),fs(:,1:m),a,m,u(1:m),l(1:m),Width(1:m), & 
-            Area(1:m), bottom(1:m), dbdh(1:m,1:2), .false., hlim ) 
+            Area(1:m), bottom(1:m), dWidth_dwaters(1:m,1:2), .false., hlim ) 
         END IF
 
             !Normal MacCormack
             CALL hyupdate(delT,delX,bottom(1:m),Width(1:m),Area(1:m),Q(1:m), Q2H_dT(0:m),&
-                          waters(1:m),t,m,j,dbdh(1:m,1:2), &
-                          rmu(1:m),inuc(1:m),LAKE, hlim, Qb,tr, mouth_data,mouthread, &
+                          waters(1:m),t,m,j,dWidth_dwaters(1:m,1:2), &
+                          rmu(1:m),inuc(1:m),LAKE, hlim, Qriver,tr, mouth_data,mouthread, &
                           mouth_data_len, bottom(1:m), rho, g,cfl1,v1coef,v4coef,seabuf)
 
     END DO 
@@ -326,7 +323,7 @@ DO j= 1, jmax
     m=b
     !More half time-step variables
     CALL meanvars(bed(:,1:m),ys(:,1:m),waters_avg(1:m),fs(:,1:m),a,m,u(1:m),l(1:m),Width(1:m), & 
-            A2(1:m), bottom(1:m),dbdh(1:m,1:2),.false.,hlim) !Figure out the average geometry
+            A2(1:m), bottom(1:m),dWidth_dwaters(1:m,1:2),.false.,hlim) !Figure out the average geometry
     Q2H=Q2H_dT/DT !The conservative 'mean' discharge throughout the last time step, evaluated spatially at 1/2, 3/2, 5/2, ... i.e. halfway between the cross-sections
     Q2H(0)= delX/DT*(A2(1)-Area_old(1))*2._dp + Q2H(1) !Note the use of (A2(1)-Area_old(1))*2 here--This should be Area(1)-Area_old(1) - except that Area(1) is not correct, because it has not yet adjusted for the change in Y(1) due to the boundary condition. However, A2(1) has adjusted, and should be halfway between Area_old and Area. So this works quite well.
     Q2=0.5_dp*(Q2H(1:b)+Q2H(0:(b-1))) !Q2H, evaluated spatially at 1, 2, 3, 4, ... i.e. at the cross-sections
@@ -708,7 +705,7 @@ DO j= 1, jmax
     IF((mod(j-1, writfreq1).EQ.0).AND.(mor1.EQ.mor)) THEN !.or.((mod(j,2).eq.0).AND.(t>72.*3600.))) THEN
         WRITE(1,*) Area
         WRITE(23,*) A2 !QbedI
-        WRITE(24,*) dbdh(:,1)
+        WRITE(24,*) dWidth_dwaters(:,1)
         WRITE(25,*) Q1in(1), Vol1(1), QS2in, VolS2, Source2
         WRITE(2,*) Q
         WRITE(42,*) Q2_geo
@@ -835,7 +832,7 @@ DO j= 1, jmax
     END IF
 
     !!Recalculate mean variables
-    CALL meanvars(bed,ys, waters,fs,a,b,u,l,Width, Area, bottom, dbdh(:,1:2), .false. ,hlim) 
+    CALL meanvars(bed,ys, waters,fs,a,b,u,l,Width, Area, bottom, dWidth_dwaters(:,1:2), .false. ,hlim) 
 
     !Sometimes too rapid accretion can push points out of the water - try this to reduce that
     printall=.false.
@@ -860,8 +857,8 @@ DO j= 1, jmax
     IF(printall) THEN
         WRITE(1,*) Area !, Area_old
         WRITE(23,*) QbedI
-        WRITE(24,*) dbdh(:,1)
-        WRITE(25,*) dbdh(:,2)
+        WRITE(24,*) dWidth_dwaters(:,1)
+        WRITE(25,*) dWidth_dwaters(:,2)
         WRITE(2,*) Q  !, Q_old
         WRITE(42,*) Q2H
         WRITE(4,*) Width

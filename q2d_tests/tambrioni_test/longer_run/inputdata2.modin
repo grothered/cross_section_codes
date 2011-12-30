@@ -19,7 +19,7 @@ read_initial_waters=.false. ! Do we read in the initial water elevation
 mouthread = .false. !Do we read in a time series of mouth water levels - of length dlength
 boundary_downstream_file='mouth'
 
-Qb = -0.0 !The river discharge (m^3/s)
+Qriver = -0.0 !The river discharge (m^3/s)
 tr = 0.0475 !The tide range in the case that mouthread=.false. (m)
 Cmouth_read=.false. ! Do we read the concentration of suspended sediment at the upstream boundary?
 Cmouth=0.00 !The concentration of sediment at the mouth boundary

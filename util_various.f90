@@ -567,14 +567,14 @@ END SUBROUTINE readcs
 !
 !!!!!!!!!!!!!!!!!!!!!!
 
-SUBROUTINE set_geo(bed, ys, waters,fs,a,b,hlim, read_initial_geo, read_initial_waters, water_m, water_mthick) !initial geometry
+SUBROUTINE set_geo(bed, ys, waters,fs,fs_g, a_ref, a,b,hlim, read_initial_geo, read_initial_waters, water_m, water_mthick) !initial geometry
     ! A routine to set initial geometry conditions for the quasi-2D model
 
     INTEGER, INTENT(IN):: a, b 
-    REAL(dp), INTENT(IN OUT):: bed, waters,fs,ys
+    REAL(dp), INTENT(IN OUT):: bed, waters,fs,fs_g, a_ref,ys
     REAL(dp), INTENT(IN):: hlim, water_m, water_mthick
     LOGICAL, INTENT(IN):: read_initial_geo, read_initial_waters
-    DIMENSION bed(a,b),waters(b),ys(a,b),fs(a,b)
+    DIMENSION bed(a,b),waters(b),ys(a,b),fs(a,b), fs_g(a,b),a_ref(a,b)
     
     INTEGER:: i, j,m,n
     REAL(dp), ALLOCATABLE:: waters_tmp(:,:)
@@ -596,8 +596,10 @@ SUBROUTINE set_geo(bed, ys, waters,fs,a,b,hlim, read_initial_geo, read_initial_w
         END DO
     END IF
    
-    ! Set arbitrary fs value, which will be reset later 
+    ! Set arbitrary fs, fs_g and a_ref values, which will be reset later 
     fs=0.032_dp
+    fs_g=fs*0.1_dp
+    a_ref=0.01_dp
 
     IF(maxval(bed)>5.0E+04_dp) THEN
         print*, 'ERROR: The maximum bed value is > 50000m. This is pretty big! &
@@ -618,7 +620,7 @@ SUBROUTINE set_geo(bed, ys, waters,fs,a,b,hlim, read_initial_geo, read_initial_w
         ! Read in the initial water elevation. Note that because waters is a
         ! vector, but this routine reads the data into an array, we have to use
         ! waters_tmp to read the data first
-        CALL read_real_table(waters_input_filename, waters_tmp, n, 1)
+        CALL read_real_table(waters_input_filename, waters_tmp, n, 1, .false.)
         ! Check that the file was of the correct size
         IF(n.ne.b) THEN
             print*, 'ERROR: the water level initial condition file watersold2 &
@@ -639,14 +641,14 @@ END SUBROUTINE set_geo
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-SUBROUTINE meanvars(bed,ys,waters,fs,a,b,u,l,Width,Area,bottom, dbdh, even,hlim) !use this to get suitably averaged variables for input into the 1D code 
+SUBROUTINE meanvars(bed,ys,waters,fs,a,b,u,l,Width,Area,bottom, dWidth_dwaters, even,hlim) !use this to get suitably averaged variables for input into the 1D code 
     INTEGER, INTENT(IN)::a,b
     INTEGER, INTENT(IN OUT):: l,u
     LOGICAL, INTENT(IN):: even !!To enforce even cross sections. Sometimes the wetting and drying routine can fall over if we require evenness, in situations with say several pools of water 
     REAL(dp), INTENT(IN):: bed,ys,waters,hlim
-    REAL(dp), INTENT(INOUT):: Width, Area, bottom, dbdh !Averaged variables
+    REAL(dp), INTENT(INOUT):: Width, Area, bottom, dWidth_dwaters !Averaged variables
     REAL(dp), INTENT(IN OUT):: fs
-    DIMENSION bed(a,b), ys(a,b), waters(b), fs(a,b), Width(b), Area(b), bottom(b),  l(b), u(b),dbdh(b,2)
+    DIMENSION bed(a,b), ys(a,b), waters(b), fs(a,b), Width(b), Area(b), bottom(b),  l(b), u(b),dWidth_dwaters(b,2)
     INTEGER:: i,ll,uu,j, wetpts(a)
 
     REAL(dp):: increm(a) , edgel, edgeu, nom, db, Area_old(b)
@@ -723,10 +725,10 @@ SUBROUTINE meanvars(bed,ys,waters,fs,a,b,u,l,Width,Area,bottom, dbdh, even,hlim)
             !	bottom(i)= bottom(i)/Width(i)  !Mean bottom elev
                          
             IF((uu<a).AND.(ll>1)) THEN !The if statements ensure that we are not on the edge of the domain, and that there are at least 2 points between l and u. Still I have not accounted for mid channel dry points. 
-                dbdh(i,1:2)= -(ys(ll,i) -ys(ll-1,i))/(bed(ll,i)-bed(ll-1,i)) &
+                dWidth_dwaters(i,1:2)= -(ys(ll,i) -ys(ll-1,i))/(bed(ll,i)-bed(ll-1,i)) &
                 +  (ys(uu+1,i) -ys(uu,i))/(bed(uu+1,i)-bed(uu,i))
             ELSE
-                dbdh(i,1:2)=0._dp
+                dWidth_dwaters(i,1:2)=0._dp
             END IF
            
             
@@ -734,7 +736,7 @@ SUBROUTINE meanvars(bed,ys,waters,fs,a,b,u,l,Width,Area,bottom, dbdh, even,hlim)
             IF ( (uu>ll).AND.(.not.alldry)) THEN 
                 Width(i)=0._dp 
                 Area(i)=0._dp
-                dbdh(i,1:2)=0._dp 
+                dWidth_dwaters(i,1:2)=0._dp 
 
                 DO j=ll,uu+1
                     IF(j<a+1) THEN !if j=a+1 we don't need to do this
@@ -748,10 +750,10 @@ SUBROUTINE meanvars(bed,ys,waters,fs,a,b,u,l,Width,Area,bottom, dbdh, even,hlim)
                                     db=abs( (ys(j,i)-ys(j-1,i))*(waters(i)-bed(j,i))/(bed(j-1,i)-bed(j,i)))
                                     Width(i)= Width(i)+ db
                                     Area(i)= Area(i)+ db*(waters(i)-bed(j,i))*.5_dp
-                                    dbdh(i,1)= dbdh(i,1)+ (abs((ys(j,i)-ys(j-1,i))*&
+                                    dWidth_dwaters(i,1)= dWidth_dwaters(i,1)+ (abs((ys(j,i)-ys(j-1,i))*&
                                                 (waters(i)+1.0E-06_dp-bed(j,i))/(bed(j-1,i)-bed(j,i)))-db)/1.0E-06_dp
                                         !Note that the above expression is = ( db(h+delh) - db(h))/delh
-                                    dbdh(i,2)=dbdh(i,1)
+                                    dWidth_dwaters(i,2)=dWidth_dwaters(i,1)
                                 END IF
                             END IF	
                         ELSE ! so wetpts(j)=0, but point j-1 might be wet and we need to account for that
@@ -760,9 +762,9 @@ SUBROUTINE meanvars(bed,ys,waters,fs,a,b,u,l,Width,Area,bottom, dbdh, even,hlim)
                                     db=abs((ys(j,i)-ys(j-1,i))*(waters(i)-bed(j-1,i))/(bed(j,i)-bed(j-1,i)))
                                     Width(i)= Width(i)+ db
                                     Area(i)=Area(i)+db*(waters(i)-bed(j-1,i))*.5_dp
-                                    dbdh(i,1)= dbdh(i,1)+ &
+                                    dWidth_dwaters(i,1)= dWidth_dwaters(i,1)+ &
                     ( abs((ys(j,i)-ys(j-1,i))*(waters(i)+1.0E-06_dp-bed(j-1,i))/(bed(j,i)-bed(j-1,i)))-db)/1.0E-06_dp
-                                                        dbdh(i,2)=dbdh(i,1)
+                                                        dWidth_dwaters(i,2)=dWidth_dwaters(i,1)
                                 END IF
                             END IF	
                         END IF
@@ -796,20 +798,20 @@ SUBROUTINE meanvars(bed,ys,waters,fs,a,b,u,l,Width,Area,bottom, dbdh, even,hlim)
                     Area(i)= 0.5_dp*(nom-bed(ll,i))*Width(i) 
                     bottom(i)= nom-Area(i)/Width(i) !Mean bottom elevation
                     
-                    dbdh(i,1)= -(ys(ll,i) -ys(ll-1,i))/(bed(ll,i)-bed(ll-1,i)) &
+                    dWidth_dwaters(i,1)= -(ys(ll,i) -ys(ll-1,i))/(bed(ll,i)-bed(ll-1,i)) &
                     +  (ys(uu+1,i) -ys(uu,i))/(bed(uu+1,i)-bed(uu,i)) 
-                    dbdh(i,2)=0._dp
+                    dWidth_dwaters(i,2)=0._dp
             END IF !END of the if statement where we deal with cross sections that either have internal dry points or are entirely dry
 
 
 
         END IF !End of the main calculation, i.e. end of IF(minval(wetpts(ll:uu))>0) THEN 
 
-        !dbdh=0._dp
+        !dWidth_dwaters=0._dp
          
-        IF(dbdh(i,1)<0._dp) THEN 
-          PRINT*, "dbdh<0", i, l(i),u(i), bed(l(i)-1,i),bed(l(i),i), bed(u(i)+1,i), bed(u(i),i) , ys(l(i)-1:l(i),i), &
-          ys(u(i):u(i)+1,i), dbdh(i,1) 
+        IF(dWidth_dwaters(i,1)<0._dp) THEN 
+          PRINT*, "dWidth_dwaters<0", i, l(i),u(i), bed(l(i)-1,i),bed(l(i),i), bed(u(i)+1,i), bed(u(i),i) , ys(l(i)-1:l(i),i), &
+          ys(u(i):u(i)+1,i), dWidth_dwaters(i,1) 
           STOP
         END IF
 
@@ -821,7 +823,7 @@ SUBROUTINE meanvars(bed,ys,waters,fs,a,b,u,l,Width,Area,bottom, dbdh, even,hlim)
 
     END DO
 
-    !dbdh=0._dp
+    !dWidth_dwaters=0._dp
     !if(b>80) write(23,*) Area_old(80)-Area(80)
 
 END SUBROUTINE meanvars
@@ -1370,11 +1372,12 @@ END SUBROUTINE create_initial_geometry
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-SUBROUTINE read_real_table(input_file, storage_array, nrows, ncols)
+SUBROUTINE read_real_table(input_file, storage_array, nrows, ncols, check_regular_timeseries)
     ! Routine to read a table (with a given number of columns) into a
     ! real array 
     CHARACTER(char_len), INTENT(in):: input_file
     INTEGER, INTENT(in):: ncols
+    LOGICAL, INTENT(in):: check_regular_timeseries
     INTEGER, INTENT(out)::nrows
     REAL(dp), ALLOCATABLE, INTENT(inout):: storage_array(:,:)
 
@@ -1414,6 +1417,10 @@ SUBROUTINE read_real_table(input_file, storage_array, nrows, ncols)
     !print*, storage_array(:,1), storage_array(:,2)    
 
     CLOSE(77)
+
+    IF(check_regular_timeseries) THEN
+        call check_for_uneven_time_increments(storage_array, nrows)
+    END IF
 END SUBROUTINE read_real_table
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
