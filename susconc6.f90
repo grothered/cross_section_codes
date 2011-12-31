@@ -1595,7 +1595,7 @@ subroutine susconc_up35(b,DT, Area, Q2, Q2_old, delX,C, U2, Qe2,Qe2_old, Qd2, Cm
                wetwidth(b+4),wetwidth_old(b+4), D(b+4), D_old(b+4), Fl1(b+4), Q_old(b+4), limi(b+4), & 
                FL_old(b+4), theta(b+4), Cpred(b+4), diag(b+4), lower(b+4), upper(b+4), rhs(b+4),wset(b+4)
     REAL(dp):: usef1(b+4), usef2(b+4), usef3(b+4), usef4(b+4)
-    REAL(dp):: mu_lim=1._dp, eeps=1.0E-10_dp
+    REAL(dp):: mu_lim=1._dp
 
     !! See a test with an analytical advection-diffusion solution in:
     !!/home/gareth/Doc_Win/My_Documents/H_drive_Gareth/Maths and bits of Code/fortran code/Hydrodynamic model/full model/2009jan-2009date/good_version_without_N_support/port_with_namespace/most_updated_nov2309/third_order_sussed/with_bedload/lower_Q/bound/even_smallerQ/iforttry/vels1/simple_geo/1d_sedconcheck/analytical
@@ -1628,8 +1628,7 @@ subroutine susconc_up35(b,DT, Area, Q2, Q2_old, delX,C, U2, Qe2,Qe2_old, Qd2, Cm
     ! using the predictor step.
     ! C=Clast+ delt/delX*(ADVECTION(t+1/2 delT, Cpred) + DIFFUSION(C,tlast+delT) )
 
-    ! I found Vreugdenhill (1989:59) a useful reference, and the way the code
-    ! USED TO be written reflects that. 
+    ! I found Vreugdenhill (1989:59) a useful reference
 
     ! Flux form of third order advection: 
     ! dF/dx = [ F(i+1/2)-F(i-1/2) ] / dx
