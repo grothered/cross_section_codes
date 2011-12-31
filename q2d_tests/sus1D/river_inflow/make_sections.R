@@ -1,7 +1,7 @@
 ## Quick R routine to create the files sectionsold2 and lnthsold2
 ## 
 a=5
-b=1000
+b=100
 width=10.0
 drop=3.0
 
@@ -28,7 +28,8 @@ write(bed,file='sectionsold2',ncolumns=a)
 
 # Make input timeseries
 t=seq(0,24*3600*10,by=5)
-h=t*0 -1
+#h=t*0 -1
+h=min(bed)+0.7168
 write.table(cbind(t,h), file='mouth', row.names=F,col.names=F)
 
 Criver=(t>=40*300)*1.0

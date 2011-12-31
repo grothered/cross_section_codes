@@ -13,12 +13,14 @@ source('../../../gettide1.R')
 
 u=0.697538250250218
 D=20.00000
-num_sects=1000
-delX=5
+num_sects=100
+delX=50
 x0=num_sects*delX
 t0=40*300
 
 getf(num_sects)
+
+ind_start=min(which(t1-t0>0))
 
 erf<-function(x){
    # This code uses the analytical solutions from Chanson (2004:343), and I
@@ -49,7 +51,8 @@ par(mfrow=c(2,2))
 par(mar=c(4,4,2,0.2))
 par(cex=0.6)
 
-for(k in (c(260,270,280,290))){
+#for(k in (c(260,270,280,290))){
+for(k in (ind_start+seq(10,40,by=10))){
 #Set k to whatever time step you want.
     plot(seq(1,num_sects)*delX, s1[k,],t='o',main=paste('Time = ', floor(t1[k]),' seconds'),cex=0.2)
     # Analytical solution
