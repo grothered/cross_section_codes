@@ -1590,7 +1590,7 @@ subroutine susconc_up35(b,DT, Area, Q2, Q2_old, delX,C, U2, Qe2,Qe2_old, Qd2, Cm
     INTEGER:: info, i, KL=2, KU=2, IPV(b+4), ii !Note KL,KU are the number of upper and lower diagonals of the banded matrix
     REAL(dp):: r(b) !Right hand side of equation
     LOGICAL:: flag
-    REAL(dp):: impcon=.50_dp, impconU=.00_dp
+    REAL(dp):: impcon_diffusion=1.00_dp, impcon_settling=.50_dp
     REAL(dp):: A(b+4), QH(b+4), QH_old(b+4), U(b+4), Qe(b+4),Qe_old(b+4), Qd(b+4), C_old(b+4), Area_old(b+4), &
                wetwidth(b+4),wetwidth_old(b+4), D(b+4), D_old(b+4), Fl1(b+4), Q_old(b+4), limi(b+4), & 
                FL_old(b+4), theta(b+4), Cpred(b+4), diag(b+4), lower(b+4), upper(b+4), rhs(b+4),wset(b+4)
@@ -1755,8 +1755,8 @@ subroutine susconc_up35(b,DT, Area, Q2, Q2_old, delX,C, U2, Qe2,Qe2_old, Qd2, Cm
     rhs=0._dp
     !Calculate C at the next half time step, predictor style
     DO i=3, b+2
-        upper(i)=-0.25_dp*(Area_old(i+1)*D(i+1)+Area_old(i)*D(i)+A(i+1)*D(i+1)+A(i)*D(i))*1._dp/delX**2 !Diffusion
-        lower(i)=-0.25_dp*(Area_old(i)*D(i)+Area_old(i-1)*D(i-1)+A(i)*D(i)+A(i-1)*D(i-1))*1._dp/delX**2 !Diffusion
+        upper(i)=-0.25_dp*((Area_old(i+1)+A(i+1))*D(i+1)+(Area_old(i)+A(i))*D(i))*1._dp/delX**2 !Diffusion
+        lower(i)=-0.25_dp*((Area_old(i)+A(i))*D(i)+(Area_old(i-1)+A(i-1))*D(i-1))*1._dp/delX**2 !Diffusion
         diag(i)=(0.5_dp*(A(i)+Area_old(i)))/(0.5_dp*DT)+& !Time derivative
                 wset(i)*0.5_dp*(wetwidth(i)+wetwidth(i)) & !Settling
                 -upper(i) - lower(i) !Diffusion
@@ -1875,6 +1875,10 @@ subroutine susconc_up35(b,DT, Area, Q2, Q2_old, delX,C, U2, Qe2,Qe2_old, Qd2, Cm
     END DO
 
     !Calculate C at the next time step, corrector style
+    ! NOTE: I have had problems using a centred treatment of diffusion here --
+    ! it seems more accurate to use a fully implicit approach. However, I expect
+    ! that for settling it will be better to use a centred approach, so that
+    ! appears below
 
     upper=0._dp
     diag=0._dp
@@ -1882,16 +1886,18 @@ subroutine susconc_up35(b,DT, Area, Q2, Q2_old, delX,C, U2, Qe2,Qe2_old, Qd2, Cm
     rhs=0._dp
 
     DO i=3, b+2
-        upper(i)= -impcon*0.25_dp*((A(i+1)+Area_old(i+1))*D(i+1) +(A(i)+Area_old(i))*D(i))/delX**2 !Diffusion
-        lower(i)= -impcon*0.25_dp*((A(i)+Area_old(i))*D(i) +(A(i-1)+Area_old(i-1))*D(i-1))/delX**2 !Diffusion
+        upper(i)= -impcon_diffusion*0.25_dp*((A(i+1)+Area_old(i+1))*D(i+1) +(A(i)+Area_old(i))*D(i))/delX**2 !Diffusion
+        lower(i)= -impcon_diffusion*0.25_dp*((A(i)+Area_old(i))*D(i) +(A(i-1)+Area_old(i-1))*D(i-1))/delX**2 !Diffusion
+        !upper(i)= -impcon_diffusion*0.5_dp*((A(i+1))*D(i+1) +(A(i))*D(i))/delX**2 !Diffusion
+        !lower(i)= -impcon_diffusion*0.5_dp*((A(i))*D(i) +(A(i-1))*D(i-1))/delX**2 !Diffusion
         diag(i)= A(i)/DT & !Unsteady
                 -upper(i) - lower(i) & !Diffusion
-                +impcon*min(wset(i)*0.5_dp*(wetwidth(i) +wetwidth(i)), 0.5_dp*(Area_old(i)+A(i))/DT) !Deposition
+                +impcon_settling*min(wset(i)*0.5_dp*(wetwidth(i) +wetwidth(i)), 0.5_dp*(Area_old(i)+A(i))/DT) !Deposition
         rhs(i) = Area_old(i)*C_old(i)/DT & !Unsteady
                 + Qe(i)*6._dp/8._dp +1._dp/8._dp*(Qe(i+1)+Qe(i-1)) & !Erosion 
-                -(1.0_dp-impcon)*min(wset(i)*0.5_dp*(wetwidth(i) +wetwidth(i)), 0.5_dp*(Area_old(i)+A(i))/DT)*C_old(i) & ! deposition
+                -(1.0_dp-impcon_settling)*min(wset(i)*0.5_dp*(wetwidth(i) +wetwidth(i)), 0.5_dp*(Area_old(i)+A(i))/DT)*C_old(i) & ! deposition
                 - 1._dp/delX*(FL1(i)-FL1(i-1)) & !Advection
-                +(1.0_dp-impcon)*(-upper(i)*C_old(i+1) +upper(i)*C_old(i) +lower(i)*C_old(i) - lower(i)*C_old(i-1)) ! Diffusion
+                +(1.0_dp-impcon_diffusion)*(-upper(i)*C_old(i+1) +upper(i)*C_old(i) +lower(i)*C_old(i) - lower(i)*C_old(i-1)) ! Diffusion
     END DO
 
     ! Boundary conditions. If there is inflow at the downstream boundary, then

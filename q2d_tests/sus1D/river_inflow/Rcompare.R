@@ -33,21 +33,34 @@ erf<-function(x){
    2*pnorm(x,mean=0,sd=sqrt(1/2))-1.0
 }
 
+erfc <- function(x, log=F){
+    # Complementary error function , with optional log output which allows
+    # accuracy for large values of x
+    if(log){
+        log(2) + pnorm(x * sqrt(2), lower = FALSE, log=T)
+    }else{
+        2 * pnorm(x * sqrt(2), lower = FALSE)
+    }
+}
+
 #png(file='compare.png',width=5.4,height=5.4,res=1000,units='in')
 pdf(file='compare.pdf',width=5.4,height=5.4)
 par(mfrow=c(2,2))
 par(mar=c(4,4,2,0.2))
 par(cex=0.6)
 
-for(k in (c(280))){#,270,280,290))){
+for(k in (c(260,270,280,290))){
 #Set k to whatever time step you want.
     plot(seq(1,num_sects)*delX, s1[k,],t='o',main=paste('Time = ', floor(t1[k]),' seconds'),cex=0.2)
     # Analytical solution
     X = x0-seq(0,num_sects-1)*delX
-    erfterm1=erf( (X -u*(t1[k]-t0))/(sqrt(4*D*(t1[k]-t0)) ))
-    erfterm2=erf( (X +u*(t1[k]-t0))/(sqrt(4*D*(t1[k]-t0)) ))
+    erfterm1=erfc( (X -u*(t1[k]-t0))/(sqrt(4*D*(t1[k]-t0)) ))
+    erfterm2=erfc( (X +u*(t1[k]-t0))/(sqrt(4*D*(t1[k]-t0)) ), log=T)
 
-    theory=0.5*( (1-erfterm1) + exp(u*(X)/(D))*(1-erfterm2))
+    # Note that we have used logs in erfterm2 to reduce round off -- as
+    # otherwise the exp(uX/D) term is very large, and the erfterm2 is very
+    # small
+    theory=0.5*( (erfterm1) + exp(u*(X)/(D)+ erfterm2) )
     points(seq(1,num_sects)*delX, theory ,t='l',col=2,cex=0.2)
 }
 legend('bottomright',c('Numerical','Analytical'),lty=c(1,1),col=c(1,2))
