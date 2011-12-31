@@ -39,11 +39,11 @@ par(mfrow=c(2,2))
 par(mar=c(4,4,2,0.2))
 par(cex=0.6)
 
-for(k in (c(260,270,280,290))){
+for(k in (c(280))){#,270,280,290))){
 #Set k to whatever time step you want.
     plot(seq(1,num_sects)*delX, s1[k,],t='o',main=paste('Time = ', floor(t1[k]),' seconds'),cex=0.2)
     # Analytical solution
-    X = x0-seq(1,num_sects)*delX
+    X = x0-seq(0,num_sects-1)*delX
     erfterm1=erf( (X -u*(t1[k]-t0))/(sqrt(4*D*(t1[k]-t0)) ))
     erfterm2=erf( (X +u*(t1[k]-t0))/(sqrt(4*D*(t1[k]-t0)) ))
 
@@ -53,3 +53,22 @@ for(k in (c(260,270,280,290))){
 legend('bottomright',c('Numerical','Analytical'),lty=c(1,1),col=c(1,2))
 dev.off()
 
+
+
+
+#png(file='compare.png',width=5.4,height=5.4,res=1000,units='in')
+#par(mfrow=c(2,2))
+#par(mar=c(4,4,2,0.2))
+#par(cex=0.6)
+#for(k in (c(280))){
+##Set k to whatever time step you want.
+#
+##plot(seq(1,220)*100, s1[k,],t='o',main=paste('Time = ', floor(t1[k]),' seconds'),cex=0.2)
+#erfterm1=erf( (220*100-seq(1,220)*100 -0.5*(t1[k]-t0))/(sqrt(4*20*(t1[k]-t0)) ))
+#erfterm2=erf( (220*100-seq(1,220)*100 +0.5*(t1[k]-t0))/(sqrt(4*20*(t1[k]-t0)) ))
+#
+#theory=0.5*( (1-erfterm1) + exp(-0.5*(220*100-seq(1,220)*100)/(20))*(1-erfterm2))
+#plot(seq(1,220)*100, theory ,t='o',col=2,cex=0.2)
+#}
+#legend('bottomright',c('Numerical','Analytical'),lty=c(1,1),col=c(1,2))
+#dev.off()

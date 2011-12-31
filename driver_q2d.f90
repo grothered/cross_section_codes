@@ -127,7 +127,8 @@ CALL meanvars(bed,ys,waters,fs,a,b,u,l,Width, Area, bottom,dWidth_dwaters, .fals
 delT=0._dp
 DT=0._dp
 cfl1=cfl
-Q=Qriver+0._dp*Area
+!Q=Qriver+0._dp*Area
+Q=0._dp*Area
 E=0._dp+0._dp*Area
 D=0._dp+0._dp*Area
 inuc=0._dp
