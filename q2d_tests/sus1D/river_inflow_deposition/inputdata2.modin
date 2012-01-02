@@ -1,35 +1,35 @@
 &inputdata2
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! Conditions from experiment 1 of Tambrioni et al (2005)
+! SIMPLE CASE OF A STRAIGHT CHANNEL
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-a = 10 !Number of points in each cross section
-b = 800 !Number of cross sections
-delX = 0.0359699 !0.14442211 !0.5 !The horizontal spacing between cross sections (m)
+a = 5 !Number of points in each cross section
+b = 100 !Number of cross sections
+delX = 50.0 !0.5 !The horizontal spacing between cross sections (m)
 
-jmax = 500 !4000200 !3500000 ! Number of time steps
+jmax = 4000 !4000200 !3500000 ! Number of time steps
 t=0.0 !Starting time (s)
-longt= 1.0 !The time step in between cross sectional updates (s)
-writfreq = 150 ! Write output every writfreqth timestep
-bedwrite = 1000 !20000 !Write bed geometry every bedwrite'th timestep
+longt= 5.0 !The time step in between cross sectional updates (s)
+writfreq = 10 ! Write output every writfreqth timestep
+bedwrite = 300 !20000 !Write bed geometry every bedwrite'th timestep
 
 read_initial_geo=.true. !Do we read in initial geometry data from a file? 
 read_initial_waters=.false. ! Do we read in the initial water elevation
             
 
-mouthread = .false. !Do we read in a time series of mouth water levels - of length dlength
+mouthread = .true. !Do we read in a time series of mouth water levels - of length dlength
 boundary_downstream_file = 'mouth' ! name of input file for downstream boundary condition 
 
-Qriver = -0.0 !The river discharge (m^3/s)
-tr = 0.0475 !The tide range in the case that mouthread=.false. (m)
+Qriver = -5.0 !The river discharge (m^3/s)
+tr = 0.00 !The tide range in the case that mouthread=.false. (m)
 Cmouth_read=.false. ! Do we read the concentration of suspended sediment at the upstream boundary?
-Cmouth=0.00 !The concentration of sediment at the mouth boundary
+Cmouth=0.00 !The concentration of sediment at the mouth boundary (g/L)
 Cmouth_file="Cmouth" ! File with timeseries of Cmouth, if Cmouth_read=.True.
-Criver_read=.false. ! Do we read the concentration of suspended sediment at the upstream boundary?
+Criver_read=.True. ! Do we read the concentration of suspended sediment at the upstream boundary?
 Criver=0.0 !The concentration of sediment at the river boundary
 Criver_file="Criver" ! File with timeseries of Criver, if Criver_read=.True.
 eddis1D=00.0 !dimensionless eddy dispersion for 1D suspended sediment
-eddis1D_constant=0.0 ! This adds a constant to the eddy dispersion. Useful for some analytical cases
-water_m=0.082 !The minimum initial water level (m)
+eddis1D_constant=00.0 ! This adds a constant to the eddy dispersion. Useful for some analytical cases
+water_m=-1.000 !The minimum initial water level (m)
 water_mthick=0.002 !The minimum initial thickness of water above the average bed level +hlim. Used to prevent dry starts.
 
 sus2d = .false. !Do we use the 2d sus sed solver? If .false., we use the 1D solver.
@@ -38,45 +38,45 @@ LAKE = .false.  !In the 1D hydro, do we assume a flat water surface (i.e. calcul
 cfl=0.99 !Courant number for explicit 1d longitudinal model
 seabuf = 0 !Number of buffer cross sections at the mouth which cannot undergo morphological evolution (Useful if you are having mouth boundary condition problems)
 hlim = 0.001 !The depth at which we start to do funny things to avoid negative depths (m) - a wetting and drying trick
-mor = 1.0 ! The morphological factor
+mor = 0.0 ! The morphological factor
 
 burnin = 0.0 !The time in hours before morphological evolution begins
 v1coef= 0.0E-01 !Viscosity coefficient
 v4coef= 0.0E-04 !Viscosity coefficient
 
 
-rho = 1000.0 !Density of water
+rho = 1026.0 !Density of water
 g = 9.8 !Gravitational acceleration (m/s^2)
 kvis = 1.0E-06 !Kinemati viscosity of water (appears in vanrijn bedload formula)
 lambdacon = 0.0 !Dimensionless eddy viscosity 
-friction_type = 'darcy' !'manning'!, 'darcy', 'vanrijn', 'ks'
-rough_coef =   6.68469760000000024E-002 !0.066846 !0.0292 ! A value depending on the friction type. if 'manning' = Mannings n for the basic bed, if 'ks' = value of ks, if 'darcy' = f, etc, if 'vanrijn', then the value is not used.
+friction_type = 'darcy' !'darcy' !'manning'!, 'darcy', 'vanrijn', 'ks'
+rough_coef = 0.07 !0.066846 !0.0292 ! A value depending on the friction type. if 'manning' = Mannings n for the basic bed, if 'ks' = value of ks, if 'darcy' = f, etc, if 'vanrijn', then the value is not used.
 grain_friction_type  = 'one' ! 'vanrijn', 'colebrook', 'onethird', 'one' -- model for bed shear acting on grains 
 man_nveg=0.0 !A vegetation driven manning type friction term to represent CDV - note that this is not really a manning formula, see the code. 
 veg_ht=10000.0 !The height at which vegetation is assumed to occur 
 
-wset = 0.000 !The settling velocity of sediment (m/s)
+wset = 1.0e-3 !The settling velocity of sediment (m/s)
 mu = 0.6 ! The angle of repose. 
 layers= 1 !The number of bed layers 
-erconst= 0.06853728 ! = 0.047*(rhos-rho)*g*d50 The constant determining the critical shear and its increment
+erconst= 0.2 ! = 0.047*(rhos-rho)*g*d50 The constant determining the critical shear and its increment
 lincrem=100.004 !The constant determining the distance between consecutive bed layers.
 lifttodrag = 0.0 !NOT YET SUPPORTED The lift to drag ratio
-rhos = 1480.0 !Density of solid sediment
+rhos = 2600.0 !Density of solid sediment
 voidf = 0.4 !The void fraction of the bed
-dsand = 0.00031 !The nominal size of sand in the van Rijn (2007) bedload equation
+dsand = 0.000062 !The d_sand parameter in the van Rijn (2007) bedload equation
 d50 = 0.00031 !The median grain size for the bedload formula
-alpha = 0.000 !Constant in the suspended sediment erosion formula.
+alpha = 0.000 !Constant in the 'cohesive' suspended sediment erosion formula.
 resus_type = 'vanrijn' ! 'cohesive', 'vanrijn', 'smithmac' -- equation for resuspension
 bedload_type= 'mpm' ! 'vanrijn', 'mpm' -- equation for bedload
 bank_erosion_type='None' ! 'Delft'
 
-Qbedon=.true. !Is bedload on?
+Qbedon=.false. !Is bedload on?
 talmon=.false. !If bedload is on, do we use a talmon lateral slope closure?
 
 norm = .false. !Is erosion directed normal to the bed
 normmov = .false. 
 vertical = .true. !Is the vertical shear (shiono and knight) method used - support for .false. is incomplete
-tbston = .true. !Switches on/off the sqrt(1+slp^2) term in the lateral shear equation, and corrects the cross-sectionally averaged friction slope accordingly
+tbston = .false. !Switches on/off the sqrt(1+slp^2) term in the lateral shear equation, and corrects the cross-sectionally averaged friction slope accordingly
 remesh = .false. !Only supported for no tendep, no bedload, no sus2d.
 remeshfreq = 500 !Frequency of above
 

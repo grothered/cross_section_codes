@@ -1590,7 +1590,7 @@ subroutine susconc_up35(b,DT, Area, Q2, Q2_old, delX,C, U2, Qe2,Qe2_old, Qd2, Cm
     INTEGER:: info, i, KL=2, KU=2, IPV(b+4), ii !Note KL,KU are the number of upper and lower diagonals of the banded matrix
     REAL(dp):: r(b) !Right hand side of equation
     LOGICAL:: flag
-    REAL(dp):: impcon_diffusion=1.00_dp, impcon_settling=.50_dp
+    REAL(dp):: impcon_diffusion=1.00_dp, impcon_settling=0.500_dp
     REAL(dp):: A(b+4), QH(b+4), QH_old(b+4), U(b+4), Qe(b+4),Qe_old(b+4), Qd(b+4), C_old(b+4), Area_old(b+4), &
                wetwidth(b+4),wetwidth_old(b+4), D(b+4), D_old(b+4), Fl1(b+4), Q_old(b+4), limi(b+4), & 
                FL_old(b+4), theta(b+4), Cpred(b+4), diag(b+4), lower(b+4), upper(b+4), rhs(b+4),wset(b+4)
@@ -1898,6 +1898,16 @@ subroutine susconc_up35(b,DT, Area, Q2, Q2_old, delX,C, U2, Qe2,Qe2_old, Qd2, Cm
                 -(1.0_dp-impcon_settling)*min(wset(i)*0.5_dp*(wetwidth(i) +wetwidth(i)), 0.5_dp*(Area_old(i)+A(i))/DT)*C_old(i) & ! deposition
                 - 1._dp/delX*(FL1(i)-FL1(i-1)) & !Advection
                 +(1.0_dp-impcon_diffusion)*(-upper(i)*C_old(i+1) +upper(i)*C_old(i) +lower(i)*C_old(i) - lower(i)*C_old(i-1)) ! Diffusion
+
+        !DEBUG
+        !IF(i==90) THEN
+        !    print*, 's1_term: ', &
+        !            impcon_settling*min(wset(i)*0.5_dp*(wetwidth(i) +wetwidth(i)), 0.5_dp*(Area_old(i)+A(i))/DT), & !Deposition
+        !      (1.0_dp-impcon_settling)*min(wset(i)*0.5_dp*(wetwidth(i) +wetwidth(i)), 0.5_dp*(Area_old(i)+A(i))/DT)*C_old(i), & ! deposition
+        !            Qe(i)*6._dp/8._dp +1._dp/8._dp*(Qe(i+1)+Qe(i-1)), & !Erosion 
+        !            1._dp/delX*(FL1(i)-FL1(i-1)), & !Advection
+        !            A(i)/DT, Area_old(i)/DT
+        !END IF
     END DO
 
     ! Boundary conditions. If there is inflow at the downstream boundary, then

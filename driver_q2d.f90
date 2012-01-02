@@ -93,6 +93,12 @@ ALLOCATE( bed(a,b),bed_old(a,b),bed_Vold(a,b),bed_oldrefit(a,b), ys(a,b),ys_oldr
 
 !!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!BEGIN THE ROUTINE
+IF(mor.eq.0.0) THEN
+    print*, 'WARNING: Treatment of sediment transport with mor=0.0 is presently &
+            inconsistent -- resuspension is set to zero, but bedload is nonzero. &
+            No morphological evolution occurs. If you want sediment transport without &
+            morphological evolution, consider setting mor=1.0e-12'
+END IF
 
 !!Read in the mouth boundary condition -- or if mouthread=.false., it should be in an equation in the
 !tidalmod_fg31.f95 subroutine 'mouth_height'

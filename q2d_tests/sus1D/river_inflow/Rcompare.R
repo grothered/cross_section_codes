@@ -56,7 +56,7 @@ for(k in (ind_start+seq(10,40,by=10))){
 #Set k to whatever time step you want.
     plot(seq(1,num_sects)*delX, s1[k,],t='o',main=paste('Time = ', floor(t1[k]),' seconds'),cex=0.2)
     # Analytical solution
-    X = x0-seq(0,num_sects-1)*delX
+    X = x0-(seq(0,num_sects-1)+0.5)*delX
     erfterm1=erfc( (X -u*(t1[k]-t0))/(sqrt(4*D*(t1[k]-t0)) ))
     erfterm2=erfc( (X +u*(t1[k]-t0))/(sqrt(4*D*(t1[k]-t0)) ), log=T)
 
