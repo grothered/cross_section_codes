@@ -95,3 +95,17 @@ tail -n1 outfile.log
 R CMD BATCH --slave Rcompare.R 
 evince compare.pdf &
 cd ../../
+
+
+cd sus1D/river_inflow_dep_erode
+cp ../../../q2d .
+echo '#########################'
+echo 'Running river_input suspended sediment  ...'
+echo ' This compares the with an analytical solution
+        of a "deposition+erosion" equation with steady-uniform flow'
+echo '#########################'
+./q2d < inputdata2.modin > outfile.log
+tail -n1 outfile.log
+R CMD BATCH --slave Rcompare.R 
+evince compare.pdf &
+cd ../../
