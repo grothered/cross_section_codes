@@ -15,7 +15,7 @@ IMPLICIT  NONE
 
 !!Define variables - This is quite disorganised, but cleaning this is not a priority.
 INTEGER:: a, b, i,j, m, p, o,d2,d1, ii, n, i1, jj1, mouth_data_len, jmax, writfreq,writfreq1, &
-          jj, writcount, Cmouth_data_len, Criver_data_len
+          jj, writcount, Cmouth_data_len, Criver_data_len, write_duration, write_longwait
 REAL(dp):: longt,longt1, cfl1, tmp1
 REAL(dp):: bed,bed_old,bed_Vold,bed_oldrefit, ys,ys_oldrefit, fs,fs_g,a_ref, ws, waters, rough_coef 
 REAL(dp):: Width, Area, bottom, bottom_old,wid_old, Q,Q2, Q2_old,& 
@@ -50,7 +50,7 @@ NAMELIST /inputdata2/ a, b, jmax, writfreq, t,longt, delX, wset, seabuf, hlim, &
      layers, bedwrite, remesh, remeshfreq, normmov,& 
      water_m, water_mthick, veg_ht, Qbedon, talmon, v1coef,v4coef,eddis1D,eddis1D_constant, lincrem, &
      boundary_downstream_file, friction_type, grain_friction_type, resus_type, bedload_type, &
-     bank_erosion_type, read_initial_waters
+     bank_erosion_type, read_initial_waters, write_duration, write_longwait
 
 ALLOCATABLE bed(:,:),bed_old(:,:),bed_Vold(:,:),bed_oldrefit(:,:), ys(:,:),ys_oldrefit(:,:),& 
             fs(:,:), fs_g(:,:),a_ref(:,:), waters(:), waters_old(:),&
@@ -189,7 +189,7 @@ morbu=0
 morbl_old=0
 morbu_old=0
 
-writcount=9E+8
+!writcount=9E+8
 NN=bed*0._dp !At the moment this is unused, but it flows through all the routines. Very inefficient
 
 !!!If we have a 'seabuf' (a region of the model where no sediment or morphological changes happen - i.e. a hydrodynamic buffer zone), then fix the suspended sediment concentration in this zone
@@ -466,7 +466,7 @@ DO j= 1, jmax
                                       Qbed(l(i):u(i),i),qb_G(l(i)-1:u(i)+1,i), rhos, & 
                                       voidf, dsand, d50, g, kvis, norm, alpha, Qbedon,talmon,&
                                       ysl(i),ysu(i),bedl(i),bedu(i), resus_type, bedload_type, &
-                                      a_ref(l(i):u(i),i), .true.) 
+                                      a_ref(l(i):u(i),i)) 
     END DO
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -709,7 +709,11 @@ DO j= 1, jmax
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !!!!!!!Save variables
-    IF((mod(j-1, writfreq1).EQ.0).AND.(mor1.EQ.mor)) THEN !.or.((mod(j,2).eq.0).AND.(t>72.*3600.))) THEN
+    !write_duration=5000
+    !write_longwait=100000
+    IF((mod(j-1, writfreq1).EQ.0).AND.& 
+       (mod(floor((j-1)*1.0_dp/(1.0_dp*write_duration)), write_longwait/write_duration).EQ.0).AND.& 
+       (mor1.EQ.mor)) THEN !.or.((mod(j,2).eq.0).AND.(t>72.*3600.))) THEN
         WRITE(1,*) Area
         WRITE(23,*) A2 !QbedI
         WRITE(24,*) dWidth_dwaters(:,1)
@@ -746,16 +750,16 @@ DO j= 1, jmax
         !BURST OF WRITING 
         !if(writfreq1.ne.writfreq) THEN
         writfreq1=writfreq !So we will write every writfreq steps following this, until a time determined by the next 'BURST OF WRITING' code
-        writcount=-1
+        !writcount=-1
         !end if
     END IF
 
     !BURST OF WRITING
     !These pieces of code control writing of hydrodynamic output
-    writcount=writcount+1
-    IF(writcount==1000) THEN
-        writfreq1=9E+8 !So we will never write with this value of writfreq.
-    END IF
+    !writcount=writcount+1
+    !IF(writcount==1000) THEN
+    !    writfreq1=9E+8 !So we will never write with this value of writfreq.
+    !END IF
 
     !Smoothing routine - here we stop the banks from being too steep to
     !erode, by smoothing if the height difference between points is too

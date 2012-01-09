@@ -63,6 +63,8 @@
  BEDLOAD_TYPE="vanrijn             ",
  BANK_EROSION_TYPE="Delft               ",
  READ_INITIAL_WATERS=F,
+ WRITE_DURATION=          1,
+ WRITE_LONGWAIT=          1,
  /
  READING FILE: mouth_new           ; Record length is        18024
  #################

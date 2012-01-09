@@ -16,6 +16,9 @@ for i in $(find $basedir -name inputdata2.modin);
 
         #sed '/read_initial_geo=.true./a\read_initial_waters=.false. ! Do we read in the initial water elevation
         #     ' $i > $(dirname $i)'/inputdata3.modin'
+        
+        sed '/write_duration=1/a\write_longwait=1 !
+             ' $i > $(dirname $i)'/inputdata3.modin'
  
         #sed '/eddis1D=/a\eddis1D_constant=0.0 ! This adds a constant to the eddy dispersion. Useful for some analytical cases
         #     ' $i > $(dirname $i)'/inputdata3.modin'

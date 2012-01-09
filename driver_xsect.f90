@@ -367,7 +367,7 @@ DO Q_loop= 1, num_simulations
                                      layers, taucrit_dep_ys(l:u), dst(l:u,0:layers+1) & 
                                     ,taucrit(l:u, 0:layers) , rho, Qe(l:u) & 
                                     , Qbed(l:u),qb_G((l-1):(u+1)), rhos, voidf, dsand, d50, g, kvis, norm, alpha, &
-                                    Qbedon,talmon, ysl,ysu,bedl,bedu, resus_type, bedload_type, a_ref(l:u), .true.) 
+                                    Qbedon,talmon, ysl,ysu,bedl,bedu, resus_type, bedload_type, a_ref(l:u)) 
         
             !! UPDATE TIME
             IF(iii.eq.1) t=t+DT1

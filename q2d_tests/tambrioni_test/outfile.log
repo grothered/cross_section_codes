@@ -63,6 +63,8 @@
  BEDLOAD_TYPE="mpm                 ",
  BANK_EROSION_TYPE="None                ",
  READ_INITIAL_WATERS=F,
+ WRITE_DURATION=          1,
+ WRITE_LONGWAIT=          1,
  /
  Analytical water level mouth boundary needed -- see the 'mouth_height' subroutine in st_venant_solver.f90
  #################

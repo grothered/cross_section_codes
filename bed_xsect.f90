@@ -12,8 +12,7 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!
 SUBROUTINE calc_resus_bedload(a, dT, water, Q, bed,ys,Area, ff,recrd, E, C, wset, a2, tau,tau_g,vel & 
     ,counter,slopes, hlim,mor,taucrit_dep,layers, taucrit_dep_ys, dst, taucrit, rho, Qe, Qbed,qb_G, rhos,& 
-    voidf, dsand, d50, g, kvis, norm, alpha, Qbedon,talmon, ysl,ysu,bedl,bedu, resus_type, bedload_type, a_ref, &
-    resus_on) 
+    voidf, dsand, d50, g, kvis, norm, alpha, Qbedon,talmon, ysl,ysu,bedl,bedu, resus_type, bedload_type, a_ref) 
     ! Purpose: Calculate the rate of resuspension and bedload transport over a
     ! cross-section
 
@@ -22,7 +21,7 @@ SUBROUTINE calc_resus_bedload(a, dT, water, Q, bed,ys,Area, ff,recrd, E, C, wset
         kvis, alpha, wset, a_ref, ys,vel,slopes, tau,tau_g, bed,taucrit_dep, taucrit_dep_ys,&
         C, taucrit, dst
     REAL(dp), INTENT(IN):: ysl,ysu,bedl,bedu 
-    LOGICAL, INTENT(IN):: norm, Qbedon,talmon, resus_on
+    LOGICAL, INTENT(IN):: norm, Qbedon,talmon
     CHARACTER(char_len), INTENT(IN):: resus_type, bedload_type
 
     ! Output variables - 'recrd' is an optional output, 'E' is the integrated
@@ -116,7 +115,7 @@ SUBROUTINE calc_resus_bedload(a, dT, water, Q, bed,ys,Area, ff,recrd, E, C, wset
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         IF(mor>0._dp) THEN
 
-          1456  IF ((abs(tau_g(i))>taucrit(i, jj)).and.(resus_on)) THEN !At least some erosion through this layer occurs
+          1456  IF ((abs(tau_g(i))>taucrit(i, jj))) THEN !At least some erosion through this layer occurs
                     
                     SELECT CASE (resus_type)
                         CASE('cohesive') 
@@ -142,6 +141,9 @@ SUBROUTINE calc_resus_bedload(a, dT, water, Q, bed,ys,Area, ff,recrd, E, C, wset
                             tmp = 2.4e-03_dp*(max(0._dp,abs(tau_g(i))-taucrit(i,jj))/taucrit(i,jj))
                             c_a = 0.65_dp*tmp/(1.0_dp+tmp)
                             Qelocal = wset*c_a*sllength(i) !/rhos !Rate of erosion in m/s of SOLID material
+    
+                        CASE('none')
+                            Qelocal = 0.0_dp ! No resuspension
 
                         CASE DEFAULT
                             print*, 'ERROR: resus_type does not have the correct value in calc_resus_bedload'

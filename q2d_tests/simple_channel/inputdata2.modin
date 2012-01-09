@@ -10,6 +10,8 @@ jmax = 30000 !4000200 !3500000 ! Number of time steps
 t=0.0 !Starting time (s)
 longt= 30.0 !The time step in between cross sectional updates (s)
 writfreq = 10 ! Write output every writfreqth timestep
+write_duration=1 ! Write for this many time steps, every write_longwait time steps
+write_longwait=1 !
 bedwrite = 10 !20000 !Write bed geometry every bedwrite'th timestep
 
 read_initial_geo=.true. !Do we read in initial geometry data from a file? 
