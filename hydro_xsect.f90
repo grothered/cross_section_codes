@@ -481,11 +481,13 @@ SUBROUTINE calc_shear(a, dT, water, Q, bed,ys,Area, bottom, ff,rmu,inuc,tau,NN,c
     IF(isnan(wslope)) print*, "wslope is nan", Q, A, water-bottom, rmu
 
     IF(a<3) THEN
-        print*, 'ERROR: less than 3 wet points on a cross-section -- shear &
-                 cannot work with this', a
-        stop
+        !print*, 'ERROR: less than 3 wet points on a cross-section -- shear &
+        !         cannot work with this', a
+        !stop
 
         tau=rho*g*wslope*(water-bed)
+        inuc=0.0
+        NN=0.0
         return
     END IF
 
