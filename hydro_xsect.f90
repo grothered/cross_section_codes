@@ -484,6 +484,9 @@ SUBROUTINE calc_shear(a, dT, water, Q, bed,ys,Area, bottom, ff,rmu,inuc,tau,NN,c
         print*, 'ERROR: less than 3 wet points on a cross-section -- shear &
                  cannot work with this', a
         stop
+
+        tau=rho*g*wslope*(water-bed)
+        return
     END IF
 
 
@@ -737,8 +740,17 @@ SUBROUTINE roughmult(aa,rmu, vel, Q, A, tbst,depths, ys, f, vegdrag, &
     END IF
 
     ! Sanity checks
-    IF(rmu.eq.0._dp) THEN
-        print*, " ERROR: rmu is zero", abs(Q), aa, sum(f), maxval(vel), minval(vel)
+    IF(rmu<=0._dp) THEN
+        print*, " ERROR: rmu is zero or negative",rmu, abs(Q), aa, sum(f), maxval(vel), minval(vel)
+
+        print*, "XXXXXX    f     XXXXXXXXXXXX"
+        print*, f
+        print*, "XXXXX     tbst  XXXXXXXXXXX"
+        print*, tbst
+        print*, "XXXXX     vegdrag  XXXXXXXXXXX"
+        print*, vegdrag
+        print*, "XXXXX     depths  XXXXXXXXXXX"
+        print*, depths
         stop
     END IF
 

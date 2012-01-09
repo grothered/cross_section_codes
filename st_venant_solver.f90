@@ -556,7 +556,7 @@ SUBROUTINE hyupdate(delT, delX, bottom, B, A, Q,Q2H_dT,Y, t,l, counter,dWidth_dw
         IF(isnan(Ypred(i))) print*, "Ypred ",i," is nan"
         IF(isnan(Ycor(i))) print*, "Ycor ",i," is nan", dWidth_dwaters(i,1:2), B(i), Bnew(i), Acor(i)-Alast(i)
         IF(isnan(Qpred(i))) print*, "Qpred ",i," is nan"
-        IF(isnan(Qcor(i))) print*, "Qcor ",i," is nan", Qcor4(i), Qcor1(i), Qcor2(i), Acorb(i) & 
+        IF(isnan(Qcor(i))) print*, "Qcor ",i," is nan", rmu(i), Qcor4(i), Qcor1(i), Qcor2(i), Acorb(i) & 
         , (1._dp-sqrt(1._dp-4._dp*Qcor4(i)*delT*(Qcor1(i)-Qcor2(i)+visc(i))))/(2._dp*Qcor4(i)*delT), &
         sqrt(1._dp-4._dp*Qcor4(i)*delT*(Qcor1(i)-Qcor2(i)+visc(i))), 4._dp*Qcor4(i)*delT*(Qcor1(i)-Qcor2(i)+visc(i))
     END DO

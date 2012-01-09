@@ -1,8 +1,8 @@
 # Makefile for the xsect codes.
 
 # Options for compiler optimization or testing
-#compiler_options =  -O3 
-compiler_options = -fbounds-check -g -pg
+compiler_options =  -O3 
+#compiler_options = -fbounds-check -g -pg
 
 # Alternative to check for NaN's / overflow / underflow
 # This one is a problem with the 1D suspended sediment routine, because the

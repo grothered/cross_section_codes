@@ -274,7 +274,13 @@ SUBROUTINE calc_resus_bedload(a, dT, water, Q, bed,ys,Area, ff,recrd, E, C, wset
         + Qe(1)*(ys(2)-ys(1) +1._dp*((water-bed(1))/(bedl-bed(1))*(ys(1)-ysl) )) & 
         + Qe(a)*(1._dp*((water-bed(a))/(bedu-bed(a))*(ysu-ys(a)) )+ys(a)-ys(a-1)) )
 
-
+    IF(isnan(E)) THEN
+        print*, 'E is NaN', E, 'XXXXXXXXXXXXXXXXXXX'
+        DO i=1,a
+            print*, Qe(i), tau(i), bed(i), water
+        END DO
+        stop
+    END IF
     ! DEBUG
     !IF(Qe(1).ne.Qe(2)) THEN
     !    print*, 'Qe unequal on step:', counter

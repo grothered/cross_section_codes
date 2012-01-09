@@ -647,7 +647,7 @@ SUBROUTINE meanvars(bed,ys,waters,fs,a,b,u,l,Width,Area,bottom, dWidth_dwaters, 
     LOGICAL, INTENT(IN):: even !!To enforce even cross sections. Sometimes the wetting and drying routine can fall over if we require evenness, in situations with say several pools of water 
     REAL(dp), INTENT(IN):: bed,ys,waters,hlim
     REAL(dp), INTENT(INOUT):: Width, Area, bottom, dWidth_dwaters !Averaged variables
-    REAL(dp), INTENT(IN OUT):: fs
+    REAL(dp), INTENT(IN):: fs
     DIMENSION bed(a,b), ys(a,b), waters(b), fs(a,b), Width(b), Area(b), bottom(b),  l(b), u(b),dWidth_dwaters(b,2)
     INTEGER:: i,ll,uu,j, wetpts(a)
 
