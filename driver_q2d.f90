@@ -466,7 +466,7 @@ DO j= 1, jmax
                                       Qbed(l(i):u(i),i),qb_G(l(i)-1:u(i)+1,i), rhos, & 
                                       voidf, dsand, d50, g, kvis, norm, alpha, Qbedon,talmon,&
                                       ysl(i),ysu(i),bedl(i),bedu(i), resus_type, bedload_type, &
-                                      a_ref(l(i):u(i),i)) 
+                                      a_ref(l(i):u(i),i), .true.) 
     END DO
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

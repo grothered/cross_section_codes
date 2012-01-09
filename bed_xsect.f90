@@ -12,7 +12,8 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!
 SUBROUTINE calc_resus_bedload(a, dT, water, Q, bed,ys,Area, ff,recrd, E, C, wset, a2, tau,tau_g,vel & 
     ,counter,slopes, hlim,mor,taucrit_dep,layers, taucrit_dep_ys, dst, taucrit, rho, Qe, Qbed,qb_G, rhos,& 
-    voidf, dsand, d50, g, kvis, norm, alpha, Qbedon,talmon, ysl,ysu,bedl,bedu, resus_type, bedload_type, a_ref) 
+    voidf, dsand, d50, g, kvis, norm, alpha, Qbedon,talmon, ysl,ysu,bedl,bedu, resus_type, bedload_type, a_ref, &
+    resus_on) 
     ! Purpose: Calculate the rate of resuspension and bedload transport over a
     ! cross-section
 
@@ -21,7 +22,7 @@ SUBROUTINE calc_resus_bedload(a, dT, water, Q, bed,ys,Area, ff,recrd, E, C, wset
         kvis, alpha, wset, a_ref, ys,vel,slopes, tau,tau_g, bed,taucrit_dep, taucrit_dep_ys,&
         C, taucrit, dst
     REAL(dp), INTENT(IN):: ysl,ysu,bedl,bedu 
-    LOGICAL, INTENT(IN):: norm, Qbedon,talmon
+    LOGICAL, INTENT(IN):: norm, Qbedon,talmon, resus_on
     CHARACTER(char_len), INTENT(IN):: resus_type, bedload_type
 
     ! Output variables - 'recrd' is an optional output, 'E' is the integrated
@@ -115,7 +116,7 @@ SUBROUTINE calc_resus_bedload(a, dT, water, Q, bed,ys,Area, ff,recrd, E, C, wset
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         IF(mor>0._dp) THEN
 
-          1456  IF ((abs(tau_g(i))>taucrit(i, jj)).and.(.true.)) THEN !At least some erosion through this layer occurs
+          1456  IF ((abs(tau_g(i))>taucrit(i, jj)).and.(resus_on)) THEN !At least some erosion through this layer occurs
                     
                     SELECT CASE (resus_type)
                         CASE('cohesive') 
