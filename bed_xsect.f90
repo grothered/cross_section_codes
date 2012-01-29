@@ -1094,32 +1094,73 @@ SUBROUTINE bank_erosion(bank_erosion_type, a, l, u,ys, bed, bed_old, failure_slo
     REAL(dp), INTENT(IN):: ys(a), bed_old(a), failure_slope
     REAL(dp), INTENT(IN OUT):: bed(a)
 
+    INTEGER:: l2, u2, lower_bank(1), upper_bank(1), slope(l:u+1)
+    
+    !print*, 'BE', l, u, a
+
+    IF((l+1.ge.u-1).or.(bank_erosion_type.eq.'None').or.(l<=2).or.(u>=a-1)) THEN
+        !There are too few points to apply the bank erosion
+        !algorithm in the wetted cross-section'
+        return
+    END IF 
+
+    ! Re-define the lower and upper banks based on the largest slopes 
+    ! This is to prevent very shallow depths on the channel edge from being
+    ! interpreted as the bank. However, it is a bit dangerous, in that we could
+    ! potentially have very internal channel points being treated as the bank
+    slope= (bed(l:u+1)-bed(l-1:u))/(ys(l:u+1)-ys(l-1:u))
+    lower_bank=minloc(slope(l:u+1))
+    l2=lower_bank(1)+(l-1)
+    upper_bank=maxloc(slope)
+    u2=upper_bank(1)+(l-1)-1
+
+    !print*, 'BE:', l, l2, u, u2, '###', bed(l-1:l+2),'###', bed(u-2:u+1)
+    !stop
+    
     SELECT CASE(bank_erosion_type)
 
         CASE('Delft')
         !   A version of the Delft bank erosion model. 
         !   If erosion is occuring at the channel margins,
         !   then assign it to the neighbouring dry bed point
-            IF((bed(l)<bed_old(l)).AND.(l>2)) THEN
-                bed(l-1) = bed(l-1) - (bed_old(l) - bed(l))*( (ys(l+1)-ys(l-1))/(ys(l)-ys(l-2)))
-                bed(l) = bed_old(l)
+            IF((bed(l2)<bed_old(l2)).AND.(l2>2)) THEN
+                bed(l2-1) = bed(l2-1) - (bed_old(l2) - bed(l2))*( (ys(l2+1)-ys(l2-1))/(ys(l2)-ys(l2-2)))
+                bed(l2) = bed_old(l2)
             END IF
-            IF((bed(u)<bed_old(u)).AND.(u<a-1)) THEN
-                bed(u+1) = bed(u+1) - (bed_old(u) - bed(u))*( (ys(u+1)-ys(u-1))/(ys(u+2)-ys(u)))
-                bed(u) = bed_old(u)
+            IF((bed(u2)<bed_old(u2)).AND.(u2<a-1)) THEN
+                bed(u2+1) = bed(u2+1) - (bed_old(u2) - bed(u2))*( (ys(u2+1)-ys(u2-1))/(ys(u2+2)-ys(u2)))
+                bed(u2) = bed_old(u2)
             END IF
 
         CASE('Delft_if_too_steep')
-            IF((bed(l)<bed_old(l)).AND.(l>2)) THEN
-                IF((bed(l-1)-bed(l)).gt.(failure_slope*(ys(l)-ys(l-1)))) THEN
-                    bed(l-1) = bed(l-1) - (bed_old(l) - bed(l))*( (ys(l+1)-ys(l-1))/(ys(l)-ys(l-2)))
-                    bed(l) = bed_old(l)
+        ! A version of the Delft bank erosion model, which only operates if the
+        ! bank slope is above a threshold value
+            IF((bed(l2)<bed_old(l2)).AND.(l2>2)) THEN
+                IF((bed(l2-1)-bed(l2)).gt.(failure_slope*(ys(l2)-ys(l2-1)))) THEN
+                    bed(l2-1) = bed(l2-1) - (bed_old(l2) - bed(l2))*( (ys(l2+1)-ys(l2-1))/(ys(l2)-ys(l2-2)))
+                    bed(l2) = bed_old(l2)
                 END IF
             END IF
-            IF((bed(u)<bed_old(u)).AND.(u<a-1)) THEN
-                IF((bed(u+1)-bed(u)).gt.(failure_slope*(ys(u+1)-ys(u)))) THEN
-                    bed(u+1) = bed(u+1) - (bed_old(u) - bed(u))*( (ys(u+1)-ys(u-1))/(ys(u+2)-ys(u)))
-                    bed(u) = bed_old(u)
+            IF((bed(u2)<bed_old(u2)).AND.(u2<a-1)) THEN
+                IF((bed(u2+1)-bed(u2)).gt.(failure_slope*(ys(u2+1)-ys(u2)))) THEN
+                    bed(u2+1) = bed(u2+1) - (bed_old(u2) - bed(u2))*( (ys(u2+1)-ys(u2-1))/(ys(u2+2)-ys(u2)))
+                    bed(u2) = bed_old(u2)
+                END IF
+            END IF
+        
+        CASE('Delft_if_big_jump')
+        ! A version of the Delft bank erosion model, which only operates if the
+        ! 'bed jump' at the banks is above a threshold value
+            IF((bed(l2)<bed_old(l2)).AND.(l2>2)) THEN
+                IF((bed(l2-1)-bed(l2)).gt.failure_slope) THEN
+                    bed(l2-1) = bed(l2-1) - (bed_old(l2) - bed(l2))*( (ys(l2+1)-ys(l2-1))/(ys(l2)-ys(l2-2)))
+                    bed(l2) = bed_old(l2)
+                END IF
+            END IF
+            IF((bed(u2)<bed_old(u2)).AND.(u2<a-1)) THEN
+                IF((bed(u2+1)-bed(u2)).gt.failure_slope) THEN
+                    bed(u2+1) = bed(u2+1) - (bed_old(u2) - bed(u2))*( (ys(u2+1)-ys(u2-1))/(ys(u2+2)-ys(u2)))
+                    bed(u2) = bed_old(u2)
                 END IF
             END IF
 

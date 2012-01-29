@@ -20,7 +20,7 @@
 !Algorithm options
 !!!!!!!!!!!!!!!!!!!!!
 
-nos = 3200 ! Number of spatial grid points
+nos = 800 ! Number of spatial grid points
 writfreq = 2000 !24*5*5 ! The output is written every writfreq 'th timestep
 jmax= 2000001 !2000001 !1382400 !24*5*2*45*4*4*4*4*5 ! The number of time steps
 t = 0.00 ! Starting time (s)
@@ -46,7 +46,9 @@ tbston=.TRUE. !When true (false) this term switches on (off) the sqrt(1+slopes^2
 layers=1 !The number of bed layers
 lincrem = 1000.031 ! The distance between bed layers (m). Set it to a very high number to avoid the multi bed layers having any influence.
 mu = 10000.60 !Angle of repose - this can be used to influence the critical shear stress if the code is adjusted
-failure_slope = 1.50 ! Slope at which mass failure occurs.
+
+bank_erosion_type='Delft_if_too_steep' !'Delft' !'Delft_if_big_jump' !'Delft_if_too_steep'
+failure_slope = 0.50 ! Slope at which mass failure occurs.
 erconst = 0.14  ! The constant determining the min critical shear and the critical shear increment
 taucrit_slope_reduction=.FALSE. ! Is taucrit reduced on lateral slopes?
 wset = 0.016 ! Settling velocity of sediment in m/s
@@ -60,7 +62,7 @@ d50 = 0.00015 !0.000062 ! median grain size for bedload formula (m)
 g = 9.8 !Gravity (m/s^2)
 kvis = 1.0E-06 !Kinematic viscosity of water. 
 alpha=0.000228 !The constant for the erosion formula E= alpha*(tau-taue)/sqrt(taue)
-Qbedon=.TRUE. !Is bedload active
+Qbedon=.FALSE. !Is bedload active
 bedload_type='vanrijn' ! 'mpm', 'vanrijn'
 talmon=.FALSE. !Do we use a talmon lateral bedload closure?
 resus_type = 'vanrijn' ! 'cohesive', 'vanrijn'
@@ -70,7 +72,7 @@ sus_vert_prof='Rouse' !'exp', 'Rouse'
 edify_model='Parabolic' ! 'Constant', 'Parabolic', 'Parabola_const'
 x_len_scale=1000.0 ! x length scale. In dynamic_sus_dist dC/dx ~= (C -k*C)/x_len_scale
 sus2d = .false. !Do we use a fully 2d suspended sediment - this is only applicable to the case with many cross sections strung together - the quasi 2d model.
-norm=.TRUE. !Is erosion to be directed normal to the bed?
+norm=.FALSE. !Is erosion to be directed normal to the bed?
 vertical=.TRUE. !Is the vertical shear method (SKM) to be used (support for Pizzuto method may not be complete, and in this case it should be .true.
 evolve_bed=.TRUE. ! Do we evolve the bed? If FALSE, hydrodynamics, erosion and deposition are computed, but no change to the bed occurs.
 

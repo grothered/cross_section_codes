@@ -9,7 +9,7 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-SUBROUTINE hyupdate(delT, delX, bottom, B, A, Q,Q2H_dT,Y, t,l, counter,dWidth_dwaters, rmu,inuc, LAKE, hlim, Qb, tr,&
+SUBROUTINE hyupdate(delT, delX, bottom, B, A, Q,Q2H_dT,Y, t,l, counter,dWidth_dwaters, rmu,inuc, LAKE, hlim, Qriver, tr,&
  mouth_data, mouthread,mouth_data_len, mns,rho, g,cfl, v1coef,v4coef,seabuf)
     ! delT = time-step (computed herein based on the CFL condition)
     ! delX = distance between cross-sections (a constant, though this should be
@@ -44,7 +44,7 @@ SUBROUTINE hyupdate(delT, delX, bottom, B, A, Q,Q2H_dT,Y, t,l, counter,dWidth_dw
     !        velocities. Should be False to solve the St Venant equations
     ! hlim = small depth, at which we start doing funny things to avoid negative
     !        depths -- a wetting and drying trick
-    ! Qb   = River discharge imposed at boundary 'l'
+    ! Qriver   = River discharge imposed at boundary 'l'
     ! tr   = tidal range, which can be passed to 'mouth_height' if
     !        mouthread=FALSE
     ! mouth_data = a 2 column matrix containing (time, waterlevel) data that can be
@@ -67,7 +67,7 @@ SUBROUTINE hyupdate(delT, delX, bottom, B, A, Q,Q2H_dT,Y, t,l, counter,dWidth_dw
     !          seabuf+1.
 
     INTEGER, INTENT (IN)::l, mouth_data_len,seabuf
-    REAL(dp), INTENT(IN):: delX, Qb, tr, mouth_data, hlim, rho, mns, g, cfl, bottom, B
+    REAL(dp), INTENT(IN):: delX, Qriver, tr, mouth_data, hlim, rho, mns, g, cfl, bottom, B
     REAL(dp),INTENT(IN OUT)::t, delT
     REAL(dp), INTENT(IN OUT):: A,Q, Q2H_dT, Y
     DIMENSION:: bottom(l), B(l),A(l), Q(l), Q2H_dT(0:l), Y(l),mouth_data(mouth_data_len,2), mns(l) 
@@ -183,7 +183,7 @@ SUBROUTINE hyupdate(delT, delX, bottom, B, A, Q,Q2H_dT,Y, t,l, counter,dWidth_dw
     Bbshift(2:l)= B(1:l-1)
     Yshift(1:l-1)=Ylast(2:l)
 
-    Qshift(l)=Qb!Q(l)!Qb!2*Qshift(l-1)  -Qshift(l-2)
+    Qshift(l)=Qriver!Q(l)!Qriver!2*Qshift(l-1)  -Qshift(l-2)
     Ashift(l)=A(l)!2*Ashift(l-1)  -Ashift(l-2)
     Yshift(l)= 2.0_dp*Y(l)-Y(l-1) !2*Yshift(l-1)-Yshift(l-2)
     Bbshift(1)=B(1)!2*Bbshift(2)-Bbshift(3)
@@ -287,7 +287,7 @@ SUBROUTINE hyupdate(delT, delX, bottom, B, A, Q,Q2H_dT,Y, t,l, counter,dWidth_dw
     END DO
 
     !Boundary conditions --Actually if we extrapolate there is no need
-    Qpred(l)= Qb 
+    Qpred(l)= Qriver 
 
     !Prevent negative areas later
     DO i=2,l

@@ -97,50 +97,50 @@
  ################
  #################
  # Output Step:         101
- #   Time (hrs):   1.2902542812011653     
- #   Long timestep:    50.500000000000000       Hydrodynamic timestep:    10.746916461672853     
+ #   Time (hrs):   1.2902542811841546     
+ #   Long timestep:    50.500000000000000       Hydrodynamic timestep:    10.746916457243540     
  #   cfl_local:   0.98999999999999999      cfl:   0.98999999999999999     
  ################
  #################
  # Output Step:         126
- #   Time (hrs):   1.6665186005750197     
- #   Long timestep:    50.500000000000000       Hydrodynamic timestep:    10.909649854455855     
+ #   Time (hrs):   1.6665185781396137     
+ #   Long timestep:    50.500000000000000       Hydrodynamic timestep:    10.909675859554049     
  #   cfl_local:   0.98999999999999999      cfl:   0.98999999999999999     
  ################
  #################
  # Output Step:         151
- #   Time (hrs):   2.0473663253235475     
- #   Long timestep:    50.500000000000000       Hydrodynamic timestep:    11.020130177333325     
+ #   Time (hrs):   2.0473662630797622     
+ #   Long timestep:    50.500000000000000       Hydrodynamic timestep:    11.020052557127638     
  #   cfl_local:   0.98999999999999999      cfl:   0.98999999999999999     
  ################
  #################
  # Output Step:         176
- #   Time (hrs):   2.4318304347532598     
- #   Long timestep:    50.500000000000000       Hydrodynamic timestep:    11.089622330014802     
+ #   Time (hrs):   2.4318302067700697     
+ #   Long timestep:    50.500000000000000       Hydrodynamic timestep:    11.089416907117966     
  #   cfl_local:   0.98999999999999999      cfl:   0.98999999999999999     
  ################
  #################
  # Output Step:         201
- #   Time (hrs):   2.8125488987468179     
- #   Long timestep:    50.500000000000000       Hydrodynamic timestep:    10.872376585419309     
+ #   Time (hrs):   2.8125482292354391     
+ #   Long timestep:    50.500000000000000       Hydrodynamic timestep:    10.872063208672497     
  #   cfl_local:   0.98999999999999999      cfl:   0.98999999999999999     
  ################
  #################
  # Output Step:         226
- #   Time (hrs):   3.1882613273159728     
- #   Long timestep:    50.500000000000000       Hydrodynamic timestep:    10.783728140083394     
+ #   Time (hrs):   3.1882612297211996     
+ #   Long timestep:    50.500000000000000       Hydrodynamic timestep:    10.783711243787804     
  #   cfl_local:   0.98999999999999999      cfl:   0.98999999999999999     
  ################
  #################
  # Output Step:         251
- #   Time (hrs):   3.5609046043613635     
- #   Long timestep:    50.500000000000000       Hydrodynamic timestep:    10.649650621578072     
+ #   Time (hrs):   3.5609045200052187     
+ #   Long timestep:    50.500000000000000       Hydrodynamic timestep:    10.649665953355466     
  #   cfl_local:   0.98999999999999999      cfl:   0.98999999999999999     
  ################
  #################
  # Output Step:         276
- #   Time (hrs):   3.9265579083431517     
- #   Long timestep:    50.500000000000000       Hydrodynamic timestep:    10.385939627285920     
+ #   Time (hrs):   3.9265577761515886     
+ #   Long timestep:    50.500000000000000       Hydrodynamic timestep:    10.385964855372729     
  #   cfl_local:   0.98999999999999999      cfl:   0.98999999999999999     
  ################
- Finished time =   15421.408846554827      j=         301
+ Finished time =   15421.408442561713      j=         301

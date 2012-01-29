@@ -22,7 +22,7 @@ SUBROUTINE wet(l, u ,nos,water, bed)
     REAL(dp), INTENT(IN):: water, bed
     DIMENSION:: bed(nos)
 
-    INTEGER:: wetdry(nos), lenwet(nos), lastdry, width, i, maxloc
+    INTEGER:: wetdry(nos), lenwet(nos), lastdry, width, i
 
 
     !Predefine  in case none are wet - the code will recognise this. 

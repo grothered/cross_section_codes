@@ -5,6 +5,7 @@ MODULE hydro_xsect ! Module for hydrodynamics
 
 !Global constants
 use global_defs
+use util_various, only: minmod
 ! MODULE TO HOLD PIZZUTO SHEAR MODEL
 use pizzutotry
 
@@ -148,7 +149,10 @@ SUBROUTINE shear(nn,ys,bed,water,wslope,taus,f,NNN,slopes, counter, Q, vegdrag, 
     call dAdP(nn, ys,bed, water, B, dAP,dPer,tbst, f,slopes, rho, lambdacon, tbston)
     
     !Value of B at i+1/2
-    Bf(1:nn-1)=0.5_dp*(B(2:nn)+B(1:nn-1))
+    !Bf(1:nn-1)=0.5_dp*(B(2:nn)+B(1:nn-1))
+    DO i=1,nn-1
+        Bf(i)=minmod(B(i),B(i+1))
+    END DO
     ! Forward dy increment
     dyf(1:nn-1)= ys(2:nn)-ys(1:nn-1) 
 
