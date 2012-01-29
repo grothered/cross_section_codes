@@ -62,6 +62,7 @@
  RESUS_TYPE="vanrijn             ",
  BEDLOAD_TYPE="mpm                 ",
  BANK_EROSION_TYPE="None                ",
+ FAILURE_SLOPE= 0.50000000000000000     ,
  READ_INITIAL_WATERS=F,
  WRITE_DURATION=          1,
  WRITE_LONGWAIT=          1,

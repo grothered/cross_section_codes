@@ -436,7 +436,7 @@ DO Q_loop= 1, num_simulations
                                 Qbedon, normmov, sus2d, ysl, ysu, bedl,bedu, iii, bedlast(l:u), &
                                 talmon, high_order_bedload, too_steep) 
 
-                call bank_erosion(bank_erosion_type,nos,l, u, ys, bed, bedlast)
+                call bank_erosion(bank_erosion_type,nos,l, u, ys, bed, bedlast, failure_slope)
 
             END IF
 

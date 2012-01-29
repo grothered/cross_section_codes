@@ -70,6 +70,7 @@ alpha = 0.000 !Constant in the 'cohesive' suspended sediment erosion formula.
 resus_type = 'vanrijn' ! 'cohesive', 'vanrijn', 'smithmac' -- equation for resuspension
 bedload_type= 'mpm' ! 'vanrijn', 'mpm' -- equation for bedload
 bank_erosion_type='None' ! 'Delft'
+failure_slope=0.5 !
 
 Qbedon=.false. !Is bedload on?
 talmon=.false. !If bedload is on, do we use a talmon lateral slope closure?

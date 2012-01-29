@@ -62,6 +62,7 @@
  RESUS_TYPE="cohesive            ",
  BEDLOAD_TYPE="vanrijn             ",
  BANK_EROSION_TYPE="Delft               ",
+ FAILURE_SLOPE= 0.50000000000000000     ,
  READ_INITIAL_WATERS=F,
  WRITE_DURATION=          1,
  WRITE_LONGWAIT=          1,

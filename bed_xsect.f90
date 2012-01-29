@@ -1082,7 +1082,7 @@ SUBROUTINE critical_bedjump_wasting(dT, nos,ys,bed,failure_jump, rate)
 END SUBROUTINE critical_bedjump_wasting
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-SUBROUTINE bank_erosion(bank_erosion_type, a, l, u,ys, bed, bed_old)
+SUBROUTINE bank_erosion(bank_erosion_type, a, l, u,ys, bed, bed_old, failure_slope)
     ! Purpose: To drive bank erosion on a single cross-section
     ! Input: bank_erosion_type, the number of points on the cross-section 'a', 
     !        the indices of the lower (l) and upper(u) wet points with dry neighbours 
@@ -1091,7 +1091,7 @@ SUBROUTINE bank_erosion(bank_erosion_type, a, l, u,ys, bed, bed_old)
     ! Output: bed has changed based on bank erosion
     CHARACTER(char_len), INTENT(IN):: bank_erosion_type
     INTEGER, INTENT(IN):: a, l, u
-    REAL(dp), INTENT(IN):: ys(a), bed_old(a)
+    REAL(dp), INTENT(IN):: ys(a), bed_old(a), failure_slope
     REAL(dp), INTENT(IN OUT):: bed(a)
 
     SELECT CASE(bank_erosion_type)
@@ -1100,14 +1100,29 @@ SUBROUTINE bank_erosion(bank_erosion_type, a, l, u,ys, bed, bed_old)
         !   A version of the Delft bank erosion model. 
         !   If erosion is occuring at the channel margins,
         !   then assign it to the neighbouring dry bed point
-            IF((bed(l)<bed_old(l)).AND.(l>1)) THEN
+            IF((bed(l)<bed_old(l)).AND.(l>2)) THEN
+                bed(l-1) = bed(l-1) - (bed_old(l) - bed(l))*( (ys(l+1)-ys(l-1))/(ys(l)-ys(l-2)))
+                bed(l) = bed_old(l)
+            END IF
+            IF((bed(u)<bed_old(u)).AND.(u<a-1)) THEN
+                bed(u+1) = bed(u+1) - (bed_old(u) - bed(u))*( (ys(u+1)-ys(u-1))/(ys(u+2)-ys(u)))
+                bed(u) = bed_old(u)
+            END IF
+
+        CASE('Delft_if_too_steep')
+            IF((bed(l)<bed_old(l)).AND.(l>2)) THEN
+                IF((bed(l-1)-bed(l)).gt.(failure_slope*(ys(l)-ys(l-1)))) THEN
                     bed(l-1) = bed(l-1) - (bed_old(l) - bed(l))*( (ys(l+1)-ys(l-1))/(ys(l)-ys(l-2)))
                     bed(l) = bed_old(l)
+                END IF
             END IF
-            IF((bed(u)<bed_old(u)).AND.(u<a)) THEN
+            IF((bed(u)<bed_old(u)).AND.(u<a-1)) THEN
+                IF((bed(u+1)-bed(u)).gt.(failure_slope*(ys(u+1)-ys(u)))) THEN
                     bed(u+1) = bed(u+1) - (bed_old(u) - bed(u))*( (ys(u+1)-ys(u-1))/(ys(u+2)-ys(u)))
                     bed(u) = bed_old(u)
+                END IF
             END IF
+
         CASE('None')
             ! No bank erosion here
             continue

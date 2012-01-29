@@ -35,7 +35,7 @@ REAL(dp):: hlim , Qriver, tr, mor,mor1,  mu, erconst, multa, aa,bb, cc, lifttodr
            rho, mouth_data, z0, rhos, burnin, &
            voidf, dsand, d50, g, kvis,  lambdacon, alpha, cfl,man_nveg, Cmouth,& 
            Criver, water_m, water_mthick, veg_ht, &
-           v1coef,v4coef, eddis1D, eddis1D_constant, lincrem
+           v1coef,v4coef, eddis1D, eddis1D_constant, lincrem, failure_slope
 LOGICAL:: susdist=.false., sus2d, LAKE, mouthread, norm, vertical, tbston, normmov, read_initial_geo, & 
           remesh, Qbedon, talmon, printall, taucrit_slope_reduction=.false., read_initial_waters, &
           Cmouth_read, Criver_read
@@ -50,7 +50,7 @@ NAMELIST /inputdata2/ a, b, jmax, writfreq, t,longt, delX, wset, seabuf, hlim, &
      layers, bedwrite, remesh, remeshfreq, normmov,& 
      water_m, water_mthick, veg_ht, Qbedon, talmon, v1coef,v4coef,eddis1D,eddis1D_constant, lincrem, &
      boundary_downstream_file, friction_type, grain_friction_type, resus_type, bedload_type, &
-     bank_erosion_type, read_initial_waters, write_duration, write_longwait
+     bank_erosion_type, failure_slope, read_initial_waters, write_duration, write_longwait
 
 ALLOCATABLE bed(:,:),bed_old(:,:),bed_Vold(:,:),bed_oldrefit(:,:), ys(:,:),ys_oldrefit(:,:),& 
             fs(:,:), fs_g(:,:),a_ref(:,:), waters(:), waters_old(:),&
@@ -622,7 +622,8 @@ DO j= 1, jmax
         END IF
 
         ! BANK EROSION
-        call bank_erosion(bank_erosion_type,a,l(i), u(i), ys(:,i), bed(:,i), bed_old(:,i))
+        call bank_erosion(bank_erosion_type,a,l(i), u(i), ys(:,i), bed(:,i), bed_old(:,i),&
+                          failure_slope)
     END DO 
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
