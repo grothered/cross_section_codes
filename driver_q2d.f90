@@ -7,7 +7,7 @@ use util_various, only: set_geo, reset_ys, meanvars, compute_slope, compute_crit
                         interp3, active_zone, conservation_tests1, conservation_tests2, read_real_table, &
                         check_for_uneven_time_increments, timeseries_interpolate
 use hydro_xsect, only: calc_friction, calc_shear ! Hydrodynamic and grain friction and shear
-use bed_xsect, only: calc_resus_bedload, update_bed ! Compute rates of sediment transport, and evolve bed
+use bed_xsect, only: calc_resus_bedload, update_bed, bank_erosion ! Compute rates of sediment transport, and evolve bed
 use st_venant_solver, only: hyupdate !The longitudinal hydrodynamic solver
 use sus, only: susconc_up35, susconc2dup3rdV2  !The longitudinal suspended sediment solver
 
@@ -622,27 +622,7 @@ DO j= 1, jmax
         END IF
 
         ! BANK EROSION
-        SELECT CASE(bank_erosion_type)
-
-            CASE('Delft')
-            !   A version of the Delft bank erosion model. 
-            !   If erosion is occuring at the channel margins,
-            !   then assign it to the neighbouring dry bed point
-                IF((bed(l(i),i)<bed_old(l(i),i)).AND.(l(i)>1)) THEN
-                        bed(l(i)-1,i) = bed(l(i)-1,i) - (bed_old(l(i),i) - bed(l(i),i))
-                        bed(l(i),i) = bed_old(l(i),i)
-                END IF
-                IF((bed(u(i),i)<bed_old(u(i),i)).AND.(u(i)<a)) THEN
-                        bed(u(i)+1,i) = bed(u(i)+1,i) - (bed_old(u(i),i) - bed(u(i),i))
-                        bed(u(i),i) = bed_old(u(i),i)
-                END IF
-            CASE('None')
-                ! No bank erosion here
-                continue
-            CASE DEFAULT
-                print*, 'ERROR: bank_erosion_type specified incorrectly', bank_erosion_type
-                stop
-        END SELECT
+        call bank_erosion(bank_erosion_type,a,l(i), u(i), ys(:,i), bed(:,i), bed_old(:,i))
     END DO 
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!

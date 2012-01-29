@@ -34,7 +34,7 @@ LOGICAL::  compute_twice, susdist, sus2d, readin, geo, remesh, norm, vertical, &
              variable_timestep, high_order_shear, high_order_bedload, &
             taucrit_slope_reduction, evolve_bed
 CHARACTER(char_len):: friction_type, grain_friction_type, resus_type, &
-                    bedload_type, sus_vert_prof, edify_model
+                    bedload_type, sus_vert_prof, edify_model, bank_erosion_type
 NAMELIST /inputdata/ nos,writfreq,jmax, layers, hlim, mor, mu, &
                 erconst,lifttodrag,sconc,rho,lincrem,wset, voidf, t, dt, &
                 susdist,readin, geo, waterM, width, smax, rough_coef, &
@@ -47,7 +47,7 @@ NAMELIST /inputdata/ nos,writfreq,jmax, layers, hlim, mor, mu, &
                 high_order_bedload, grain_friction_type, &
                 resus_type, bedload_type, sus_vert_prof, edify_model, &
                 failure_slope, x_len_scale, taucrit_slope_reduction, &
-                evolve_bed
+                evolve_bed, bank_erosion_type
 
 ALLOCATABLE ys(:), bed(:), dists(:), tau(:),ks(:),tbst(:),& 
             qby(:), bedlast(:), hss(:), tss(:),  hss2(:), Qe(:),& 
@@ -436,68 +436,7 @@ DO Q_loop= 1, num_simulations
                                 Qbedon, normmov, sus2d, ysl, ysu, bedl,bedu, iii, bedlast(l:u), &
                                 talmon, high_order_bedload, too_steep) 
 
-                ! Correct the banks. In the case that we allow bedload at l-1/2 and
-                ! u+1/2, this is very important to ensure mass conservation, because
-                ! if there is a downslope bedload flux from l-1/2, or from u+1/2,
-                ! then it must come from the dry part of the channel 
-                !IF(.FALSE.) THEN
-                !    ! Use this case when bedload occurs and l-1/2, u+1/2
-                !    IF(l>1) THEN
-                !        IF(bed(l-1)>bedl) bed(l-1)=bedl
-                !    END IF
-                !    IF(u<nos) THEN
-                !        IF(bed(u+1)>bedu) bed(u+1)=bedu
-                !    END IF
-                !END IF
-
-                IF(.TRUE.) THEN
-                !    ! A version of the Delft bank erosion model. 
-                !    ! First check that there is no leakage of bedl, bedu in the
-                !    ! bed solver (possibly could happen due to matrix round off or
-                !    ! coding error).
-                !    IF((l>1).and.(u<nos)) THEN
-                !        IF((abs(bedl - bedlast(l-1))>0.0e-8_dp).OR.& 
-                !           (abs(bedu-bedlast(u+1))>0.0e-08_dp)) THEN
-                !            print*, 'ERROR -- there is still erosion of dry points in &
-                !                the matrix solution of the bed solver'
-                !            print*, abs(bedl - bedlast(l-1)), abs(bedu-bedlast(u-1)), l, u
-                !            stop
-                !        END IF
-                !    END IF
-                !    ! If erosion is occuring at the channel margins,
-                !    ! then assign it to the neighbouring dry bed point
-                    IF((bed(l)<bedlast(l)).AND.(l>1)) THEN
-                !        !IF( abs(bed(l) - bed(l-1))/(ys(l)-ys(l-1))>1.0_dp) THEN
-                !        !IF( abs(tau_g(l))>taucrit(l,0)) THEN
-                            bed(l-1) = bed(l-1) - (bedlast(l) - bed(l))
-                            bed(l) = bedlast(l)
-                        !END IF
-                    END IF
-                    IF((bed(u)<bedlast(u)).AND.(u<nos)) THEN
-                !        !IF( abs(bed(u+1) - bed(u))/(ys(u+1)-ys(u))>1.0_dp) THEN
-                !        !IF( abs(tau_g(u))>taucrit(u,0)) THEN
-                            bed(u+1) = bed(u+1) - (bedlast(u) - bed(u))
-                            bed(u) = bedlast(u)
-                        !END IF
-                    END IF
-                END IF
-               
-     
-                ! BASIC LIMITING OF THE CHANNEL SLOPE -- to circumvent the numerically
-                ! difficult problem of allowing infinite banks otherwise
-                !IF(mod(j,1)==0)
-                !call basic_slope_limit(nos,ys,bed,failure_slope, remesh, 1.0_dp)
-                !call basic_jump_limit(nos,ys,bed,0.5_dp, remesh, 1.0_dp)
-                !do ii=1,100
-                !call critical_slope_wasting(DT1, nos,ys,bed,failure_slope, 1.0e-06_dp)
-                !end do
-                !call critical_bedjump_wasting(DT1, nos,ys,bed,2.0_dp, 1.0e-05_dp)
-                !Update Cbar to reflect changes in the bed.
-                !DO i=1,nos
-                !    IF((water>bedlast(i)).and.(water>bed(i))) THEN
-                !        Cbar(i) = Cbar(i)*(water-bedlast(i))/(water-bed(i))
-                !    END IF
-                !END DO
+                call bank_erosion(bank_erosion_type,nos,l, u, ys, bed, bedlast)
 
             END IF
 

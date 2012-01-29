@@ -614,10 +614,8 @@ SUBROUTINE mouth_height(th, t, tr, mouth_data, mouthread, mouth_data_len)
     !time and the height - for interpolation
 
     IF(mouthread.eqv..false.) THEN
-        !th=  (tr/2._dp)*( sin(2.00_dp*pi*t/(3600.00_dp*12.40_dp)) ) !*atan(counter/4000.)*2./pi
-        th=  (tr/2._dp)*( sin(2.00_dp*pi*t/(180.0_dp)) ) + 0.082 !Tambrioni experiment 1 !*atan(counter/4000.)*2./pi
-        !if(t< 3260._dp) THEN
-        !th= .05_dp*(2._dp/2.00_dp)*( sin(2.00_dp*pi*t/(1.250_dp*3260._dp)))!(3600.00_dp*12.40_dp)) )+0._dp !*atan(counter/4000.)*2./pi
+        ! Example analytical water level boundary condition
+        th=  (tr/2._dp)*( sin(2.00_dp*pi*t/(180.0_dp)) ) + 0.082 !Tambrioni experiment 1 
     ELSE 
 
         !        th=0._dp
