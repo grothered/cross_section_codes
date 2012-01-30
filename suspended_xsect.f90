@@ -984,6 +984,7 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
     !   int_edif_f = Integral_{a_ref}^{water_surface} ( edify*f) dz
     !   int_edif_dfdy = Integral_{a_ref}^{water_surface} ( edify*df/dy) dz
     !
+    ! EVALUATED AT i+1/2
     INTEGER, INTENT(IN):: a 
     CHARACTER(char_len), INTENT(IN):: edify_model, sus_vert_prof
     REAL(dp), INTENT(IN):: ys, bed, ysl, ysu, bedl, bedu, ustar, water, wset, a_ref

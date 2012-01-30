@@ -252,7 +252,7 @@ SUBROUTINE calc_resus_bedload(a, dT, water, Q, bed,ys,Area, ff,recrd, E, C, wset
         ! based upwinding, or standard linear interpolation. 
         ! Note that there is 1 less output point than input
         ! point. Hence, there is a funny organisation of arguments.
-        call qbh_approx(a,ys,qb_G(0:a),qb_G(a+1),bed, bedl, bedu, ysl, ysu, 2)                
+        call qbh_approx(a,ys,qb_G(0:a),qb_G(a+1),bed, bedl, bedu, ysl, ysu, 1)                
     END IF !Qbedon
 
     ! Here we ensure that there is no lateral bedload transport at y(1/2) and
@@ -433,9 +433,9 @@ SUBROUTINE update_bed(a, dT, water, Q, bed,ys,Area, recrd, E, D,C,a2, tau,taug,&
         
         !Calculate coefficients for bed slope terms
         IF(high_order_bedload) THEN
-            call dbeddyH_approx(a,ys,bed,dbeddyH, ysl, ysu, bedl, bedu, 3)
+            call dbed_dy_iplushalf(a,ys,bed,dbeddyH, ysl, ysu, bedl, bedu, 3)
         ELSE
-            call dbeddyH_approx(a,ys,bed,dbeddyH, ysl, ysu, bedl, bedu, 2)
+            call dbed_dy_iplushalf(a,ys,bed,dbeddyH, ysl, ysu, bedl, bedu, 2)
         END IF
         !!Set diagonals for Matrix -- termed 'h'
         !! h stores the implicit terms for [1 / (1-voidf)] dbed/dt = -d/dy (qb_G*dbed/dy) + Ds - Es
@@ -610,13 +610,10 @@ SUBROUTINE qbh_approx(n,ys,qb,qbnP1,bed, bedl, bedu, ysl, ysu, order)
     INTEGER:: i, ii
     INTEGER, save:: counter=0
 
-    IF(order.ne.1) THEN
-        IF(order.ne.2) THEN
-            print*, 'Order (in qbh_approx) has an incorrect value'
-            stop
-        END IF
+    IF((order.ne.1).and.(order.ne.2).and.(order.ne.0)) THEN
+        print*, 'Order (in qbh_approx) has an incorrect value'
+        stop
     END IF
-        
 
     !Temporary variables
     qbt=qb
@@ -645,47 +642,57 @@ SUBROUTINE qbh_approx(n,ys,qb,qbnP1,bed, bedl, bedu, ysl, ysu, order)
     !central]
     DO i=0,n
 
-        !IF(order.eq.2) THEN
-        SELECT CASE(order)
+        IF(order.eq.2) THEN
+        !SELECT CASE(order)
             ! Order ==2
-            CASE(2)
-                IF(i.eq.n) THEN
-                    ii=i !-1 !i  
+        !    CASE(2)
+            IF(i.eq.n) THEN
+                ii=i !-1 !i  
+            ELSE
+                IF(i.eq.0) THEN
+                    ii=i+1 !-1 !i+1  
                 ELSE
-                    IF(i.eq.0) THEN
-                        ii=i+1 !-1 !i+1  
+                    IF((bedt(i)>bedt(i+1)).and.(bedt(i-1)>bedt(i))) THEN
+                        ii=i !Use backward extrap (points i-1,i and i+1)
                     ELSE
-                        IF((bedt(i)>bedt(i+1)).and.(bedt(i-1)>bedt(i))) THEN
-                            ii=i !Use backward extrap (points i-1,i and i+1)
+                        IF((bedt(i)<bedt(i+1)).and.(bedt(i-1)<bedt(i))) THEN
+                            ii= i+1 !Use forward extrap (using points i, i+1, i+2)
                         ELSE
-                            IF((bedt(i)<bedt(i+1)).and.(bedt(i-1)<bedt(i))) THEN
-                                ii= i+1 !Use forward extrap (using points i, i+1, i+2)
-                            ELSE
-                                ii=-1 !Use central extrap
-                            END IF
+                            ii=-1 !Use central extrap
                         END IF
                     END IF
                 END IF
+            END IF
             ! Order ==1
-            CASE(1)
-                ii = -1 !Make everything a central extrapolation
-            
-            CASE DEFAULT
-                PRINT*, 'ERROR: the variable order should be either 1 or 2 in qbh_approx'
-                stop
-        END SELECT
-
+            !CASE(1)
+            !    ii = -1 !Make everything a central extrapolation
+            !
+            !CASE(0)
+            !    ii = -2 ! Use minmod
+            !
+            !CASE DEFAULT
+            !    PRINT*, 'ERROR: the variable order should be either 0, 1 or 2 in qbh_approx'
+            !    stop
+        !END SELECT
+        END IF
 
         !Here we do the extrapolation        
-        IF(ii==-1) THEN !Central approach
+        IF(Order==1) THEN !Central approach
             IF(i<n) THEN
                 qbt(i)=0.5_dp*(qb(i)+qb(i+1))
             ELSE
                 qbt(i)=0.5_dp*(qb(i)+qbnP1)
             END IF
+        ELSEIF(Order==0) THEN
+            ! minmod version
+            IF(i<n) THEN
+                qbt(i)=minmod(qb(i),qb(i+1))
+            ELSE
+                qbt(i)=minmod(qb(i),qbnP1)
+            END IF
         ELSE !Use either forward or backward extrap
-            !Say the polynomial is F(x)= c+b*(x-x(i)) + a*(x-x(i))*(x-x(i+1))
-            !Then c=y(i), b=(y(i+1)-y(i))/(x(i+1)-x(i)), a= ( (y(i-1)-y(i))/(x(i-1)-x(i)) -b)/(x(i-1)-x(i+1))
+             !Say the polynomial is F(x)= c+b*(x-x(i)) + a*(x-x(i))*(x-x(i+1))
+             !Then c=y(i), b=(y(i+1)-y(i))/(x(i+1)-x(i)), a= ( (y(i-1)-y(i))/(x(i-1)-x(i)) -b)/(x(i-1)-x(i+1))
             a0=qb(ii) !c
             a1=delqbP(ii)/delyP(ii) !b
             a2=(-delqbM(ii)/delyM(ii) + a1)/(delyM(ii)+delyP(ii)) !a
@@ -726,7 +733,7 @@ END SUBROUTINE qbh_approx
 !!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!
-SUBROUTINE dbeddyH_approx(a,ys,bed, dbeddyH, ysl, ysu, bedl, bedu, order)
+SUBROUTINE dbed_dy_iplushalf(a,ys,bed, dbeddyH, ysl, ysu, bedl, bedu, order)
 ! Purpose: This routine takes ys, bed, and calculates the coefficients b1, b2,
 ! b3, b4, where dhdy_(i+1/2) = b1*bed(i-1) + b2*bed(i) + b3*bed(i+1) +
 ! b4*bed(i+2) These are stored in dbeddyH
@@ -743,7 +750,7 @@ SUBROUTINE dbeddyH_approx(a,ys,bed, dbeddyH, ysl, ysu, bedl, bedu, order)
     
     !IF(order.ne.2) THEN
     !    IF(order.ne.3) THEN
-    !        print*, 'Order (in dbeddyH_approx) has an incorrect value'
+    !        print*, 'Order (in dbed_dy_iplushalf) has an incorrect value'
     !        stop
     !    END IF
     !END IF
@@ -768,7 +775,7 @@ SUBROUTINE dbeddyH_approx(a,ys,bed, dbeddyH, ysl, ysu, bedl, bedu, order)
         DO i=1,a+1
             IF( ((ys_temp(i) - ys_temp(i-1))-dy) > 1.0e-8_dp*dy) THEN
                 print*, 'ERROR: dy does not appear constant, but the 3rd &
-                        order approximation is being used in dbeddyH_approx. &
+                        order approximation is being used in dbed_dy_iplushalf. &
                         Perhaps try the linear (2nd order) approximation instead' 
                 stop
             END IF
@@ -846,22 +853,22 @@ SUBROUTINE dbeddyH_approx(a,ys,bed, dbeddyH, ysl, ysu, bedl, bedu, order)
                 END IF
 
             CASE DEFAULT
-                print*, 'ERROR: ii should be +-1 in dbeddyH_approx'
+                print*, 'ERROR: ii should be +-1 in dbed_dy_iplushalf'
                 stop
 
         END SELECT
     END DO
     
 
-END SUBROUTINE dbeddyH_approx
+END SUBROUTINE dbed_dy_iplushalf
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 SUBROUTINE basic_slope_limit(nos,ys,bed,failure_slope, remesh,limit_fail)
     ! Purpose: Basic routine to limit the absolute value of the lateral slope to be <= failure_slope
     ! Input: The channel geometry, and the slope at which the bank 'fails', and
-    ! limit_fail = a number from (0-1], which can be used to make the failure
-    ! happen over more time.
+    !        limit_fail = a number from (0-1], which can be used to make the failure
+    !        happen over more time.
     ! Output: The updated channel geometry
     INTEGER, INTENT(IN):: nos
     REAL(dp), INTENT(IN):: ys(nos), failure_slope, limit_fail
@@ -925,8 +932,8 @@ END SUBROUTINE basic_slope_limit
 SUBROUTINE basic_jump_limit(nos,ys,bed,bedjump, remesh,limit_fail)
     ! Purpose: Basic routine to limit the absolute value of the difference between bed points to be <=bedjump 
     ! Input: The channel geometry, and the bedjump at which the bank 'fails', and
-    ! limit_fail = a number from (0-1], which can be used to make the failure
-    ! happen over more time.
+    !        limit_fail = a number from (0-1], which can be used to make the failure
+    !        happen over more time.
     ! Output: The updated channel geometry
     INTEGER, INTENT(IN):: nos
     REAL(dp), INTENT(IN):: ys(nos), bedjump, limit_fail

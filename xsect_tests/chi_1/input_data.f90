@@ -20,8 +20,8 @@
 !Algorithm options
 !!!!!!!!!!!!!!!!!!!!!
 
-nos = 1600 ! Number of spatial grid points
-writfreq = 2000 !24*5*5 ! The output is written every writfreq 'th timestep
+nos = 800 ! Number of spatial grid points
+writfreq = 8000 !24*5*5 ! The output is written every writfreq 'th timestep
 jmax= 2000001 !2000001 !1382400 !24*5*2*45*4*4*4*4*5 ! The number of time steps
 t = 0.00 ! Starting time (s)
 dT = 300.00 !Time step (s)
@@ -41,7 +41,7 @@ man_nveg = 0.3 !Mannings n for vegetated regions
 veg_ht = 1000.1 !Height at which vegetation is assumed to occur.
 lambdacon=0.24 !Dimensionless eddy viscosity constant
 rho = 1026.0 ! Density of water (kg/m^3)
-tbston=.FALSE. !When true (false) this term switches on (off) the sqrt(1+slopes^2) in the bed shear equation: tau*sqrt(1+slopes^2) = rho g Sf h + d/dy ... If .false., then it is replaced with 1. This effects both the shear calculation, and the 'roughmult' friction factor estimation
+tbston=.TRUE. !When true (false) this term switches on (off) the sqrt(1+slopes^2) in the bed shear equation: tau*sqrt(1+slopes^2) = rho g Sf h + d/dy ... If .false., then it is replaced with 1. This effects both the shear calculation, and the 'roughmult' friction factor estimation
 
 layers=1 !The number of bed layers
 lincrem = 1000.031 ! The distance between bed layers (m). Set it to a very high number to avoid the multi bed layers having any influence.
@@ -62,7 +62,7 @@ d50 = 0.00015 !0.000062 ! median grain size for bedload formula (m)
 g = 9.8 !Gravity (m/s^2)
 kvis = 1.0E-06 !Kinematic viscosity of water. 
 alpha=0.000228 !The constant for the erosion formula E= alpha*(tau-taue)/sqrt(taue)
-Qbedon=.FALSE. !Is bedload active
+Qbedon=.TRUE. !Is bedload active
 bedload_type='vanrijn' ! 'mpm', 'vanrijn'
 talmon=.FALSE. !Do we use a talmon lateral bedload closure?
 resus_type = 'vanrijn' ! 'cohesive', 'vanrijn'
