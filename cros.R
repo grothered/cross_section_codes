@@ -70,15 +70,15 @@ anim<-function(d,j,...){
 
 
 
-anim2<-function(lengths,bed, sleeper=0, ...){
+anim2<-function(lengths,bed, sleep=0,asp=1, ...){
 	f=range(bed,na.rm=TRUE)
 	b=range(lengths,na.rm=TRUE)
 	for(i in 1:dim(bed)[1]){
-		plot(b,f, col=0,asp=1, ...)
+		plot(b,f, col=0, ...)
 		points(lengths[i,],bed[i,], ...)
         title(i)
-        if(sleeper>0){
-            slptime=paste('sleep', sleeper)
+        if(sleep>0){
+            slptime=paste('sleep', sleep)
             system(slptime)
         }
 	 }
