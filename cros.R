@@ -74,7 +74,7 @@ anim2<-function(lengths,bed, sleep=0,asp=1, ...){
 	f=range(bed,na.rm=TRUE)
 	b=range(lengths,na.rm=TRUE)
 	for(i in 1:dim(bed)[1]){
-		plot(b,f, col=0, ...)
+		plot(b,f, col=0,asp=asp, ...)
 		points(lengths[i,],bed[i,], ...)
         title(i)
         if(sleep>0){

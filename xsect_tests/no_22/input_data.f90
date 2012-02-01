@@ -31,7 +31,7 @@ waterM = 0.0 !Initial water elevation (m) and mean water elevation
 TR=0.0 !Tidal range. If it is set to zero then the discharge is constant, otherwise the continuity based method is used.
 Width = 150.0 !Width of computational domain (m)
 
-no_discharges = 7
+num_simulations = 7
 Discharges = 6.44    6.44    6.44    6.44    6.44    6.44    6.44 
 susconcs =   5.0e-05 1.0e-04 7.5e-05 5.0e-05 1.0e-05 5.0e-06 0.0e-06 !manning=.true. !Do we use a manning friction factor? If not, then we use a Darcy Weisbach friction factor, calculated as f=man_n**2*8.*9.8 -i.e., the equivalent manning friction value if the depth were 1 everywhere. Hence, the variable man_n is used to set either a manning or darcy friction. Same deal for vegetation drag
 friction_type = 'manning' !'manning'!, 'darcy', 'vanrijn', 'ks'
@@ -46,7 +46,9 @@ tbston=.true. !When true (false) this term switches on (off) the sqrt(1+slopes^2
 layers=1 !The number of bed layers
 lincrem = 1000.031 ! The distance between bed layers (m). Set it to a very high number to avoid the multi bed layers having any influence.
 mu = 10000.60 !Angle of repose - this can be used to influence the critical shear stress if the code is adjusted
-failure_slope = 1000.0 ! Slope at which mass failure occurs.
+
+bank_erosion_type='Delft' !'Delft_if_too_steep' !'Delft' !'Delft_if_big_jump' !'Delft_if_too_steep'
+failure_slope = 0.50 ! Slope at which mass failure occurs.
 erconst = 0.15 ! The constant determining the min critical shear and the critical shear increment
 taucrit_slope_reduction=.FALSE. ! Is taucrit reduced on lateral slopes?
 wset = 0.02 ! Settling velocity of sediment in m/s
@@ -83,6 +85,5 @@ normmov=.false. !Do the bed points actually shift with the D-E vector? This is o
 
 high_order_shear=.FALSE. ! Do we try to use a higher order estimate of derivatives in the shear approximation
 high_order_bedload=.FALSE. !Do we try to use a higher order estimate of derivatives in the downslope bedload approximation
-high_order_Cflux=.FALSE. ! Do we try to use a higher order estimate of derivatives in the dynamic_sus_dist routine
 /
 
