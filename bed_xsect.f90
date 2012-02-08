@@ -582,7 +582,7 @@ SUBROUTINE update_bed(a, dT, water, Q, bed,ys,Area, recrd, E, D,C,a2, tau,taug,&
         END IF
 
         IF(abs(bedlast_tmp(i)-bed(i))>0.1_dp) THEN
-            print*, "bedjump in update_bed", i, bedlast_tmp(i)-bed(i), bedlast_tmp(i), bed(i), &
+            print*, "bedjump in update_bed", i, counter, bedlast_tmp(i)-bed(i), bedlast_tmp(i), bed(i), &
                     tau(i), taug(i), water-bed(i), water-bedlast_tmp(i), Qe(i), C(i),&
                     Qd(i), dqbeddx(i)
         END IF
@@ -1115,6 +1115,7 @@ SUBROUTINE bank_erosion(bank_erosion_type, a, l, u,ys, bed, bed_old, failure_slo
     ! This is to prevent very shallow depths on the channel edge from being
     ! interpreted as the bank. However, it is a bit dangerous, in that we could
     ! potentially have very internal channel points being treated as the bank
+    ! AND we could be subject to round-off error
     slope= (bed(l:u+1)-bed(l-1:u))/(ys(l:u+1)-ys(l-1:u))
     lower_bank=minloc(slope(l:u+1))
     l2=lower_bank(1)+(l-1)
