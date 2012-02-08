@@ -171,7 +171,7 @@ SUBROUTINE refit(ys,bed,a)
     INTEGER, INTENT(IN):: a
     REAL(dp), INTENT (IN OUT)::ys(a), bed(a)
 
-    INTEGER:: i,j, bankl, bankr, tmp(1), n1, n2, num_pts(5)
+    INTEGER:: i,j, bankl, bankr, tmp(1), n1, n2, num_pts(5), mid_chan
     REAL(dp):: slope_c(a),newxs(a), slope_f(a),&
                tmpR, res_pts(6), high_res_width, bank_old
     SAVE res_pts ! This will record the boundaries between zones of different resolutions
@@ -196,12 +196,13 @@ SUBROUTINE refit(ys,bed,a)
 
     ! Find location of the maximum slope on the left half of the channel
     ! We assume that the mid-regions of the channel are near a/2
-    tmp = maxloc(abs(slope_c(2:a/2))) + 1
-    bankl=tmp(1)
+    mid_chan=floor(0.5_dp*a)
+    tmp = maxloc(abs(slope_c(2:mid_chan))) + 1
+    bankl=tmp(1) ! Left bank index
 
     ! Same on the right half of the channel
-    tmp = maxloc(abs(slope_c(a/2:a))) + a/2 -1
-    bankr=tmp(1)
+    tmp = maxloc(abs(slope_c(mid_chan:a))) + mid_chan -1
+    bankr=tmp(1) ! Right bank index
 
     ! Check whether we need to remesh
     ! If the distance between 'bankl' and 'the value of bankl last time we remeshed'
@@ -232,7 +233,7 @@ SUBROUTINE refit(ys,bed,a)
     res_pts(5) = ys(bankr) + high_res_width
    
  
-    IF((res_pts(2)<0._dp).or.(res_pts(5)>ys(a))& 
+    IF((res_pts(2)<ys(1)).or.(res_pts(5)>ys(a))& 
         .or.(res_pts(4)<res_pts(3)) ) THEN
         PRINT*, 'ERROR - the bank region points are not ordered correctly. &
                  Need to recode the refit routine to make this more general'
@@ -509,16 +510,16 @@ SUBROUTINE interp3(oldxs, oldys, newxs, a)
     !!end do
 
     !FIXME: POTENTIAL BUG: Here we test for symmetry in oldys. If it is symmetric, then we assume that newys should also be symmetric. Now, technically, this might not always be true. However, in my situations, I think it will always be true. And loss of roundoff is a problem. So here we go
-    IF(.true.)THEN
-        tester=oldys(1:a)-oldys(a:1:-1)
-        IF(maxval(abs(tester))<1.0E-9) THEN
-            !Enforce symmetry
-            DO i=1,floor(a*0.5_dp)
-            newys(i)=0.5_dp*(newys(i)+newys(a-i+1))
-            newys(a-i+1)=newys(i)
-            END DO
-        END IF
-    END IF
+    !IF(.FALSE.)THEN
+    !    tester=oldys(1:a)-oldys(a:1:-1)
+    !    IF(maxval(abs(tester))<1.0E-9) THEN
+    !        !Enforce symmetry
+    !        DO i=1,floor(a*0.5_dp)
+    !        newys(i)=0.5_dp*(newys(i)+newys(a-i+1))
+    !        newys(a-i+1)=newys(i)
+    !        END DO
+    !    END IF
+    !END IF
 
     oldys(2:a-1)=newys(2:a-1) !Update the y values
 

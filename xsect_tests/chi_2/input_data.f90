@@ -55,7 +55,7 @@ wset = 0.042 ! Settling velocity of sediment in m/s
 voidf = 0.4 ! Void fraction (non sediment fraction) of bed = porosity
 lifttodrag = 0.0 ! Lift to drag coefficient ratio
 hlim = 0.01 ! If the mean depth of the cross section is < hlim (m), then it is treated as dry - so we don't calculate the shear stress
-mor = 1.0 !Morphological factor
+mor = 20.0 !Morphological factor
 rhos = 2600.0 !Density of solid sediment (kg/m^3)
 dsand = 0.000062 ! dsand from van Rijn (2004) bedload formula (m)
 d50 = 0.00032 !0.000062 ! median grain size for bedload formula (m)
