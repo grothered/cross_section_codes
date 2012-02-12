@@ -228,12 +228,12 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     ! Solve initially for the depth - averaged suspended sediment concentration
-    ! depth d (Cbar) / dt + 
-    ! V*depth* d(Cbar)/dy - d/dy( Fl ) -
+    !  d (depth*Cbar) / dt + 
+    ! d(V*depth*Cbar)/dy - d/dy( Fl ) -
     ! (Es - ws*cb) = 0.
     !
     ! Note that the d/dx term is included via operator spliiting (see above and
-    ! at the end of the code.
+    ! at the end of the code).
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     M1_diag = 0._dp
     M1_lower = 0._dp
