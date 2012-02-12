@@ -48,7 +48,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
 
     ! LOCAL VARIABLES
     INTEGER:: i, info, j
-    LOGICAL:: halt, xderivative_operator_splitting=.TRUE.
+    LOGICAL:: halt, xderivative_operator_splitting=.TRUE., erode_deposit_splitting=.FALSE.
     REAL(dp):: depth(0:a+1), eddif_y(0:a+1), eddif_z(a), vd(0:a+1), ys_temp(0:a+1)
     REAL(dp):: M1_lower(a), M1_diag(a), M1_upper(a), M1_upper2(a), M1_lower2(a)
     REAL(dp):: RHS(a), dy_all(a), depthlast(0:a+1), zetamult_old(0:a+1),&
@@ -633,7 +633,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     END DO
 
     ! Erosion and deposition
-    IF(.TRUE.) THEN
+    IF(.NOT. erode_deposit_splitting) THEN
         DO i = 1, a
 
             !RHS(i) = RHS(i) +Qe(i) - (1.0_dp-impcon)*min(wset/zetamult_old(i), depthlast(i)/delT)*Cbar(i)
@@ -745,14 +745,6 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
         lat_sus_flux(i+1) = lat_sus_flux(i+1) -(cbed_tmp2)*diffuse2(i)
     END DO 
 
-    ! Add deposition and erosion here using operator splitting
-    ! depth*dCbar/dt +wset*Cbed =  Qe 
-    ! depth/dt*(Cbar_new -Cbar) + wset*(Cbar_new/zetamult) = Qe
-    ! Cbar_new( depth/dt + wset/zetamult) = Qe + depth/dt*Cbar
-    !FIXME: Doing this separate to lateral diffusion leads to negative Cbar
-    !values, except with a fully implicit approach (impcon =1.0_dp)
-    !Cbar = 1.0_dp*(Qe*1.0_dp + depth(1:a)/delT*Cbar - 0.0_dp*wset/zetamult(1:a)*Cbar)/ &
-    !       (depth(1:a)/delT + 1.0_dp*wset/zetamult(1:a))
     
     IF(xderivative_operator_splitting) THEN
    
@@ -825,6 +817,17 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
             END WHERE
         END DO
       
+    END IF
+    
+    IF(erode_deposit_splitting) THEN
+        ! Add deposition and erosion here using operator splitting
+        ! depth*dCbar/dt +wset*Cbed =  Qe 
+        ! depth/dt*(Cbar_new -Cbar) + wset*(Cbar_new/zetamult) = Qe
+        ! Cbar_new( depth/dt + wset/zetamult) = Qe + depth/dt*Cbar
+        !FIXME: Doing this separate to lateral diffusion leads to negative Cbar
+        !values, except with a fully implicit approach (impcon =1.0_dp)
+        Cbar = 1.0_dp*(Qe*1.0_dp + depth(1:a)/delT*Cbar - 0.0_dp*wset/zetamult(1:a)*Cbar)/ &
+               (depth(1:a)/delT + 1.0_dp*wset/zetamult(1:a))
     END IF
 
     ! Check for negative Cbar, clip, and warn if it is not small 

@@ -1,6 +1,8 @@
 # R source for getting data
 
-get<-function(l, gz=F, ...){
+get<-function(l, gz=F, sourcedir='.', ...){
+    basedir=getwd()
+    setwd(sourcedir) #change directory to sourcedir
 
 	if(!gz){
 		a=which(dir()=="taus.cst")
@@ -40,6 +42,8 @@ get<-function(l, gz=F, ...){
 	ys<<- matrix(as.numeric(misc)[1:(floor(length(misc)/l)*l)], ncol=l, byrow=TRUE)
 
 
+    # Change back the directory
+    setwd(basedir)
 		}
 
 
@@ -287,7 +291,10 @@ curv<-function(coords,widths,windowmult,windowconst){
 
 
 
-get_extra<-function(l){
+get_extra<-function(l, sourcedir='.'){
+        basedir=getwd()
+        setwd(sourcedir)
+
         # Function to get a range of output variables
 		taug_file=which(dir()=="taug.cst")
 		Cbed_file=which(dir()=="Cbed.cst")
@@ -307,6 +314,9 @@ get_extra<-function(l){
         Qby <<- genread(dir()[qb_G_file],l+1)	
         a_ref<<- genread(dir()[aref_file],l)
         #time1 <<- scan(dir()[time_file])
+
+
+        setwd(basedir)
 }
 
 
