@@ -49,6 +49,12 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     ! LOCAL VARIABLES
     INTEGER:: i, info, j
     LOGICAL:: halt, xderivative_operator_splitting=.TRUE., erode_deposit_splitting=.FALSE.
+    ! NOTE: BE CAREFUL WITH THE SPLITTING VARIABLES -- CAN AFFECT ABILITY OF
+    ! CODE TO REACH STEADY STATE / CONVERGE IN TIME. 
+    ! In one check, setting both to false seemed to allow convergence in time,
+    ! (i.e same solution as the time step was reduced), whereas I seemed to be
+    ! having some troubles with either set to TRUE -- however, what does this do
+    ! to the equilibrium solutions?
     REAL(dp):: depth(0:a+1), eddif_y(0:a+1), eddif_z(a), vd(0:a+1), ys_temp(0:a+1)
     REAL(dp):: M1_lower(a), M1_diag(a), M1_upper(a), M1_upper2(a), M1_lower2(a)
     REAL(dp):: RHS(a), dy_all(a), depthlast(0:a+1), zetamult_old(0:a+1),&
