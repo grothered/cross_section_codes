@@ -49,22 +49,71 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     ! LOCAL VARIABLES
     INTEGER:: i, info, j
     LOGICAL:: halt, xderivative_operator_splitting=.FALSE., erode_deposit_splitting=.FALSE.
-    ! NOTE: BE CAREFUL WITH THE SPLITTING VARIABLES -- CAN AFFECT ABILITY OF
+    ! NOTE: BE CAREFUL WITH USING OPERATOR SPLITTING 
+    ! IT CAN NEGATIVELY THE AFFECT ABILITY OF THE
     ! CODE TO REACH STEADY STATE / CONVERGE IN TIME. 
-    ! DO NOT USE xder_op_split=TRUE !
-    ! One check WITHOUT LATERAL DIFFUSION -- xderivative=True,
-    ! erode_deposit=False (tf) got a different equilibrium answer to each of the other 3
-    ! combinations of these variables (which all agreed with each other in terms
-    ! of equilibrium solutions. However, the time-evolution of tt was different
-    ! to ft and ff, which seemed the same as each other.
+
+    ! The following tests suggest that setting both splitting flags to FALSE is
+    ! a good idea, and that any other choice will probably require great great
+    ! care. 
+
+    ! I ran a simulation (no_22) with each combination of xderivative =
+    ! True/False, and erode_deposit_splitting=True/False. I denote tf to be
+    ! xderivative(True), erode_deposit_splitting (false), and likewise ff, tt,
+    ! ft. 
+
+    ! I first ran a test WITHOUT LATERAL DIFFUSION, running the code to an
+    ! equilibrium with every combination. 'tf' got a different equilibrium
+    ! answer to each of the other 3 combinations of these variables (which all
+    ! agreed with each other in terms of equilibrium solutions). However, the
+    ! time-evolution of tt was different to ft and ff, which seemed the same as
+    ! each other.
 
     ! I then re-ran the above with twice as many points in space. All seemed to
     ! converge to the same solution as with half as many points, although tf has
     ! larger errors. These 'fine' runs also seemed to behave the same in time as
-    ! with half as many points ===> No effect of spatial discretization on
+    ! with half as many points ===> Little effect of spatial discretization on
     ! equilibrium or evolution. 
 
-    ! What about if we add lateral diffusion?
+    ! WHAT ABOUT IF WE ADD LATERAL DIFFUSION?
+    ! I ran the same check as above with lateral diffusion of suspended load,
+    ! parabolic model. 
+    ! With these settings, ff and ft do not agree in time anymore, although
+    ! based on an initial run, it seemed plausible that they may be approaching
+    ! the same equilibrium solution (I didn't run either for enough time to find
+    ! equilibrium, although for ff, the channel change became quite slow) 
+    !
+    ! If we double the number of points, then ff required a smaller time-step
+    ! (selected as *0.5) to be stable enough to generally preserve symmetry. The
+    ! evolution in time seemed very similar in this case to the case with less
+    ! grid points. I further tried a *0.25 timestep, to check for strong
+    ! dependende on the ratio of dt/dx -- however, this solution seemed very
+    ! similar to the other fine-grid solution.
+    !
+    ! For ft, I also tried doubling the number of points. The agreement in time
+    ! was not so good with the other ft, it was somewhat between the ff
+    ! solutions and the coarse ft one. I tried shrinking the time-step to *0.25,
+    ! and the tendency was again to be moving closer to ff. Dropping the
+    ! time-step it to *0.125, it was pretty close to ff. Using *0.0625, it was
+    ! closer still to the ff case. Using *0.03125, it got closer to the ff case
+    ! with twice as many points, which is still quite close to the ff case.
+    
+    ! CONCLUSIONS: This analysis doesn't show any version to be correct,
+    ! however, ff seems to have the best convergence properties, requiring much
+    ! less effort than ft (which however seems to give the same solution as ff
+    ! with a small enough time-step / sufficient number of points).
+    
+    ! So operator splitting seems to require great care in this example --
+    ! probably because the time-step I take is pretty large compared with the
+    ! relevant timescales for diffusion?
+
+    ! In addition, beware large timesteps in general. The above coarse runs were
+    ! done with a 30s time-step (and 2000 pts over 150m), halving as described.
+    ! No remeshing was used.  Although the ff case behaved pretty well even with
+    ! these settings, I have often used much larger time-steps, at my peril.
+
+    ! I will now re-investigate the equilibrium of the no-22 case with 4000pts
+    ! and a 10s time-step, as these seem to be moderately conservative values.
     REAL(dp):: depth(0:a+1), eddif_y(0:a+1), eddif_z(a), vd(0:a+1), ys_temp(0:a+1)
     REAL(dp):: M1_lower(a), M1_diag(a), M1_upper(a), M1_upper2(a), M1_lower2(a)
     REAL(dp):: RHS(a), dy_all(a), depthlast(0:a+1), zetamult_old(0:a+1),&
