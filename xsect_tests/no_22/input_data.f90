@@ -21,10 +21,10 @@
 !!!!!!!!!!!!!!!!!!!!!
 
 nos = 2000 ! Number of spatial grid points
-writfreq = 1 !24*5*5 ! The output is written every writfreq 'th timestep
-jmax= 90 !2400000 !1382400 !24*5*2*45*4*4*4*4*5 ! The number of time steps
+writfreq = 500 !24*5*5 ! The output is written every writfreq 'th timestep
+jmax= 50000 !2400000 !1382400 !24*5*2*45*4*4*4*4*5 ! The number of time steps
 t = 0.00 ! Starting time (s)
-dT = 1.000 !Time step (s)
+dT = 30.000 !Time step (s)
 variable_timestep=.FALSE. !Do we change the timestepping for high sediment concentrations? -- this is presently inconsistent with bed layers
 
 waterM = 0.0 !Initial water elevation (m) and mean water elevation
@@ -69,7 +69,7 @@ resus_type = 'vanrijn'! ! 'cohesive', 'vanrijn', 'smithmac'
 
 susdist = .TRUE. !Do we have a laterally variable suspended load? 
 sus_vert_prof='Rouse' !'exp', 'Rouse'
-edify_model='Parabolic' ! 'Constant', 'Parabolic', 'Parabola_const'
+edify_model='Zero' !'Parabolic' ! 'Constant', 'Parabolic', 'Parabola_const'
 x_len_scale=1000.0 ! x length scale. In dynamic_sus_dist dC/dx ~= (C -k*C)/x_len_scale
 sus2d = .false. !Do we use a fully 2d suspended sediment - this is only applicable to the case with many cross sections strung together - the quasi 2d model.
 norm=.TRUE. !Is erosion to be directed normal to the bed?

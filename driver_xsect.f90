@@ -438,6 +438,28 @@ DO Q_loop= 1, num_simulations
 
                 call bank_erosion(bank_erosion_type,nos,l, u, ys, bed, bedlast, failure_slope)
 
+                ! BUG CHECK FOR SYMMETRY
+                !DO i=l,u
+                !    IF(abs(Qe(i)-Qe(u+l-i))>1.0e-08) THEN
+                !        print*, 'Symmetry break in Qe', Qe(i), Qe(u+l-i),Qe(i)-Qe(u+l-i), i
+                !    END IF
+                !    IF(abs(bed(i)-bed(u+l-i))>1.0e-08) THEN
+                !        print*, 'Symmetry break in bed', bed(i), bed(u+l-i), bed(i)-bed(u+l-i), i
+                !    END IF
+
+                !    IF(abs(tau_g(i)-tau_g(u+l-i))>1.0e-08) THEN
+                !        print*, 'Symmetry break in tau_g', tau_g(i), tau_g(u+l-i), i
+                !    END IF
+
+                !    IF(abs(C(i)-C(u+l-i))>1.0e-08) THEN
+                !        print*, 'Symmetry break in C', C(i), C(u+l-i), i
+                !    END IF
+
+                !    IF(abs(taucrit(i,0)-taucrit(u+l-i,0))>1.0e-08) THEN
+                !        print*, 'Symmetry break in taucrit @ surface', taucrit(i,0), taucrit(u+l-i,0), i
+                !    END IF
+                !END DO
+
             END IF
 
             !! WRITE OUTPUTS -- notice that these are all supposed to be at the

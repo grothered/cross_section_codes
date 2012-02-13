@@ -176,6 +176,7 @@ SUBROUTINE refit(ys,bed,a)
                tmpR, res_pts(6), high_res_width, bank_old, slope_steep
     SAVE res_pts ! This will record the boundaries between zones of different resolutions
     DATA res_pts /6*0.0_dp/
+    CHARACTER(char_len):: left='left', right='right'
     
     !Check the input data
     DO i= 1, a
@@ -194,28 +195,29 @@ SUBROUTINE refit(ys,bed,a)
     slope_c(1) = 0._dp
     slope_c(a) = 0._dp
 
-    ! Find location of the maximum slope on the left half of the channel
-    ! We assume that the mid-regions of the channel are near a/2
-    ! The method accepts the left most point within a tolerence of the maximum,
-    ! to avoid floating point round off chaos
-    mid_chan=floor(0.5_dp*a)
-    slope_steep = minval(slope_c(2:mid_chan))
-    DO i=2,mid_chan
-        IF(abs(slope_c(i)-slope_steep)<1.0e-05*abs(slope_steep)) THEN
-            bankl = i
-            continue
-        END IF
-    END DO
-    ! Find the steepest slope on the right half of the channel.
-    ! The method accepts the right most point within a tolerence of the maximum,
-    ! to avoid floating point round off chaos
-    slope_steep = maxval(abs(slope_c(mid_chan:a-1)))
-    DO i=a-1,mid_chan,-1
-        IF(abs(slope_c(i)-slope_steep)<1.0e-05*abs(slope_steep)) THEN
-            bankr = i
-            continue
-        END IF
-    END DO
+    ! Find location of the maximum slope on the left half of the channel The
+    ! method accepts the left most (or right most) point within a tolerence of
+    ! the maximum, to avoid floating point round off chaos
+    bankl=maxloc2(-slope_c, a, left, 1.0e-05)
+    bankr=maxloc2(slope_c, a, right, 1.0e-05)
+    !mid_chan=floor(0.5_dp*a)
+    !slope_steep = minval(slope_c(2:mid_chan))
+    !DO i=2,mid_chan
+    !    IF(abs(slope_c(i)-slope_steep)<1.0e-05*abs(slope_steep)) THEN
+    !        bankl = i
+    !        continue
+    !    END IF
+    !END DO
+    !! Find the steepest slope on the right half of the channel.
+    !! The method accepts the right most point within a tolerence of the maximum,
+    !! to avoid floating point round off chaos
+    !slope_steep = maxval(abs(slope_c(mid_chan:a-1)))
+    !DO i=a-1,mid_chan,-1
+    !    IF(abs(slope_c(i)-slope_steep)<1.0e-05*abs(slope_steep)) THEN
+    !        bankr = i
+    !        continue
+    !    END IF
+    !END DO
 
     ! Check whether we need to remesh
     ! If the distance between 'bankl' and 'the value of bankl last time we remeshed'
@@ -1438,6 +1440,49 @@ SUBROUTINE read_real_table(input_file, storage_array, nrows, ncols, check_regula
         call check_for_uneven_time_increments(storage_array, nrows)
     END IF
 END SUBROUTINE read_real_table
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+INTEGER FUNCTION maxloc2(quantity,a, side, tolerance)
+    ! Function like 'maxloc', except that it finds the first value within
+    ! 'tolerance'*maximum of the maximum, approaching from side 'side' 
+    ! It is supposed to be less prone to round-off error than the standard max
+    ! function
+    INTEGER:: a
+    REAL(dp):: quantity(a), tolerance
+    CHARACTER(char_len):: side
+   
+    ! Local variables
+    INTEGER:: i 
+    REAL(dp):: quant_max
+
+    quant_max=maxval(quantity)
+
+    SELECT CASE (side)
+        CASE('left')
+            DO i=1,a
+                IF(abs(quantity(i) - quant_max)<tolerance*quant_max) THEN
+                    maxloc2=i
+                    return
+                END IF
+            END DO
+
+        CASE('right')
+            DO i=a,1,-1
+                IF(abs(quantity(i) - quant_max)<tolerance*quant_max) THEN
+                    maxloc2=i
+                    return
+                END IF
+            END DO
+
+        CASE DEFAULT
+            print*, "ERROR: quantity 'side' in maxloc2 must be either 'left' or&
+                    'right'. Received ", side
+            stop
+
+    END SELECT
+     
+
+END FUNCTION maxloc2
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

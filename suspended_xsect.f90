@@ -1049,7 +1049,7 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
                                      -0.9833362538846260_dp,0.9833362538846260_dp,-0.9910133714767443_dp,0.9910133714767443_dp,&
                                      -0.9963401167719553_dp,0.9963401167719553_dp,-0.9993050417357722_dp,0.9993050417357722_dp /)
 
-    IF(edify_model=='zero') THEN
+    IF(edify_model=='Zero') THEN
         int_edif_f=0.0_dp
         int_edif_dfdy=0.0_dp
         return

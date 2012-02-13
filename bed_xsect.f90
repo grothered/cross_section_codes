@@ -4,7 +4,7 @@ MODULE bed_xsect
 
 ! Module with global parameters
 USE global_defs
-USE util_various, only: minmod
+USE util_various, only: minmod, maxloc2
 IMPLICIT NONE
 contains
 
@@ -393,6 +393,19 @@ SUBROUTINE update_bed(a, dT, water, Q, bed,ys,Area, recrd, E, D,C,a2, tau,taug,&
             !print*, 'b ', mor*dT/(1.0_dp-voidf), maxval(Qe)
             IF(iii==1) bed = bed + (-dqbeddx + Qd - Qe)*mor*dT/(1._dp-voidf)
             IF(iii==2) bed = bedlast + (-dqbeddx + Qd - Qe)*mor*dT/(1._dp-voidf)
+                
+            ! BUG CHECK     
+            !DO i=1,a
+            !    IF(abs((Qe(i)-Qd(i))-(Qe(a-i+1)-Qd(a-i+1)))*mor*dT>1.0e-08) THEN
+            !        print*, 'update_bed symmetry break in Qe', Qe(i),Qd(i), & 
+            !                Qe(i)-Qd(i), Qe(a-i+1),Qd(a-i+1), Qe(a-i+1)-Qd(a-i+1), i
+            !    END IF
+
+            !    IF(abs(bed(i)-bed(a-i+1))>1.0e-08) THEN
+            !        print*, 'update_bed symmetry break in bed', bed(i), bed(a-i),bed(i)-bed(a-i), i
+            !    END IF
+            !END DO
+            !print*, '.' 
 
             ! DEBUG
             !IF(bed(1).ne.bed(2)) THEN
@@ -1101,8 +1114,9 @@ SUBROUTINE bank_erosion(bank_erosion_type, a, l, u,ys, bed, bed_old, failure_slo
     REAL(dp), INTENT(IN):: ys(a), bed_old(a), failure_slope
     REAL(dp), INTENT(IN OUT):: bed(a)
 
-    INTEGER:: l2, u2, lower_bank(1), upper_bank(1), slope(l:u+1)
-    
+    INTEGER:: l2, u2, lower_bank(1), upper_bank(1)
+    REAL(dp):: slope(l:u+1)
+    CHARACTER(char_len):: left='left', right='right' 
     !print*, 'BE', l, u, a
 
     IF((l+1.ge.u-1).or.(bank_erosion_type.eq.'None').or.(l<=2).or.(u>=a-1)) THEN
@@ -1115,13 +1129,12 @@ SUBROUTINE bank_erosion(bank_erosion_type, a, l, u,ys, bed, bed_old, failure_slo
     ! This is to prevent very shallow depths on the channel edge from being
     ! interpreted as the bank. However, it is a bit dangerous, in that we could
     ! potentially have very internal channel points being treated as the bank
-    ! AND we could be subject to round-off error
+    ! AND we could be subject to round-off error, so maxloc2 is used for safety
     slope= (bed(l:u+1)-bed(l-1:u))/(ys(l:u+1)-ys(l-1:u))
-    lower_bank=minloc(slope(l:u+1))
-    l2=lower_bank(1)+(l-1)
-    upper_bank=maxloc(slope)
-    u2=upper_bank(1)+(l-1)-1
+    l2=maxloc2(-slope,u-l+2,left, 1.0e-05_dp)+l-1
+    u2=maxloc2(slope, u-l+2, right, 1.0e-05_dp)+l-2
 
+    !print*, 'bank erosion', l2, u2
     !print*, 'BE:', l, l2, u, u2, '###', bed(l-1:l+2),'###', bed(u-2:u+1)
     !stop
     
