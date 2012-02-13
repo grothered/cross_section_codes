@@ -48,13 +48,23 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
 
     ! LOCAL VARIABLES
     INTEGER:: i, info, j
-    LOGICAL:: halt, xderivative_operator_splitting=.TRUE., erode_deposit_splitting=.FALSE.
+    LOGICAL:: halt, xderivative_operator_splitting=.FALSE., erode_deposit_splitting=.FALSE.
     ! NOTE: BE CAREFUL WITH THE SPLITTING VARIABLES -- CAN AFFECT ABILITY OF
     ! CODE TO REACH STEADY STATE / CONVERGE IN TIME. 
-    ! In one check, setting both to false seemed to allow convergence in time,
-    ! (i.e same solution as the time step was reduced), whereas I seemed to be
-    ! having some troubles with either set to TRUE -- however, what does this do
-    ! to the equilibrium solutions?
+    ! DO NOT USE xder_op_split=TRUE !
+    ! One check WITHOUT LATERAL DIFFUSION -- xderivative=True,
+    ! erode_deposit=False (tf) got a different equilibrium answer to each of the other 3
+    ! combinations of these variables (which all agreed with each other in terms
+    ! of equilibrium solutions. However, the time-evolution of tt was different
+    ! to ft and ff, which seemed the same as each other.
+
+    ! I then re-ran the above with twice as many points in space. All seemed to
+    ! converge to the same solution as with half as many points, although tf has
+    ! larger errors. These 'fine' runs also seemed to behave the same in time as
+    ! with half as many points ===> No effect of spatial discretization on
+    ! equilibrium or evolution. 
+
+    ! What about if we add lateral diffusion?
     REAL(dp):: depth(0:a+1), eddif_y(0:a+1), eddif_z(a), vd(0:a+1), ys_temp(0:a+1)
     REAL(dp):: M1_lower(a), M1_diag(a), M1_upper(a), M1_upper2(a), M1_lower2(a)
     REAL(dp):: RHS(a), dy_all(a), depthlast(0:a+1), zetamult_old(0:a+1),&

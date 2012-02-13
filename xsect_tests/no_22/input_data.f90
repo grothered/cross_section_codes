@@ -22,7 +22,7 @@
 
 nos = 2000 ! Number of spatial grid points
 writfreq = 500 !24*5*5 ! The output is written every writfreq 'th timestep
-jmax= 50000 !2400000 !1382400 !24*5*2*45*4*4*4*4*5 ! The number of time steps
+jmax= 500000 !2400000 !1382400 !24*5*2*45*4*4*4*4*5 ! The number of time steps
 t = 0.00 ! Starting time (s)
 dT = 30.000 !Time step (s)
 variable_timestep=.FALSE. !Do we change the timestepping for high sediment concentrations? -- this is presently inconsistent with bed layers
@@ -55,7 +55,7 @@ wset = 0.02 ! Settling velocity of sediment in m/s
 voidf = 0.4 ! Void fraction (non sediment fraction) of bed = porosity
 lifttodrag = 0.0 ! Lift to drag coefficient ratio
 hlim = 0.01 ! If the mean depth of the cross section is < hlim (m), then it is treated as dry - so we don't calculate the shear stress
-mor = 1.00 !Morphological factor
+mor = 10.00 !Morphological factor
 rhos = 2600.0 !Density of solid sediment (kg/m^3)
 dsand = 0.000062 ! dsand from van Rijn (2004) bedload formula (m)
 d50 = 0.000177 !0.000062 ! median grain size for bedload formula (m)
@@ -69,7 +69,7 @@ resus_type = 'vanrijn'! ! 'cohesive', 'vanrijn', 'smithmac'
 
 susdist = .TRUE. !Do we have a laterally variable suspended load? 
 sus_vert_prof='Rouse' !'exp', 'Rouse'
-edify_model='Zero' !'Parabolic' ! 'Constant', 'Parabolic', 'Parabola_const'
+edify_model='Parabolic' ! 'Constant', 'Parabolic', 'Parabola_const', 'Zero'
 x_len_scale=1000.0 ! x length scale. In dynamic_sus_dist dC/dx ~= (C -k*C)/x_len_scale
 sus2d = .false. !Do we use a fully 2d suspended sediment - this is only applicable to the case with many cross sections strung together - the quasi 2d model.
 norm=.TRUE. !Is erosion to be directed normal to the bed?

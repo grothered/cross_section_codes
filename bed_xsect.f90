@@ -394,28 +394,6 @@ SUBROUTINE update_bed(a, dT, water, Q, bed,ys,Area, recrd, E, D,C,a2, tau,taug,&
             IF(iii==1) bed = bed + (-dqbeddx + Qd - Qe)*mor*dT/(1._dp-voidf)
             IF(iii==2) bed = bedlast + (-dqbeddx + Qd - Qe)*mor*dT/(1._dp-voidf)
                 
-            ! BUG CHECK     
-            !DO i=1,a
-            !    IF(abs((Qe(i)-Qd(i))-(Qe(a-i+1)-Qd(a-i+1)))*mor*dT>1.0e-08) THEN
-            !        print*, 'update_bed symmetry break in Qe', Qe(i),Qd(i), & 
-            !                Qe(i)-Qd(i), Qe(a-i+1),Qd(a-i+1), Qe(a-i+1)-Qd(a-i+1), i
-            !    END IF
-
-            !    IF(abs(bed(i)-bed(a-i+1))>1.0e-08) THEN
-            !        print*, 'update_bed symmetry break in bed', bed(i), bed(a-i),bed(i)-bed(a-i), i
-            !    END IF
-            !END DO
-            !print*, '.' 
-
-            ! DEBUG
-            !IF(bed(1).ne.bed(2)) THEN
-            !    print*, 'Bed variation'
-            !    print*, bed
-            !    print*, Qd
-            !    print*, Qe
-            !    stop
-            !END IF
-
         ELSE !!USE POINTS WHICH MOVE IN THE DIRECTION OF THE VECTOR D-E
             print*, 'FIXME: Use of normmov is not consistent with the new definition of Qe &
                              (30/12/2010), which already includes sllength'
