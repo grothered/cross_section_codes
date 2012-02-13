@@ -1048,6 +1048,13 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
                                      -0.9610087996520538_dp,0.9610087996520538_dp,-0.9733268277899110_dp,0.9733268277899110_dp,&
                                      -0.9833362538846260_dp,0.9833362538846260_dp,-0.9910133714767443_dp,0.9910133714767443_dp,&
                                      -0.9963401167719553_dp,0.9963401167719553_dp,-0.9993050417357722_dp,0.9993050417357722_dp /)
+
+    IF(edify_model=='zero') THEN
+        int_edif_f=0.0_dp
+        int_edif_dfdy=0.0_dp
+        return
+    END IF
+
     ! Predefine bed_tmp, ys, and ustar, including boundary values
     bed_tmp(1:a) = bed
     bed_tmp(0)   = bedl
