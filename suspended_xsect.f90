@@ -49,25 +49,24 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     ! LOCAL VARIABLES
     INTEGER:: i, info, j
     LOGICAL:: halt, xderivative_operator_splitting=.FALSE., erode_deposit_splitting=.FALSE.
-    ! NOTE: BE CAREFUL WITH USING OPERATOR SPLITTING 
-    ! IT CAN NEGATIVELY THE AFFECT ABILITY OF THE
-    ! CODE TO REACH STEADY STATE / CONVERGE IN TIME. 
+    ! NOTE: BE CAREFUL WITH USING OPERATOR SPLITTING IT CAN NEGATIVELY THE
+    ! AFFECT ABILITY OF THE CODE TO REACH STEADY STATE / CONVERGE IN TIME. 
 
     ! The following tests suggest that setting both splitting flags to FALSE is
     ! a good idea, and that any other choice will probably require great great
     ! care. 
 
-    ! I ran a simulation (no_22) with each combination of xderivative =
-    ! True/False, and erode_deposit_splitting=True/False. I denote tf to be
-    ! xderivative(True), erode_deposit_splitting (false), and likewise ff, tt,
-    ! ft. 
+    ! I ran a simulation (no_22 in the xsect_tests folder) with each combination
+    ! of xderivative = True/False, and erode_deposit_splitting=True/False. I
+    ! denote tf to be xderivative(True), erode_deposit_splitting (false), and
+    ! likewise define ff, tt, and ft. 
 
-    ! I first ran a test WITHOUT LATERAL DIFFUSION, running the code to an
-    ! equilibrium with every combination. 'tf' got a different equilibrium
-    ! answer to each of the other 3 combinations of these variables (which all
-    ! agreed with each other in terms of equilibrium solutions). However, the
-    ! time-evolution of tt was different to ft and ff, which seemed the same as
-    ! each other.
+    ! I first ran a test with 'Zero' lateral diffusion, rouse vertical profile,
+    ! running the code to an equilibrium with every combination. 'tf' got a
+    ! different equilibrium answer to each of the other 3 combinations of these
+    ! variables (which all agreed with each other in terms of equilibrium
+    ! solutions). However, the time-evolution of tt was different to ft and ff,
+    ! which seemed the same as each other.
 
     ! I then re-ran the above with twice as many points in space. All seemed to
     ! converge to the same solution as with half as many points, although tf has
@@ -77,18 +76,20 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
 
     ! WHAT ABOUT IF WE ADD LATERAL DIFFUSION?
     ! I ran the same check as above with lateral diffusion of suspended load,
-    ! parabolic model. 
-    ! With these settings, ff and ft do not agree in time anymore, although
-    ! based on an initial run, it seemed plausible that they may be approaching
-    ! the same equilibrium solution (I didn't run either for enough time to find
-    ! equilibrium, although for ff, the channel change became quite slow) 
+    ! using the 'parabolic' model. 
+    ! With these settings, ff and ft do not agree in time anymore on the
+    ! coarsest grid, although based on an initial run, it seemed plausible that
+    ! they may be approaching the same equilibrium solution (I didn't run either
+    ! for enough time to find equilibrium, although for ff, the channel change
+    ! became quite slow) 
     !
     ! If we double the number of points, then ff required a smaller time-step
     ! (selected as *0.5) to be stable enough to generally preserve symmetry. The
     ! evolution in time seemed very similar in this case to the case with less
     ! grid points. I further tried a *0.25 timestep, to check for strong
     ! dependende on the ratio of dt/dx -- however, this solution seemed very
-    ! similar to the other fine-grid solution.
+    ! similar to the other fine-grid solution. ==> ff appears to be approx
+    ! converged
     !
     ! For ft, I also tried doubling the number of points. The agreement in time
     ! was not so good with the other ft, it was somewhat between the ff
@@ -101,7 +102,9 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     ! CONCLUSIONS: This analysis doesn't show any version to be correct,
     ! however, ff seems to have the best convergence properties, requiring much
     ! less effort than ft (which however seems to give the same solution as ff
-    ! with a small enough time-step / sufficient number of points).
+    ! with a small enough time-step / sufficient number of points). This must be
+    ! because of the operator splitting, as nothing else differs between the 2
+    ! runs.
     
     ! So operator splitting seems to require great care in this example --
     ! probably because the time-step I take is pretty large compared with the
