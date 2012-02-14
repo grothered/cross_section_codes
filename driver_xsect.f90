@@ -437,7 +437,7 @@ DO Q_loop= 1, num_simulations
                                 talmon, high_order_bedload, too_steep) 
 
                 call bank_erosion(bank_erosion_type,nos,l, u, ys, bed, bedlast, failure_slope)
-
+                call critical_slope_wasting(DT1, nos,ys,bed,failure_slope, 0.000001_dp)
                 ! BUG CHECK FOR SYMMETRY
                 !DO i=l,u
                 !    IF(abs(Qe(i)-Qe(u+l-i))>1.0e-08) THEN

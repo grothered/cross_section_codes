@@ -52,6 +52,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     ! NOTE: BE CAREFUL WITH USING OPERATOR SPLITTING IT CAN NEGATIVELY THE
     ! AFFECT ABILITY OF THE CODE TO REACH STEADY STATE / CONVERGE IN TIME. 
 
+    ! 14/2/2012
     ! The following tests suggest that setting both splitting flags to FALSE is
     ! a good idea, and that any other choice will probably require great great
     ! care. 
@@ -606,22 +607,26 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
 
                     !ELSE
                         cb_weight(j) = 0.50_dp + 0.5*(cb(j+1)-cb(j))/(cb(j)**1+cb(j+1)**1+1.0e-10_dp)
+                        ! 15/2/2012
                         ! The above term would be the standard second order
                         ! approx if it were just 0.5_dp. The additional part
-                        ! means we end up adding:
+                        ! means we end up adding the following term to the
+                        ! discretized pde (ignoring the 1.0e-10 which prevents
+                        ! zero division):
                         ! 1/dy_outer*( 0.5*(cb(j+1)-cb(j))/(2*cb(j+1/2))*[-cb(j+1)+cb(j)]*int_edif_dfdy(i+1/2) - 
                         !              0.5*(cb(j)-cb(j-1))/(2*cb(j-1/2))*[-cb(j)+cb(j-1)]*int_edif_dfdy(i-1/2)
                         !            ),
                         ! where the part in square brackets follows from
                         ! factorising. This extra term helps prevent negative cb
                         ! values in the solution.
-                        ! Noting that the (cb(j+1)-cb(j)) terms are
-                        ! proportional to dy_outer, the extra term scales at
-                        ! most with dy_outer (probably dy_outer**2 because of
-                        ! the subtraction of similar terms at i+1/2 and i-1/2),
-                        ! so goes to zero as dy_outer goes to zero. Hence this
-                        ! should not ruin the convergence, at least in smooth
-                        ! areas. 
+                        ! Noting that the (cb(j+1)-cb(j)) terms are proportional
+                        ! to dy_inner*(dcb/dy)@(i+1/2), the extra term scales at
+                        ! most with 1/dy_outer*(dy_inner)**2 ~= dy_outer.
+                        ! Actually it probably scales with dy_outer**2 because
+                        ! of the subtraction of similar terms at i+1/2 and
+                        ! i-1/2), so goes to zero as dy_outer goes to zero.
+                        ! Hence this should not ruin the convergence, at least
+                        ! in smooth areas. 
                     !END IF
                 END DO
 
