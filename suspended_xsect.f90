@@ -117,13 +117,17 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
 
     ! I will now re-investigate the equilibrium of the no-22 case with 4000pts
     ! and a 10s time-step, as these seem to be moderately conservative values.
-    ! .... -- This run does seem to reach a convergent solution. Does it have
-    ! sed_lag_scale =1.0? {Does seem to be converging to this, e.g.
-    ! sed_lag_scale=0.9999989 when the bed_change is around 3.0e-10 ) Is the
-    ! equilibrium sufficiently grid-independent? Can we use re-meshing to get
-    ! the fine grid near the banks and still get as good a solution, and does
-    ! this require that we keep the time-step small in keeping with the finer
-    ! mesh?
+    ! .... -- This run does seem to reach a convergent solution. 
+    ! - Does it have sed_lag_scale =1.0? {Does seem to be converging to this, e.g.
+    ! sed_lag_scale=0.9999989 when the bed_change is around 3.0e-10 ) 
+    ! - Is the equilibrium sufficiently grid-independent? {A run with half as many
+    ! points and 2x the time step did not converge well. A finer run seems to
+    ! be similar, but still significantly different near the banks.}
+    ! - Can we use re-meshing to get the fine grid near the banks and still get as
+    ! good a solution, and does this require that we keep the time-step small in
+    ! keeping with the finer mesh? { Still running, looks as though the
+    ! remeshing run with half as many points may get closer to the finer run
+    ! with 2x as many points than does the standard run. CHECK}.
     ! THEN ONCE WE UNDERSTAND THIS
     ! -- how does it go on more challenging problems like chi_1?
 
