@@ -555,8 +555,9 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
                 ! (denoted 'diffuse1') -- this is reused later
                 diffuse1(0) = 0.0_dp
                 diffuse1(a) = 0.0_dp
-                diffuse1(1:a-1) = 0.5_dp*max(int_edif_f(2:a) + int_edif_f(3:a+1), &
-                                            int_edif_f(2:a) + int_edif_f(1:a-1))
+                !diffuse1(1:a-1) = 0.5_dp*max(int_edif_f(2:a) + int_edif_f(3:a+1), &
+                !                            int_edif_f(2:a) + int_edif_f(1:a-1))
+                diffuse1(1:a-1) = int_edif_f(2:a) 
                 ! Here, we try to weight 'diffuse1' by the depth, biasing towards
                 ! higher depths
                 !diffuse1(1:a-1) = ((int_edif_f(2:a) + int_edif_f(3:a+1))*depth(2:a)**1 + &
@@ -568,8 +569,9 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
                 diffuse2(0) = 0.0_dp
                 diffuse2(a) = 0.0_dp
                 DO j=1,a-1
-                    diffuse2(j) = 0.5_dp*minmod(int_edif_dfdy(j+1)+int_edif_dfdy(j+2), &
-                                                  int_edif_dfdy(j+1)+int_edif_dfdy(j))
+                    !diffuse2(j) = 0.5_dp*minmod(int_edif_dfdy(j+1)+int_edif_dfdy(j+2), &
+                    !                              int_edif_dfdy(j+1)+int_edif_dfdy(j))
+                    diffuse2(j)=int_edif_dfdy(j+1)
                     ! Here we try to weight diffuse2 by the depth, biasing
                     ! towards lower depths
                     !diffuse2(j) =( (int_edif_dfdy(j+1)+int_edif_dfdy(j+2))*depth(j)**1 + &
@@ -580,16 +582,18 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
 
                 ! Compute the weighting of cb(i+1/2) = (1-cb_weight)*cb(i+1) + cb_weight*cb(i)
                 DO j=1,a-1
-                    IF(bed(j)>bed(j+1)) THEN
-                        cb_weight(j) = 1.0_dp
-                    ELSEIF(bed(j)<bed(j+1)) THEN
-                        cb_weight(j) = 0.0_dp
-                    ELSE
-                        cb_weight(j) = 0.5_dp
-                    END IF
+                    !IF(bed(j)>bed(j+1)) THEN
+                    !    cb_weight(j) = 1.0_dp
+                    !ELSEIF(bed(j)<bed(j+1)) THEN
+                    !    cb_weight(j) = 0.0_dp
+                    !ELSE
+                    !    cb_weight(j) = 0.5_dp
+                    !END IF
+                    !cb_weight(j)=0.5_dp
 
                     ! Try to weight toward the cbed associated with the shallower depth
                     !cb_weight(j) = 1.0_dp - depth(j+1)**1/(depth(j)**1+depth(j+1)**1)
+                    cb_weight(j) = 0.50_dp + 0.5*(cb(j+1)-cb(j))/(cb(j)**1+cb(j+1)**1+1.0e-10_dp)
                 END DO
 
             END IF

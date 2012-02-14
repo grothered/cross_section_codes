@@ -55,10 +55,16 @@ get<-function(l, gz=F, sourcedir='.', ...){
 #}
 
 
-genread<-function(name, l){
+genread<-function(name, l, sourcedir='.'){
+    basedir=getwd()
+    setwd(sourcedir)
+
 	s=which(dir()==name)
 	s2=scan(dir()[s], what="numeric")
 	gen=matrix(as.numeric(s2)[1:(floor(length(s2)/l)*l)], ncol=l, byrow=T)
+
+    setwd(basedir)
+
     gen
 	}
 

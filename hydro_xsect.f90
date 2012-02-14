@@ -153,7 +153,8 @@ SUBROUTINE shear(nn,ys,bed,water,wslope,taus,f,NNN,slopes, counter, Q, vegdrag, 
     ! The following 'min' version of Bf seems better for balancing with the
     ! suspended_xsect.f90 code, which also uses a minmod type diffusion
     DO i=1,nn-1
-        Bf(i)=min(B(i),B(i+1))
+        !Bf(i)=min(B(i),B(i+1))
+        Bf(i)=0.5_dp*(B(i)+B(i+1))
     END DO
     ! Forward dy increment
     dyf(1:nn-1)= ys(2:nn)-ys(1:nn-1) 
