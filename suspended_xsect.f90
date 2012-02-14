@@ -593,6 +593,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
 
                     ! Try to weight toward the cbed associated with the shallower depth
                     !cb_weight(j) = 1.0_dp - depth(j+1)**1/(depth(j)**1+depth(j+1)**1)
+                    ! Try to weight toward the lower cbed value 
                     cb_weight(j) = 0.50_dp + 0.5*(cb(j+1)-cb(j))/(cb(j)**1+cb(j+1)**1+1.0e-10_dp)
                 END DO
 
