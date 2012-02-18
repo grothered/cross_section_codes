@@ -353,7 +353,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
                       )
 
         IF(sus_flux > 1.0e-12_dp) THEN
-            sed_lag_scale = 1.0_dp*((sconc*discharge)/sus_flux) !Desired flux / actual flux
+            sed_lag_scale = 1.0_dp*((sconc*discharge)/sus_flux)**5.0 !Desired flux / actual flux
 
             ! Prevent very high or low values
             sed_lag_scale = min(max(sed_lag_scale,0.666_dp),1.5_dp) 
@@ -946,7 +946,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
         ! depth*dCbar/dt +wset*Cbed =  Qe 
         ! depth/dt*(Cbar_new -Cbar) + wset*(Cbar_new/zetamult) = Qe
         ! Cbar_new( depth/dt + wset/zetamult) = Qe + depth/dt*Cbar
-        !FIXME: Doing this separate to lateral diffusion leads to negative Cbar
+        !FIXME: Doing this separate to lateral diffusion may lead to negative Cbar
         !values, except with a fully implicit approach (impcon =1.0_dp)
         Cbar = 1.0_dp*(Qe*1.0_dp + depth(1:a)/delT*Cbar - 0.0_dp*wset/zetamult(1:a)*Cbar)/ &
                (depth(1:a)/delT + 1.0_dp*wset/zetamult(1:a))
@@ -992,13 +992,16 @@ END SUBROUTINE dynamic_sus_dist
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!
 REAL(dp) FUNCTION rouse_int(z,d_aref)
-    ! Suppose that Cbar = cbed*(K +a_ref/d)
+    ! Suppose that Cbar = cbed*(K +a_ref/d) 
     ! Where Cbar is the depth-averaged sediment concentration
     ! cbed is the near bed concentration
     ! and K is an integrating factor, which is determined from the Rouse
     ! distribution for suspended sediment.
     ! Then this function calculates K + a_ref/d.
-    
+    !
+    ! FIXME: a_ref/d should perhaps only appear when bedload is OFF, since we
+    ! might count sediment transport below a_ref as bedload 
+    !
     ! INPUTS
     ! z = rouse number = wset/(0.4*ustar)
     ! d_aref = dimensionless reference level 
@@ -1072,7 +1075,10 @@ REAL(dp) FUNCTION rouse_int(z,d_aref)
         END IF
 
         ! Compute the desired integration factor
-        rouse_int=J1*db_const +d_aref 
+        rouse_int=J1*db_const 
+        ! Include the contribution between [0, a_ref]
+        ! FIXME: This should only be included when bedload is OFF
+        rouse_int=rouse_int+d_aref 
 
         IF((rouse_int<0.0_dp).or.(rouse_int>=1.0_dp).or.(rouse_int.ne.rouse_int)) THEN
             PRINT*, ' ERROR in rouse_int: unphysical rouse_int value ', rouse_int, d_aref, z
@@ -1106,10 +1112,17 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
     ! cb*INT(edify*df/dy) dz + dcb/dy*INT(edify*f) dz
     !
     ! OUTPUTS: 
-    !   int_edif_f = Integral_{a_ref}^{water_surface} ( edify*f) dz
-    !   int_edif_dfdy = Integral_{a_ref}^{water_surface} ( edify*df/dy) dz
+    !   int_edif_f = Integral_{0}^{water_surface} ( edify*f) dz
+    !   int_edif_dfdy = Integral_{0}^{water_surface} ( edify*df/dy) dz
     !
     ! EVALUATED AT i+1/2
+    !
+    ! FIXME: Integrals should only be between a_ref and water_surface unless
+    ! bedload is OFF.
+    ! Note: In practice we integrate over [a_ref ,  water_surface] first, then
+    ! add on the contribution from [0, a_ref]. Actually the latter should be
+    ! ignored if we are including bedload.
+
     INTEGER, INTENT(IN):: a 
     CHARACTER(char_len), INTENT(IN):: edify_model, sus_vert_prof
     REAL(dp), INTENT(IN):: ys, bed, ysl, ysu, bedl, bedu, ustar, water, wset, a_ref
@@ -1203,8 +1216,10 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
         dbed_dy = (bed_tmp(i) - bed_tmp(i-1))*dyinv
         dus_dy = (ustar_tmp(i) - ustar_tmp(i-1))*dyinv 
        
-        ! I think there is a problem if aref changes sign -- try setting the
-        ! derivative to zero in this case.
+        ! I experienced numerical problems if the derivative of aref changes
+        ! sign -- try setting the derivative to zero in this case (which is
+        ! reasonable)
+        ! FIXME: Check if this is still needed.
         IF((i>2).and.(i<a)) THEN
             IF( ((aref_tmp(i)-aref_tmp(i-1))*(aref_tmp(i+1)-aref_tmp(i))<0.0_dp)&
               .or.((aref_tmp(i)-aref_tmp(i-1))*(aref_tmp(i-1)-aref_tmp(i-2))<0.0_dp) ) THEN
@@ -1365,6 +1380,14 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
         !int_edif_f(i) = wedint(no_subints, dz, edify*f)
         !int_edif_f(i) = newtcotes7(no_subints, dz, edify*f)
         int_edif_f(i) = sum(gauss_weights*edify*f)*(d-arefh)/2.0_dp ! gaussian quadrature
+
+        ! Try adding in near-bed portion [a_ref >= z >= bed]. Note that here f =
+        ! 1, while the eddy viscosity profile is still parabolic. Integrating
+        ! this eddy viscosity profile from [zero , a_ref] gives us the extra constant to add
+        ! FIXME: Arguably this should only be included when bedload is OFF,
+        ! since we may otherwise consider all sediment transport below arefh as
+        ! bedload.
+        int_edif_f(i) = int_edif_f(i) + ( 1.6_dp*us/d*( (arefh)**3)/3)
         
         IF(isnan(int_edif_f(i))) THEN
             print*, 'Error: int_edif_f(',i, ') is nan, '  
@@ -1378,7 +1401,8 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
         !int_edif_dfdy(i) = wedint(no_subints, dz, edify*df_dy)
         !int_edif_dfdy(i) = newtcotes7(no_subints, dz, edify*df_dy)
         int_edif_dfdy(i) = sum(gauss_weights*edify*df_dy)*(d-arefh)/2.0_dp !Gaussian quadrature   
-
+        ! Note -- since df_dy is zero below a_refh, we do not need to add
+        ! anything here to cover the region [0, arefh]
         IF(isnan(int_edif_dfdy(i))) THEN
             print*, 'Error: int_edif_dfdy(',i, ') is nan, ', us,'$$$$', f,'$$$$', df_dus
             stop
