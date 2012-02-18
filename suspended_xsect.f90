@@ -212,6 +212,8 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
                     z = wset/(0.4_dp*sqrt(tau(i)/rho)) 
                     ! Compute rouse integral factor using a function
                     zetamult(i) = rouse_int(z,a_ref(i)/depth(i))
+                    ! Add the bit near the bed
+                    zetamult(i) = zetamult(i)
                 ELSE
                     zetamult(i) = 0.0_dp
                 END IF
@@ -990,12 +992,12 @@ END SUBROUTINE dynamic_sus_dist
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!
 REAL(dp) FUNCTION rouse_int(z,d_aref)
-    ! Suppose that Cbar = cbed*K
+    ! Suppose that Cbar = cbed*(K +a_ref/d)
     ! Where Cbar is the depth-averaged sediment concentration
     ! cbed is the near bed concentration
     ! and K is an integrating factor, which is determined from the Rouse
     ! distribution for suspended sediment.
-    ! Then this function calculates K.
+    ! Then this function calculates K + a_ref/d.
     
     ! INPUTS
     ! z = rouse number = wset/(0.4*ustar)
@@ -1070,7 +1072,7 @@ REAL(dp) FUNCTION rouse_int(z,d_aref)
         END IF
 
         ! Compute the desired integration factor
-        rouse_int=J1*db_const
+        rouse_int=J1*db_const +d_aref 
 
         IF((rouse_int<0.0_dp).or.(rouse_int>=1.0_dp).or.(rouse_int.ne.rouse_int)) THEN
             PRINT*, ' ERROR in rouse_int: unphysical rouse_int value ', rouse_int, d_aref, z
@@ -1250,7 +1252,11 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
                     
                     ! Calculate vertical profile of suspended sediment
                     f = ((z2ratio-1.0_dp)*(d_on_aref_les1_inv))**rouseno
-
+                    !print*, maxval(f)
+                    IF(maxval(f)>1.0_dp) THEN
+                        print*, 'maxval(f)>1', maxval(f), d, maxloc(f), z_tmp(maxloc(f)), arefh+bedh
+                        stop
+                    END IF
                     ! Calculate derivative of f. Use this approach:
                     ! df_dy = df/dbedh*dbedh/dy + df/aref*daref/dy + df/dus*dus/dy
                     ! because all the d/dy terms have only a single value at
@@ -1293,6 +1299,10 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
                     ! Step4: df_dy = df/dbedh*dbedh/dy + df/aref*daref/dy + df/dus*dus/dy
                     df_dy = df_dbedh*dbed_dy + df_darefh*daref_dy + df_dus*dus_dy
 
+                    ! Note that (analytically), df_dy =0 for z<a_ref+bedh,
+                    ! because f=1 there in this zone. If we perturb y by a sufficiently
+                    ! small amount below z=a_ref+bedh, then f will also be 1 in
+                    ! the neighbouring point. Hence df_dy =0 there
                 ELSE
                     !PRINT*, 'ERROR - d< aref in suspended_xsect (int_edify_f)', &
                     !        d, arefh, aref_tmp(i), aref_tmp(i-1), bed_tmp(i), bed_tmp(i-1)
@@ -1325,8 +1335,8 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
 
             CASE('Parabolic')
                 IF(d>0.0_dp) THEN
-
-                    !edify = (0.4_dp*us*d)*(z_tmp-bedh)*(water-z_tmp)/(0.25_dp*d**2) ! Parabolic
+                    ! Note this is parabolic, with peak lateral eddy viscosity = 0.4_dp*us*d
+                    !edify = (0.4_dp*us*d)*[ (z_tmp-bedh)*(water-z_tmp)/(0.25_dp*d**2)] ! Parabolic
                     edify = (1.6_dp*us/d)*(z_tmp-bedh)*(water-z_tmp) ! Parabolic
                 ELSE
                     edify=0.0_dp
