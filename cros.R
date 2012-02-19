@@ -94,15 +94,15 @@ anim2<-function(lengths,bed, sleep=0,asp=1, ...){
 	 }
 }
 
-danim2<-function(lengths1,bed1,lengths2,bed2,sleeper=0,...){
+danim2<-function(lengths1,bed1,lengths2,bed2,sleep=0,asp=1,...){
 	f=range(bed1,na.rm=TRUE)
 	b=range(lengths1,na.rm=TRUE)
 	for(i in 1:dim(bed1)[1]){
-		plot(b,f, col=0,asp=1, ...)
+		plot(b,f, col=0,asp=asp, ...)
 		points(lengths1[i,],bed1[i,], col=2,...)
 		points(lengths2[i,],bed2[i,], col=3,...)
-        if(sleeper>0){
-            slptime=paste('sleep', sleeper)
+        if(sleep>0){
+            slptime=paste('sleep', sleep)
             system(slptime)
         }
 		
