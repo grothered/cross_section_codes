@@ -46,6 +46,8 @@ tbston=.true. !When true (false) this term switches on (off) the sqrt(1+slope
 layers=1 !The number of bed layers -- layers>1 is not presently compatible wi
 lincrem = 1000.031 ! The distance between bed layers (m). Set it to a very hi
 mu = .60 !Angle of repose - this can be used to influence the critical shear 
+
+bank_erosion_type='Delft' !'Delft_if_too_steep' !'Delft' !'Delft_if_big_jump' !'Delft_if_too_steep'
 failure_slope = 1.0 ! Slope at which mass failure occurs
 erconst = 0.13  ! The constant determining the min critical shear and the cri
 taucrit_slope_reduction=.FALSE. ! Does taucrit reduce on a lateral slope?
@@ -69,8 +71,6 @@ susdist = .TRUE. !Do we have a laterally variable suspended load? This can ON
 sus_vert_prof='Rouse' !'exp', 'Rouse'
 edify_model='Parabolic' ! 'Constant', 'Parabolic', 'Parabola_const'
 x_len_scale=10000.0 ! x length scale. In dynamic_sus_dist dC/dx ~=(C-k*C)/x_l
-susQbal= .FALSE. ! DEPRECIATED: Is there a balance between the lateral flux o
-integrated_load_flux=-1.0 !DEPRECIATED: The total flux (suspended load + bedl
 sus2d = .false. !Do we use a fully 2d suspended sediment - this is only appli
 norm=.TRUE. !Is erosion to be directed normal to the bed?
 vertical=.true. ! POORLY TESTED .false. CASE: Is the vertical shear method (S
@@ -85,6 +85,5 @@ normmov=.false. !Do the bed points actually shift with the D-E vector? This i
 
 high_order_shear=.FALSE. !LITTLE EXPERIENCE WITH .true. CASE: Do we try to us
 high_order_bedload=.FALSE. !LITTLE EXPERIENCE WITH .true CASE: Do we try to u
-high_order_Cflux=.FALSE. !DEPRECIATED: Do we try to use a higher order estima
 /
 
