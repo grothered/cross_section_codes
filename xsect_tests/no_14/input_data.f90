@@ -33,7 +33,7 @@ Width = 100 !Width of computational domain (m)
 
 num_simulations=1 ! Number of different discharge simulations
 Discharges = 29.4 ! Discharge values
-susconcs = 5.0e-05 !suspended sediment concentration(m^3/m^3) for each discha
+susconcs = 1.0e-05 !suspended sediment concentration(m^3/m^3) for each discha
 friction_type = 'manning'!, 'darcy', 'vanrijn'
 rough_coef=0.027 ! Friction coefficient corresponding to the friction_type mo
 grain_friction_type='vanrijn' !'colebrook'!'vanrijn'

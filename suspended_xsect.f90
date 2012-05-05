@@ -1153,10 +1153,12 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
                 parabola(64), rouseno, tmp1(a+1), tmp2(a+1)
                 !z2surf(64), z2bed(64)
 
-    ! Note -- we assume 64 point gaussian quadrature is the method. Experiments
-    ! suggest that this works very well, compared with e.g. 800 points using simpsons
-    ! rule or another higher order method -- get the same answer -- and it is way cheaper.
-    ! I got the coefficients from the web -- see my 'math notes' folder for the website, with a folder on gaussian_quadrature there.
+    ! Note -- 64 point gaussian quadrature is used for vertical integration.
+    ! Experiments suggest that this works very well, compared with e.g. 800
+    ! points using simpsons rule or another higher order method -- get the same
+    ! answer -- and it is way cheaper.  I got the coefficients from the web --
+    ! see my 'math notes' folder for the website, with a folder on
+    ! gaussian_quadrature there.
     REAL(dp):: gauss_weights(64)= (/ 0.0486909570091397_dp,0.0486909570091397_dp,0.0485754674415034_dp,0.0485754674415034_dp,&
                                      0.0483447622348030_dp,0.0483447622348030_dp,0.0479993885964583_dp,0.0479993885964583_dp,&
                                      0.0475401657148303_dp,0.0475401657148303_dp,0.0469681828162100_dp,0.0469681828162100_dp,&
