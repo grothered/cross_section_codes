@@ -232,9 +232,17 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     zetamult(0)   = 1.0_dp
     zetamult(a+1) = 1.0_dp
     
-    ! Should limit cb to ~ 150g/L, and make sure we dont divide by zero
-    zetamult(1:a) = max(zetamult(1:a), Cbar/(150.0_dp/rhos), 1.0e-010_dp) 
+    ! Should ensure cb <= ~ 150g/L, and make sure we dont divide by zero
+    !zetamult(1:a) = max(zetamult(1:a), Cbar/(150.0_dp/rhos), 1.0e-010_dp) 
     !zetamult_old(1:a) = max(zetamult_old(1:a), Cbar_old/(150.0_dp/rhos), 1.0e-010_dp) 
+    zetamult(1:a) = max(zetamult(1:a),1.0e-10_dp)
+    IF(any(zetamult(1:a)*150.0_dp/rhos < Cbar(1:a))) THEN
+        PRINT*, 'ERROR: cb will apparently be > 150g/L'
+        DO i=1,a
+            PRINT*, i, zetamult(i)*150.0_dp/rhos, Cbar(i),zetamult(i), tau(i), a_ref(i), wset/(0.4*sqrt(tau(i)/rho)), depth(i)
+        END DO
+        STOP
+    END IF
 
 
     ! Compute the discharge using the same approach as is used to compute
@@ -1238,6 +1246,8 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
         ! Create vertical suspended sediment profile
         SELECT CASE(sus_vert_prof) 
             CASE('exp') 
+                PRINT*, "ERROR: sus_vert_prof = 'exp' is not really supported now."
+                PRINT*, "The routine has been coded with 'Rouse' in mind"
                 ! Vertical eddy diffusivity
                 eps_z =0.5_dp*( 0.1_dp*ustar_tmp(i)*max(water-bed_tmp(i),0.0_dp) + &
                                 0.1_dp*ustar_tmp(i-1)*max(water-bed_tmp(i-1),0.0_dp)) 
@@ -1389,7 +1399,7 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
         !int_edif_f(i) = newtcotes7(no_subints, dz, edify*f)
         int_edif_f(i) = sum(gauss_weights*edify*f)*(d-arefh)/2.0_dp ! gaussian quadrature
 
-        IF(Qbedon.eqv..FALSE.) THEN
+        IF( (sus_vert_prof=='Rouse').and.(Qbedon.eqv..FALSE.)) THEN
             ! Try adding in near-bed portion [a_ref >= z >= bed]. Note that here f =
             ! 1, while the eddy viscosity profile is still parabolic. Integrating
             ! this eddy viscosity profile from [zero , a_ref] gives us the extra constant to add
