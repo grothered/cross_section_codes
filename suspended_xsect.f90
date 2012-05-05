@@ -353,7 +353,8 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
                       )
 
         IF(sus_flux > 1.0e-12_dp) THEN
-            sed_lag_scale = 1.0_dp*((sconc*discharge)/sus_flux)**5.0 !Desired flux / actual flux
+            !sed_lag_scale = 1.0_dp*((sconc*discharge)/sus_flux)**5.0 !Desired flux / actual flux
+            sed_lag_scale = ((sconc*discharge)/sus_flux) !Desired flux / actual flux
 
             ! Prevent very high or low values
             sed_lag_scale = min(max(sed_lag_scale,0.666_dp),1.5_dp) 
