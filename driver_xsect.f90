@@ -383,7 +383,7 @@ DO Q_loop= 1, num_simulations
                 ! (from i-1 to i)
                 call dynamic_sus_dist(u-l+1, DT1, ys(l:u), bed(l:u), water, waterlast, Q, tau(l:u), vel(l:u), wset, & 
                                         0.5_dp*(Qe(l:u)+Qelast(l:u)), lambdacon, rho,rhos, g, d50, bedl,bedu, ysl, ysu, C(l:u),&
-                                        Cbar(l:u), Qbed(l:u), sed_lag_scale, j, a_ref(l:u), sus_vert_prof,&
+                                        Cbar(l:u), Qbed(l:u),Qbedon, sed_lag_scale, j, a_ref(l:u), sus_vert_prof,&
                                         edify_model, x_len_scale, sconc, lat_sus_flux(l:u+1), bedlast(l:u), int_edif_f(l:u+1), &
                                         int_edif_dfdy(l:u+1), zetamult((l-1):(u+1)), too_steep(l:u))
 

@@ -11,7 +11,7 @@ contains
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wset, Qe,lambdacon, &
-                                rho,rhos, g, d50, bedl,bedu, ysl, ysu, cb, Cbar, Qbed, &
+                                rho,rhos, g, d50, bedl,bedu, ysl, ysu, cb, Cbar, Qbed,Qbedon, &
                                 sed_lag_scale, counter, a_ref, sus_vert_prof, edify_model, &
                                 x_len_scale, sconc, lat_sus_flux, bedlast, int_edif_f, int_edif_dfdy, zetamult, &
                                 too_steep)
@@ -30,6 +30,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     ! integration to calculate Fl (the lateral flux)
     
     INTEGER, INTENT(IN)::a, counter, too_steep
+    LOGICAL, INTENT(IN):: Qbedon
     REAL(dp), INTENT(IN):: delT, ys, bed, water, waterlast, tau, vel, wset, Qe, lambdacon, rho, rhos,g, & 
                                 d50, bedl, bedu,ysl,ysu, Q, Qbed, a_ref, x_len_scale, sconc, bedlast
     REAL(dp), INTENT(OUT):: lat_sus_flux 
@@ -211,9 +212,9 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
                     ! Rouse number
                     z = wset/(0.4_dp*sqrt(tau(i)/rho)) 
                     ! Compute rouse integral factor using a function
-                    zetamult(i) = rouse_int(z,a_ref(i)/depth(i))
+                    zetamult(i) = rouse_int(z,a_ref(i)/depth(i), Qbedon)
                     ! Add the bit near the bed
-                    zetamult(i) = zetamult(i)
+                    !zetamult(i) = zetamult(i)
                 ELSE
                     zetamult(i) = 0.0_dp
                 END IF
@@ -553,7 +554,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
                 ! int_edif_f
                 call int_edify_f(edify_model, sus_vert_prof, a, ys, bed, ys_temp(0), &
                                  ys_temp(a+1), water, water, water, sqrt(abs(tau)/rho),&
-                                 wset,a_ref, int_edif_f, int_edif_dfdy) !, 205)
+                                 wset,a_ref, Qbedon, int_edif_f, int_edif_dfdy) !, 205)
 
                 ! Compute pointwise value of int(eddif_y*f)dz at (i+1/2)
                 ! (denoted 'diffuse1') -- this is reused later
@@ -992,21 +993,23 @@ END SUBROUTINE dynamic_sus_dist
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!
-REAL(dp) FUNCTION rouse_int(z,d_aref)
-    ! Suppose that Cbar = cbed*(K +a_ref/d) 
+REAL(dp) FUNCTION rouse_int(z,d_aref, Qbedon)
+    ! Suppose that Cbar = cbed*(K +a_ref/d) [without bedload]
+    !         or
+    !              Cbar = cbed*K [with bedload]    
     ! Where Cbar is the depth-averaged sediment concentration
     ! cbed is the near bed concentration
     ! and K is an integrating factor, which is determined from the Rouse
     ! distribution for suspended sediment.
-    ! Then this function calculates K + a_ref/d.
+    ! Then this function calculates K + a_ref/d [without bedload]
+    !                               or just K [with bedload]
     !
-    ! FIXME: a_ref/d should perhaps only appear when bedload is OFF, since we
-    ! might count sediment transport below a_ref as bedload 
     !
     ! INPUTS
     ! z = rouse number = wset/(0.4*ustar)
     ! d_aref = dimensionless reference level 
     !        = (van rijn reference level)/ depth
+    ! Qbedon = TRUE/FALSE [bedload 'on' or 'off']
 
     ! NOTE -- This uses a method from Guo and Julien (2004) 'Efficient
     ! Algorithms for Computing Einstein Integrals', Journal of Hydraulic
@@ -1014,6 +1017,7 @@ REAL(dp) FUNCTION rouse_int(z,d_aref)
     ! They show how to calculate J1=int_{d_aref}^{1} [(1-eps)/eps]^z d(eps)
     ! It can be shown that K=J1*db_const (where db_const is defined below) 
     REAL(dp), INTENT(IN):: z, d_aref
+    LOGICAL, INTENT(IN):: Qbedon
 
     ! num_trapz_pts = number of points used in trapezoidal integration
     INTEGER:: i, num_trapz_pts=400 
@@ -1079,7 +1083,9 @@ REAL(dp) FUNCTION rouse_int(z,d_aref)
         rouse_int=J1*db_const 
         ! Include the contribution between [0, a_ref]
         ! FIXME: This should only be included when bedload is OFF
-        rouse_int=rouse_int+d_aref 
+        IF(Qbedon.eqv..FALSE.) THEN
+            rouse_int=rouse_int+d_aref 
+        END IF
 
         IF((rouse_int<0.0_dp).or.(rouse_int>=1.0_dp).or.(rouse_int.ne.rouse_int)) THEN
             PRINT*, ' ERROR in rouse_int: unphysical rouse_int value ', rouse_int, d_aref, z
@@ -1093,7 +1099,7 @@ END FUNCTION rouse_int
 !!!!!!!!!!!!!!!!!!!!!!!!!!!
 SUBROUTINE int_edify_f(edify_model,sus_vert_prof,& 
                       a,ys,bed,ysl, ysu, bedl, bedu, &
-                      water, ustar,wset, a_ref, &
+                      water, ustar,wset, a_ref,Qbedon, &
                       int_edif_f, int_edif_dfdy) !, no_subints)
     ! PURPOSE: 
     !   To calculate
@@ -1125,6 +1131,7 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
     ! ignored if we are including bedload.
 
     INTEGER, INTENT(IN):: a 
+    LOGICAL, INTENT(IN)::Qbedon
     CHARACTER(char_len), INTENT(IN):: edify_model, sus_vert_prof
     REAL(dp), INTENT(IN):: ys, bed, ysl, ysu, bedl, bedu, ustar, water, wset, a_ref
     REAL(dp), INTENT(OUT):: int_edif_f, int_edif_dfdy
@@ -1382,13 +1389,12 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
         !int_edif_f(i) = newtcotes7(no_subints, dz, edify*f)
         int_edif_f(i) = sum(gauss_weights*edify*f)*(d-arefh)/2.0_dp ! gaussian quadrature
 
-        ! Try adding in near-bed portion [a_ref >= z >= bed]. Note that here f =
-        ! 1, while the eddy viscosity profile is still parabolic. Integrating
-        ! this eddy viscosity profile from [zero , a_ref] gives us the extra constant to add
-        ! FIXME: Arguably this should only be included when bedload is OFF,
-        ! since we may otherwise consider all sediment transport below arefh as
-        ! bedload.
-        int_edif_f(i) = int_edif_f(i) + ( 1.6_dp*us/d*( (arefh)**3)/3)
+        IF(Qbedon.eqv..FALSE.) THEN
+            ! Try adding in near-bed portion [a_ref >= z >= bed]. Note that here f =
+            ! 1, while the eddy viscosity profile is still parabolic. Integrating
+            ! this eddy viscosity profile from [zero , a_ref] gives us the extra constant to add
+            int_edif_f(i) = int_edif_f(i) + ( 1.6_dp*us/d*( (arefh)**3)/3)
+        END IF
         
         IF(isnan(int_edif_f(i))) THEN
             print*, 'Error: int_edif_f(',i, ') is nan, '  
