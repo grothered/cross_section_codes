@@ -155,7 +155,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     ! Degree of implicitness of the lateral diffusive flux
     impcon=1.00_dp
     IF(impcon .ne. 1.0_dp) THEN
-        print*, 'ERROR: impcon in dynamic_sus_dist is not supported for values other than 1.0_dp' 
+        print*, 'ERROR: impcon in dynamic_sus_dist is not presently supported for values other than 1.0_dp' 
     END IF
 
     Cbar_old = Cbar
@@ -213,8 +213,6 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
                     z = wset/(0.4_dp*sqrt(tau(i)/rho)) 
                     ! Compute rouse integral factor using a function
                     zetamult(i) = rouse_int(z,a_ref(i)/depth(i), Qbedon)
-                    ! Add the bit near the bed
-                    !zetamult(i) = zetamult(i)
                 ELSE
                     zetamult(i) = 0.0_dp
                 END IF
@@ -255,7 +253,6 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
     discharge = sum( abs(vel)*max(water-bed,0.0_dp)*& 
               ( ( (/ ys(2:a), ysu /) - (/ ysl, ys(1:a-1) /) )*0.5_dp) &  ! dy
                   )
-
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !! COMPUTE A HALF STEP OF d(depth*Cbar)/dt + d/dx(U*depth*Cbar) = 0
@@ -619,7 +616,7 @@ SUBROUTINE dynamic_sus_dist(a, delT, ys, bed, water, waterlast, Q, tau, vel, wse
                     !    END IF
 
                     !ELSE
-                        cb_weight(j) = 0.50_dp + 0.5*(cb(j+1)-cb(j))/(cb(j)**1+cb(j+1)**1+1.0e-10_dp)
+                    cb_weight(j) = 0.50_dp + 0.5*(cb(j+1)-cb(j))/(cb(j)**1+cb(j+1)**1+1.0e-10_dp)
                         ! 15/2/2012
                         ! The above term would be the standard second order
                         ! approx if it were just 0.5_dp. The additional part
@@ -1133,11 +1130,10 @@ SUBROUTINE int_edify_f(edify_model,sus_vert_prof,&
     !
     ! EVALUATED AT i+1/2
     !
-    ! FIXME: Integrals should only be between a_ref and water_surface unless
-    ! bedload is OFF.
     ! Note: In practice we integrate over [a_ref ,  water_surface] first, then
-    ! add on the contribution from [0, a_ref]. Actually the latter should be
-    ! ignored if we are including bedload.
+    ! add on the contribution from [0, a_ref] if Qbedon=FALSE . Otherwise, the
+    ! latter zone is associated with bedload -- I think this is standard in other
+    ! models (e.g. Delft3D)
 
     INTEGER, INTENT(IN):: a 
     LOGICAL, INTENT(IN)::Qbedon
