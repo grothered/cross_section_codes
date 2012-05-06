@@ -1035,19 +1035,57 @@ END SUBROUTINE intnuc
 
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!SUBROUTINE get_stage_given_Q_and_Sf(b,Q,Sf,ys,h,ff,vegdrag)
+!SUBROUTINE get_stage_given_Q_and_Sf(nos,Q,Sf,ys,bed, vegdrag, &
+!                                    friction_pars   
+!                                    stagemin,stagemax, increments,
+!                                    recompute)
+! Idea: Given Q and Sf, compute stage.
+!       Exploit the relation Sf = Q*abs(Q)*[drag_coef/(Area**2*avg_depth)]
+!                               = Q*abs(Q)*[rmult/Area**2]
+!       Provides the capacity to (re)compute a Stage - rmult_on_area_squared relationship
+!       This is saved, and can be used to compute Q given Sf 
 !
-!! For stage in stagemin-stagemax,
-!!  Compute wetted width, area for that stage
-!!  For i in 1,2, possibly more until result is stable
-!!    Compute friction for that stage
-!!    Compute tau for that stage
-!!    Compute rmu
-!!    Compute Sf
+!! LOCAL VARIABLES
+! INTEGER:: l, u
+! REAL(dp):: wet_width, area, ysl, ysu, bedl, bedu
+! REAL(dp):: vel(nos), f(nos), vegdrag(nos), f_g(nos), a_ref(nos)
+! REAL(dp):: stage_rmult_on_area_squared_relation(increments,2)   
+! SAVE stage_rmult_on_area_squared_relation
+!
+!
+!  IF(recompute) THEN
+!!     For stage in stagemin-stagemax,
+!!      Compute wetted width, area for that stage
+!       call wet(l,u,nos,stage,bed)
+!       wet_width=compute_wet_width(nos,stage,bed,ys,l,u)
+!       area=compute_area(nos, water,bed,ys,l,u)
+
+!        call compute_xsect_wetted_boundary_coords(nos,ys,bed,water,l,u, &
+!                                                  ysl, ysu, bedl, bedu)
+
+!!      For i in 1,2, possibly more until result is stable
+!!        Compute friction for that stage
+!i            call calc_friction(friction_type, grain_friction_type, rough_coef, water, u-l+1,&
+!                                bed(l:u), vel(l:u), man_nveg,d50,veg_ht, rhos, rho, g,&
+!                                f(l:u), vegdrag(l:u),f_g(l:u), dsand, j, a_ref(l:u)) 
+!!        Compute tau for that stage
+!            call calc_shear(u-l+1,DT1,water,Q,bed(l:u),ys(l:u),Area, &
+!                            water-Area/wet_width,f(l:u),&
+!                            rmult,inuc, tau(l:u),& 
+!                            NN(l:u),j,slopes(l:u), hlim, &
+!                            u-l+1, vegdrag(l:u), rho & 
+!                            ,rhos, voidf, d50, g, kvis, vertical, lambdacon, tbston &
+!                            ,ysl,ysu,bedl,bedu, high_order_shear) 
+!
+!       Store stage-rmult-on_area_squared
+!! END IF
 !!
-!!  If Sf>desired value and Sf_last <desired_value 
-!!    Interpolate the stage value? Or select another stage to refine estimate
-!
+!! Given Q, Sf
+!! Desired value of rmult/A**2 = Sf/Q**2
+!! Find the relevant stage
+!! 
+!! 
+!!
 !END SUBROUTINE get_stage_given_Q_and_Sf
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 SUBROUTINE findn(NN,inuc,A,Q,vels,aa,b, delX,DT,waters, bed,acUdlast,NN_old)

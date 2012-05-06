@@ -5,7 +5,9 @@ USE global_defs !Module with some fundamental constants
 USE hydro_xsect, only: calc_friction, calc_shear !cross-sectional hydrodynamics
 USE suspended_xsect, only: dynamic_sus_dist ! cross-sectional suspended sediment distribution
 USE bed_xsect, only: calc_resus_bedload, update_bed, bank_erosion ! cross-sectional sediment transport / bed evolution
-USE util_various, only: create_initial_geometry, wet,compute_area, compute_slope, compute_critical_shear,refit, interp3, interp ! Random utilities that don't fit nearly elsewhere
+USE util_various, only: create_initial_geometry, wet,compute_area, compute_slope, &
+                        compute_critical_shear,refit, interp3, interp, compute_wet_width, &
+                        compute_xsect_wetted_boundary_coords ! Random utilities that don't fit nearly elsewhere
 
 IMPLICIT NONE
 ! Initialise variables -- there is no order to this, and some variables may be
@@ -248,13 +250,8 @@ DO Q_loop= 1, num_simulations
 
         ! Find wetted part of section
         call wet(l,u,nos,water, bed) 
-        
-        ! Compute Wetted width 
-        wet_width=ys(u)-ys(l) 
-        IF(l>0) THEN
-            IF (u<nos) wet_width = wet_width+ (water-bed(u))/(bed(u+1)-bed(u))*(ys(u+1)-ys(u))
-            IF (l>1)   wet_width = wet_width+ (water-bed(l))/(bed(l-1)-bed(l))*(ys(l)-ys(l-1))
-        END IF
+       
+        wet_width = compute_wet_width(nos,water, bed, ys, l, u) 
 
         ! Cross sectional area
         Arealast=Area
@@ -301,21 +298,8 @@ DO Q_loop= 1, num_simulations
         !tss=bed
         ! Determine the y and elevation values of the points just on the dry
         ! edge of the cross-section -- needed for the shear and bed solver 
-        IF(l>1) THEN
-            ysl=ys(l-1)
-            bedl=bed(l-1)
-        ELSE
-            ysl=ys(l)- 0.001_dp 
-            bedl=water 
-        END IF
-        IF(u<nos) THEN
-            ysu=ys(u+1)
-            bedu=bed(u+1)
-        ELSE
-            ysu=ys(u)+0.001_dp
-            bedu=water 
-        END IF
-
+        call compute_xsect_wetted_boundary_coords(nos,ys,bed,water,l,u, &
+                                                  ysl, ysu, bedl, bedu)
         DO iii=1, 1 !This can be used to try fancy time stepping techniques
        
             ! During the first time step, we compute friction and shear twice,

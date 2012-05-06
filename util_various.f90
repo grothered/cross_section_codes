@@ -53,6 +53,7 @@ SUBROUTINE wet(l, u ,nos,water, bed)
     RETURN 
 
 END SUBROUTINE wet
+
 !!!!!!!!!!!!!!!!!!!!!!!!
 !
 !!!!!!!!!!!!!!!!!!!!!!!!
@@ -1220,6 +1221,53 @@ REAL(dp) FUNCTION compute_area(nos, water,bed,ys,l,u)
 
 END FUNCTION compute_area
 !!!!!!!!!!!!!!!!!!!!!!!!!
+REAL(dp) FUNCTION compute_wet_width(nos, water,bed,ys,l,u)
+    ! Used to compute the cross-sectional area.
+    ! nos = number of points in cross-section (including dry regions)
+    ! water = water elevation
+    ! ys,bed = y and z coordinates of cross-section
+    ! l,u = indices of lower wet point and the upper wet point on the
+    ! cross-section
+    INTEGER:: l,u,nos
+    REAL(dp):: water, bed(nos), ys(nos)
+
+    ! Local variables
+    REAL(dp):: wet_width
+
+    wet_width=ys(u)-ys(l) 
+    IF(l>0) THEN
+        IF (u<nos) wet_width = wet_width+ (water-bed(u))/(bed(u+1)-bed(u))*(ys(u+1)-ys(u))
+        IF (l>1)   wet_width = wet_width+ (water-bed(l))/(bed(l-1)-bed(l))*(ys(l)-ys(l-1))
+    END IF
+
+    !Return the value Area
+    compute_wet_width = wet_width    
+
+END FUNCTION compute_wet_width
+!!!!!!!!!!!!!!!!!!!!!!!!!
+SUBROUTINE compute_xsect_wetted_boundary_coords(nos,ys,bed,water,l,u,&
+                                                  ysl, ysu, bedl, bedu)
+    ! Compute the 'exact' y,bed values at the wet/dry edge of the cross-section
+    INTEGER, INTENT(IN):: nos, l, u
+    REAL(dp), INTENT(IN):: ys(nos), bed(nos), water
+    REAL(dp), INTENT(OUT):: ysl, ysu, bedl, bedu
+
+    IF(l>1) THEN
+        ysl=ys(l-1)
+        bedl=bed(l-1)
+    ELSE
+        ysl=ys(l)- 0.001_dp 
+        bedl=water 
+    END IF
+    IF(u<nos) THEN
+        ysu=ys(u+1)
+        bedu=bed(u+1)
+    ELSE
+        ysu=ys(u)+0.001_dp
+        bedu=water 
+    END IF
+
+END SUBROUTINE compute_xsect_wetted_boundary_coords
 !!!!!!!!!!!!!!!!!!!!!!!!!
 SUBROUTINE compute_slope(nos, slopes, bed, ys)
     ! Compute the lateral bed slope, as a distance weighted average of the right
