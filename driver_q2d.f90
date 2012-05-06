@@ -726,7 +726,9 @@ DO j= 1, jmax
         WRITE(12,*) taus
         !WRITE(34,*) NN
         !write(12,*) vels
-        WRITE(33,*) Cdist
+        IF(sus2d) THEN
+            WRITE(33,*) Cdist
+        END IF
 
         !BURST OF WRITING 
         !if(writfreq1.ne.writfreq) THEN

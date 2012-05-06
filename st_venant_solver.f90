@@ -542,11 +542,11 @@ SUBROUTINE hyupdate(delT, delX, bottom, B, A, Q,Q2H_dT,Y, t,l, counter,dWidth_dw
     !Condition suggested by Blayo and Debreu (2005). Qext=0 is my decision, since it
     !seems to do good things. - Could be interpreted as uext=0, indicating that the
     !cross sectional area at the boundary is so large that u is effectively 0.
-    Qext=Qlast(1)*A(1)/Alast(1)! 0._dp!Q(1)!Q(1)/2._dp!0._dp!A(1)*(2.*Q(1)/A(1)-Q(2)/A(2))!0._dp!Qlast(1)!0._dp!.1*sum(A(2:l)+A(1:l-1) -Alast(2:l)-Alast(1:l-1))*delX/delT
+    Qext= Qlast(1)*A(1)/Alast(1)!min(Qlast(1)*A(1)/Alast(1),0.0_dp) ! 0._dp! NOTE: THIS IS IMPORTANT. SOMETIMES 0 is better, sometimes not. The difference can be seen in the Yalimbah Creek seiche oscillations -- predictions of the water surface oscillations at triton2 damp more strongly with Qext=0 -- this is sometimes more correct, sometimes not
     w1= Qext/A(1) +sqrt(g/(Y(1)-bottom(1)))*(d0-bottom(1))
-    w3= Q(1)/A(1)-sqrt(g/(Y(1)-bottom(1)))*(Y(1)-bottom(1)) !2.*(Q(2)/A(2) -sqrt(g/(Y(1)-bottom(1)))*(Y(2)) ) - (Q(3)/A(3) -sqrt(g/(Y(1)-bottom(1)))*(Y(3))) !Note that this could be extrap in different ways.Q(1)/A(1)-sqrt(g/(Y(1)-bottom(1)))*Y(1)
-    Q(1)= .5_dp*A(1)*(w1+w3) !.5*A(1)*(Qext/A(1) + 2.*Q(2)/A(2) -1.*Q(3)/A(3)+sqrt(g/(Y(1)-bottom(1)))*(d0 - 2.*Y(2)+1.*Y(3))) 
-    Y(1)= sqrt((Y(1)-bottom(1))/g)*(-w3+w1)/2._dp +bottom(1)!.5*(d0+ 2.*Y(2) -1.*Y(3) - sqrt((Y(1)-bottom(1))/g)*(-Qext/A(1) + 2.*Q(2)/A(2) - 1.*Q(3)/A(3))) 
+    w3= Q(1)/A(1)-sqrt(g/(Y(1)-bottom(1)))*(Y(1)-bottom(1))  !Note that this could be extrap in different ways.Q(1)/A(1)-sqrt(g/(Y(1)-bottom(1)))*Y(1)
+    Q(1)= .5_dp*A(1)*(w1+w3)  
+    Y(1)= sqrt((Y(1)-bottom(1))/g)*(-w3+w1)/2._dp +bottom(1)
 
     !Y(1)=d0
   
