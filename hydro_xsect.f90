@@ -1032,6 +1032,24 @@ END SUBROUTINE intnuc
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!SUBROUTINE get_stage_given_Q_and_Sf(b,Q,Sf,ys,h,ff,vegdrag)
+!
+!! For stage in stagemin-stagemax,
+!!  Compute wetted width, area for that stage
+!!  For i in 1,2, possibly more until result is stable
+!!    Compute friction for that stage
+!!    Compute tau for that stage
+!!    Compute rmu
+!!    Compute Sf
+!!
+!!  If Sf>desired value and Sf_last <desired_value 
+!!    Interpolate the stage value? Or select another stage to refine estimate
+!
+!END SUBROUTINE get_stage_given_Q_and_Sf
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 SUBROUTINE findn(NN,inuc,A,Q,vels,aa,b, delX,DT,waters, bed,acUdlast,NN_old)
     ! This is to estimate 'N', the neglected terms in the longitudinal momentum
     ! balance

@@ -2,10 +2,10 @@ PROGRAM driver_xsect
 ! Program to run the cross-sectional evolution
 
 USE global_defs !Module with some fundamental constants
-USE hydro_xsect !cross-sectional hydrodynamics
-USE suspended_xsect ! cross-sectional suspended sediment distribution
-USE bed_xsect ! cross-sectional sediment transport / bed evolution
-USE util_various ! Random utilities that don't fit nearly elsewhere
+USE hydro_xsect, only: calc_friction, calc_shear !cross-sectional hydrodynamics
+USE suspended_xsect, only: dynamic_sus_dist ! cross-sectional suspended sediment distribution
+USE bed_xsect, only: calc_resus_bedload, update_bed, bank_erosion ! cross-sectional sediment transport / bed evolution
+USE util_various, only: create_initial_geometry, wet,compute_area, compute_slope, compute_critical_shear,refit, interp3, interp ! Random utilities that don't fit nearly elsewhere
 
 IMPLICIT NONE
 ! Initialise variables -- there is no order to this, and some variables may be
